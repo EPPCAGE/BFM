@@ -3640,7 +3640,7 @@ function renderDashboard(){
   const qLabel = (academy.quality||50)>=70?'Excelente ⭐⭐⭐':(academy.quality||50)>=50?'Boa ⭐⭐':'Modesta ⭐';
   const nextProm = academy.nextPromotion || 19;
   const wkNow = gameState.week||1;
-  const weeksLeft = Math.max(0, nextProm - wkNow);
+  const weeksUntilPromo = Math.max(0, nextProm - wkNow);
   const youthSquad = (gameState.squads[gameState.teamId]||[]).filter(p=>p.isYouth);
   const youthRows = youthSquad.slice(0,5).map(p=>`
     <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
@@ -3657,7 +3657,7 @@ function renderDashboard(){
       </div>
       <div style="flex:1;background:var(--bg-secondary);border-radius:6px;padding:8px;text-align:center;">
         <div style="font-size:11px;color:var(--text-muted);">Próxima Promoção</div>
-        <div style="font-weight:700;font-size:13px;">${weeksLeft===0?'Agora!':weeksLeft+' rodadas'}</div>
+        <div style="font-weight:700;font-size:13px;">${weeksUntilPromo===0?'Agora!':weeksUntilPromo+' rodadas'}</div>
       </div>
     </div>
     ${youthRows || '<div class="text-muted text-sm">Nenhum cria no plantel ainda.</div>'}`;
