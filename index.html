@@ -161,6 +161,9 @@ tr.my-team:hover td { background: rgba(0,230,118,0.07); }
 .badge-VOL { background: #7b1fa2; }
 .badge-MEI { background: #f57f17; }
 .badge-ATA { background: #c62828; }
+.badge-PE  { background: #e53935; }
+.badge-PD  { background: #b71c1c; }
+.badge-CA  { background: #880e4f; }
 .status-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; }
 .status-ok { background: var(--accent-green); }
 .status-warn { background: var(--accent-yellow); }
@@ -670,7 +673,10 @@ select:focus { border-color: var(--accent-blue); }
           <option value="LE">Lateral Esquerdo</option>
           <option value="VOL">Volantes</option>
           <option value="MEI">Meias</option>
-          <option value="ATA">Atacantes</option>
+          <option value="PE">Ponta Esquerda</option>
+          <option value="PD">Ponta Direita</option>
+          <option value="CA">Centro-Avante</option>
+          <option value="ATA">Atacante</option>
         </select>
         <select id="squad-filter-status" onchange="renderSquad()" style="padding:6px 8px;background:var(--bg-card);border:1px solid var(--border);border-radius:5px;color:var(--text-primary);font-family:'Exo 2',sans-serif;font-size:12px;">
           <option value="">Todos Status</option>
@@ -793,7 +799,7 @@ select:focus { border-color: var(--accent-blue); }
     <div id="transfer-search-panel">
       <div class="card mb12">
         <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
-          <select id="tf-pos" onchange="searchPlayers()"><option value="">Posição</option><option>GOL</option><option>ZAG</option><option>LD</option><option>LE</option><option>VOL</option><option>MEI</option><option>ATA</option></select>
+          <select id="tf-pos" onchange="searchPlayers()"><option value="">Posição</option><option>GOL</option><option>ZAG</option><option>LD</option><option>LE</option><option>VOL</option><option>MEI</option><option>PE</option><option>PD</option><option>CA</option><option>ATA</option></select>
           <select id="tf-max-age" onchange="searchPlayers()"><option value="">Idade máx.</option><option value="20">≤ 20</option><option value="25">≤ 25</option><option value="28">≤ 28</option><option value="32">≤ 32</option></select>
           <select id="tf-min-ovr" onchange="searchPlayers()"><option value="">Mín. OVR</option><option value="50">50+</option><option value="60">60+</option><option value="70">70+</option><option value="75">75+</option><option value="80">80+</option></select>
           <input type="text" class="search-input" id="tf-name" style="width:180px;margin:0;" placeholder="Nome..." oninput="searchPlayers()">
@@ -809,7 +815,7 @@ select:focus { border-color: var(--accent-blue); }
         <div class="card-title">🤝 Proposta de Empréstimo</div>
         <p style="font-size:12px;color:var(--text-muted);margin-bottom:12px;">Busque jogadores de outros clubes e proponha um empréstimo temporário. O clube cede o jogador por uma temporada pagando parte do salário.</p>
         <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;">
-          <select id="loan-pos" onchange="searchLoanPlayers()"><option value="">Posição</option><option>GOL</option><option>ZAG</option><option>LD</option><option>LE</option><option>VOL</option><option>MEI</option><option>ATA</option></select>
+          <select id="loan-pos" onchange="searchLoanPlayers()"><option value="">Posição</option><option>GOL</option><option>ZAG</option><option>LD</option><option>LE</option><option>VOL</option><option>MEI</option><option>PE</option><option>PD</option><option>CA</option><option>ATA</option></select>
           <select id="loan-max-age" onchange="searchLoanPlayers()"><option value="">Idade máx.</option><option value="21">≤ 21</option><option value="24">≤ 24</option><option value="27">≤ 27</option></select>
           <select id="loan-min-ovr" onchange="searchLoanPlayers()"><option value="">Mín. OVR</option><option value="50">50+</option><option value="60">60+</option><option value="70">70+</option></select>
           <input type="text" class="search-input" id="loan-name" style="width:160px;margin:0;" placeholder="Nome do jogador..." oninput="searchLoanPlayers()">
@@ -1200,64 +1206,123 @@ function playCrowdCheer(duration=3.0){
 }
 
 // Continuous crowd ambient during match
+// Architecture: brown-noise (warm) through dual bandpass filters + detuned
+// triangle-wave choir + pulsing LFO rhythm + slow swell + compressor
 let _crowdAmbientNode = null;
 let _crowdAmbientGain = null;
+let _crowdExtraNodes = [];
 function startCrowdAmbient(){
   try {
     if(_crowdAmbientNode) return;
     const ctx = getACtx();
+    const now = ctx.currentTime;
+
+    // ── Master chain ─────────────────────────────────────────
+    const master = ctx.createGain();
+    master.gain.setValueAtTime(0, now);
+    master.gain.linearRampToValueAtTime(0.40, now + 2.5);
+    const comp = ctx.createDynamicsCompressor();
+    comp.threshold.value = -16; comp.knee.value = 10;
+    comp.ratio.value = 4;      comp.attack.value = 0.08;
+    comp.release.value = 0.4;
+    master.connect(comp); comp.connect(ctx.destination);
+
+    // ── Layer 1: Brown noise → dual bandpass (warm crowd rumble) ─
     const SR = ctx.sampleRate;
-    const dur = 5; // 5-second loop
-    const buf = ctx.createBuffer(2, SR*dur, SR);
-    for(let ch=0;ch<2;ch++){
-      const d = buf.getChannelData(ch);
-      // Pink noise state (Voss-McCartney algorithm approximation)
-      let b0=0,b1=0,b2=0,b3=0,b4=0,b5=0,b6=0;
-      for(let i=0;i<SR*dur;i++){
-        const t = i/SR;
-        const w = Math.random()*2-1;
-        // Pink noise (sounds far more natural than white noise)
-        b0=0.99886*b0+w*0.0555179; b1=0.99332*b1+w*0.0750759;
-        b2=0.96900*b2+w*0.1538520; b3=0.86650*b3+w*0.3104856;
-        b4=0.55000*b4+w*0.5329522; b5=-0.7616*b5-w*0.0168980;
-        const pink = (b0+b1+b2+b3+b4+b5+b6+w*0.5362)*0.09;
-        b6=w*0.115926;
-        // Voice-frequency oscillators with FM — simulates crowd chatter
-        // Different pitches and modulation rates per channel for stereo spread
-        const phOffset = ch*1.3;
-        const voices =
-          Math.sin(2*Math.PI*230*t + Math.sin(2*Math.PI*1.9*t+phOffset)*0.5)*0.032 +
-          Math.sin(2*Math.PI*340*t + Math.sin(2*Math.PI*2.7*t+0.8)*0.6)*0.028 +
-          Math.sin(2*Math.PI*470*t + Math.sin(2*Math.PI*1.4*t+1.5)*0.4)*0.022 +
-          Math.sin(2*Math.PI*290*t + Math.sin(2*Math.PI*3.3*t+phOffset+0.4)*0.35)*0.026 +
-          Math.sin(2*Math.PI*180*t + Math.sin(2*Math.PI*0.9*t)*0.3)*0.018;
-        // Irregular amplitude: sum of fast and slow modulators (avoids wave pattern)
-        const env =
-          0.50 +
-          0.12*Math.sin(2*Math.PI*0.8*t+0.4) +
-          0.10*Math.sin(2*Math.PI*1.7*t+1.1) +
-          0.08*Math.sin(2*Math.PI*2.9*t+0.7) +
-          0.06*Math.sin(2*Math.PI*4.3*t+1.9) +
-          0.04*Math.sin(2*Math.PI*7.1*t+0.2);
-        d[i] = (pink*0.65 + voices*1.1) * Math.max(0.05, env);
+    const nlen = SR * 8; // 8 s looping buffer
+    const nbuf = ctx.createBuffer(2, nlen, SR);
+    for(let ch = 0; ch < 2; ch++){
+      const d = nbuf.getChannelData(ch);
+      let b = ch === 0 ? 0 : 0.001; // slightly different per channel → stereo
+      for(let i = 0; i < nlen; i++){
+        b += (Math.random() * 2 - 1) * 0.016;
+        b *= 0.987; // brown noise integration constant
+        d[i] = Math.max(-1, Math.min(1, b * 3.2));
       }
     }
-    const src = ctx.createBufferSource();
-    src.buffer = buf; src.loop = true;
-    // High-pass: remove sub-bass that causes the "wave" feel
-    const hpf = ctx.createBiquadFilter();
-    hpf.type='highpass'; hpf.frequency.value=180; hpf.Q.value=0.6;
-    // Slight presence boost in crowd-voice range (300–600 Hz)
-    const eq = ctx.createBiquadFilter();
-    eq.type='peaking'; eq.frequency.value=380; eq.gain.value=5; eq.Q.value=0.9;
-    const gain = ctx.createGain();
-    gain.gain.setValueAtTime(0, ctx.currentTime);
-    gain.gain.linearRampToValueAtTime(0.38, ctx.currentTime+1.8);
-    src.connect(hpf); hpf.connect(eq); eq.connect(gain); gain.connect(ctx.destination);
-    src.start();
-    _crowdAmbientNode = src;
-    _crowdAmbientGain = gain;
-  } catch(e){ console.warn('crowd ambient error',e); }
+    const noise = ctx.createBufferSource();
+    noise.buffer = nbuf; noise.loop = true;
+
+    // BPF 1: main voice hum 300-550 Hz
+    const bp1 = ctx.createBiquadFilter();
+    bp1.type = 'bandpass'; bp1.frequency.value = 400; bp1.Q.value = 1.2;
+    // BPF 2: upper presence 650-1100 Hz
+    const bp2 = ctx.createBiquadFilter();
+    bp2.type = 'bandpass'; bp2.frequency.value = 800; bp2.Q.value = 1.4;
+    // LPF to cut harshness above ~1.8 kHz
+    const lpf = ctx.createBiquadFilter();
+    lpf.type = 'lowpass'; lpf.frequency.value = 1800; lpf.Q.value = 0.5;
+
+    const ng1 = ctx.createGain(); ng1.gain.value = 0.50;
+    const ng2 = ctx.createGain(); ng2.gain.value = 0.28;
+
+    noise.connect(lpf);
+    lpf.connect(bp1); bp1.connect(ng1); ng1.connect(master);
+    lpf.connect(bp2); bp2.connect(ng2); ng2.connect(master);
+    noise.start();
+
+    // ── Layer 2: Detuned triangle choir (multiple voice fundamentals) ─
+    const choirGain = ctx.createGain();
+    choirGain.gain.value = 0.14;
+    choirGain.connect(master);
+
+    // Voice frequency layout: low male → mid female range
+    const FREQS = [195, 230, 265, 310, 360, 420, 490, 560, 640, 720];
+    const voiceOscs = FREQS.map((f, i) => {
+      const osc = ctx.createOscillator();
+      osc.type = 'triangle'; // warm, not harsh
+      // Each voice detuned ±2.5% — creates natural chorus width
+      osc.frequency.value = f * (1 + (Math.random() - 0.5) * 0.05);
+      // Per-voice lowpass: cut harmonics above ~2× fundamental
+      const vf = ctx.createBiquadFilter();
+      vf.type = 'lowpass'; vf.frequency.value = f * 2.2;
+      const vg = ctx.createGain();
+      vg.gain.value = 0.007 + Math.random() * 0.008; // slightly random mix
+      osc.connect(vf); vf.connect(vg); vg.connect(choirGain);
+      osc.start(now);
+      return osc;
+    });
+
+    // ── Layer 3: Chanting rhythm LFO (1.1–1.4 Hz — fast clap / olé rhythm) ─
+    // LFO drives choirGain.gain — creates the pulsing "torcida" feel
+    const lfoRate = 1.15 + Math.random() * 0.25;
+    const lfo = ctx.createOscillator();
+    lfo.type = 'sine';
+    lfo.frequency.value = lfoRate;
+
+    // Waveshaper: maps sine (-1..1) to half-rectified ramp (0..~1)
+    // giving sharp attack, slow fall — like a crowd chant onset
+    const shaperLen = 512;
+    const curve = new Float32Array(shaperLen);
+    for(let i = 0; i < shaperLen; i++){
+      const x = (i * 2 / (shaperLen - 1)) - 1; // -1 to 1
+      // x<0 → near-zero; x>0 → rises with slight overshoot at peak
+      curve[i] = x < 0 ? Math.max(0, x * 0.15 + 0.08) : Math.pow(x, 0.6) * 0.85;
+    }
+    const shaper = ctx.createWaveShaper();
+    shaper.curve = curve;
+
+    const lfoGain = ctx.createGain();
+    lfoGain.gain.value = 0.10; // modulation depth: adds 0–0.10 to choirGain
+
+    lfo.connect(shaper); shaper.connect(lfoGain);
+    lfoGain.connect(choirGain.gain); // AudioParam modulation (additive)
+    lfo.start(now);
+
+    // ── Layer 4: Slow stadium swell (10–18 s period) ─────────
+    const swellOsc = ctx.createOscillator();
+    swellOsc.frequency.value = 0.065 + Math.random() * 0.025;
+    const swellG = ctx.createGain();
+    swellG.gain.value = 0.06; // ±6% master volume drift
+    swellOsc.connect(swellG);
+    swellG.connect(master.gain); // additive modulation on master
+    swellOsc.start(now);
+
+    // ── Store refs for cleanup ────────────────────────────────
+    _crowdAmbientGain = master;
+    _crowdAmbientNode = noise; // primary node (stopCrowdAmbient stops noise)
+    _crowdExtraNodes  = [...voiceOscs, lfo, swellOsc];
+  } catch(e){ console.warn('crowd ambient error', e); }
 }
 function stopCrowdAmbient(){
   try {
@@ -1266,9 +1331,14 @@ function stopCrowdAmbient(){
     _crowdAmbientGain.gain.setValueAtTime(_crowdAmbientGain.gain.value, ctx.currentTime);
     _crowdAmbientGain.gain.linearRampToValueAtTime(0, ctx.currentTime+1.2);
     const n = _crowdAmbientNode;
-    setTimeout(()=>{ try{ n.stop(); }catch(e){} }, 1400);
+    const extras = [..._crowdExtraNodes];
+    setTimeout(()=>{
+      try{ n.stop(); }catch(e){}
+      extras.forEach(x=>{ try{ x.stop(); }catch(e){} });
+    }, 1400);
     _crowdAmbientNode = null;
     _crowdAmbientGain = null;
+    _crowdExtraNodes  = [];
   } catch(e){ console.warn('stop crowd error',e); }
 }
 
@@ -1584,9 +1654,9 @@ const REAL_SQUADS = {
     {name:'Erick Pulgar',age:30,pos:'VOL',ovr:79,nat:'🇨🇱'},{name:'Allan',age:33,pos:'VOL',ovr:78,nat:'🇧🇷'},
     {name:'Gerson',age:27,pos:'MEI',ovr:87,nat:'🇧🇷'},{name:'De La Cruz',age:27,pos:'MEI',ovr:85,nat:'🇺🇾'},
     {name:'Arrascaeta',age:30,pos:'MEI',ovr:88,nat:'🇺🇾'},{name:'Jorginho',age:33,pos:'VOL',ovr:83,nat:'🇮🇹'},
-    {name:'Bruno Henrique',age:33,pos:'ATA',ovr:80,nat:'🇧🇷'},{name:'Pedro',age:27,pos:'ATA',ovr:86,nat:'🇧🇷'},
-    {name:'Luiz Araújo',age:27,pos:'ATA',ovr:78,nat:'🇧🇷'},{name:'Plata',age:25,pos:'ATA',ovr:77,nat:'🇪🇨'},
-    {name:'Carlinhos',age:23,pos:'ATA',ovr:72,nat:'🇧🇷'},{name:'Andrew',age:17,pos:'GOL',ovr:65,nat:'🇧🇷'},
+    {name:'Bruno Henrique',age:33,pos:'PE',ovr:80,nat:'🇧🇷'},{name:'Pedro',age:27,pos:'CA',ovr:86,nat:'🇧🇷'},
+    {name:'Luiz Araújo',age:27,pos:'PD',ovr:78,nat:'🇧🇷'},{name:'Plata',age:25,pos:'PD',ovr:77,nat:'🇪🇨'},
+    {name:'Carlinhos',age:23,pos:'PE',ovr:72,nat:'🇧🇷'},{name:'Andrew',age:17,pos:'GOL',ovr:65,nat:'🇧🇷'},
     {name:'Matías Viña',age:27,pos:'LE',ovr:74,nat:'🇺🇾'},{name:'Cleiton',age:25,pos:'GOL',ovr:79,nat:'🇧🇷'},
   ],
   'palmeiras': [
@@ -1596,10 +1666,10 @@ const REAL_SQUADS = {
     {name:'Piquerez',age:27,pos:'LE',ovr:82,nat:'🇺🇾'},{name:'Vanderlan',age:22,pos:'LE',ovr:72,nat:'🇧🇷'},
     {name:'Aníbal Moreno',age:26,pos:'VOL',ovr:82,nat:'🇦🇷'},{name:'Zé Rafael',age:31,pos:'VOL',ovr:79,nat:'🇧🇷'},
     {name:'Raphael Veiga',age:29,pos:'MEI',ovr:85,nat:'🇧🇷'},{name:'Felipe Anderson',age:31,pos:'MEI',ovr:80,nat:'🇧🇷'},
-    {name:'Mauricio',age:23,pos:'MEI',ovr:76,nat:'🇧🇷'},{name:'Paulinho',age:23,pos:'ATA',ovr:82,nat:'🇧🇷'},
-    {name:'Vitor Roque',age:19,pos:'ATA',ovr:82,nat:'🇧🇷'},{name:'Flaco López',age:25,pos:'ATA',ovr:79,nat:'🇦🇷'},
-    {name:'Rony',age:30,pos:'ATA',ovr:78,nat:'🇧🇷'},{name:'Estêvão',age:17,pos:'ATA',ovr:84,nat:'🇧🇷'},
-    {name:'Bruno Rodrigues',age:29,pos:'ATA',ovr:74,nat:'🇧🇷'},{name:'Richard Ríos',age:24,pos:'VOL',ovr:81,nat:'🇨🇴'},
+    {name:'Mauricio',age:23,pos:'MEI',ovr:76,nat:'🇧🇷'},{name:'Paulinho',age:23,pos:'CA',ovr:82,nat:'🇧🇷'},
+    {name:'Vitor Roque',age:19,pos:'CA',ovr:82,nat:'🇧🇷'},{name:'Flaco López',age:25,pos:'CA',ovr:79,nat:'🇦🇷'},
+    {name:'Rony',age:30,pos:'PE',ovr:78,nat:'🇧🇷'},{name:'Estêvão',age:17,pos:'PD',ovr:84,nat:'🇧🇷'},
+    {name:'Bruno Rodrigues',age:29,pos:'CA',ovr:74,nat:'🇧🇷'},{name:'Richard Ríos',age:24,pos:'VOL',ovr:81,nat:'🇨🇴'},
     {name:'Caio Paulista',age:27,pos:'LE',ovr:74,nat:'🇧🇷'},{name:'Michel',age:30,pos:'LD',ovr:76,nat:'🇧🇷'},
   ],
   'corinthians': [
@@ -1609,11 +1679,11 @@ const REAL_SQUADS = {
     {name:'Matheus Bidu',age:26,pos:'LE',ovr:74,nat:'🇧🇷'},{name:'Hugo',age:21,pos:'LD',ovr:70,nat:'🇧🇷'},
     {name:'Raniele',age:26,pos:'VOL',ovr:77,nat:'🇧🇷'},{name:'Breno Bidon',age:19,pos:'VOL',ovr:76,nat:'🇧🇷'},
     {name:'Rodrigo Garro',age:26,pos:'MEI',ovr:82,nat:'🇦🇷'},{name:'Charles',age:28,pos:'MEI',ovr:75,nat:'🇧🇷'},
-    {name:'Igor Coronado',age:31,pos:'MEI',ovr:76,nat:'🇮🇹'},{name:'Memphis Depay',age:30,pos:'ATA',ovr:84,nat:'🇳🇱'},
-    {name:'Yuri Alberto',age:23,pos:'ATA',ovr:80,nat:'🇧🇷'},{name:'Talles Magno',age:23,pos:'ATA',ovr:75,nat:'🇧🇷'},
-    {name:'Héctor Hernández',age:24,pos:'ATA',ovr:73,nat:'🇻🇪'},{name:'Pedro Raul',age:27,pos:'ATA',ovr:74,nat:'🇧🇷'},
+    {name:'Igor Coronado',age:31,pos:'MEI',ovr:76,nat:'🇮🇹'},{name:'Memphis Depay',age:30,pos:'CA',ovr:84,nat:'🇳🇱'},
+    {name:'Yuri Alberto',age:23,pos:'CA',ovr:80,nat:'🇧🇷'},{name:'Talles Magno',age:23,pos:'PE',ovr:75,nat:'🇧🇷'},
+    {name:'Héctor Hernández',age:24,pos:'CA',ovr:73,nat:'🇻🇪'},{name:'Pedro Raul',age:27,pos:'CA',ovr:74,nat:'🇧🇷'},
     {name:'Ryan',age:21,pos:'MEI',ovr:72,nat:'🇧🇷'},{name:'Alex Santana',age:30,pos:'VOL',ovr:74,nat:'🇧🇷'},
-    {name:'Léo Mana',age:21,pos:'LD',ovr:70,nat:'🇧🇷'},{name:'Ángel Romero',age:32,pos:'ATA',ovr:75,nat:'🇵🇾'},
+    {name:'Léo Mana',age:21,pos:'LD',ovr:70,nat:'🇧🇷'},{name:'Ángel Romero',age:32,pos:'CA',ovr:75,nat:'🇵🇾'},
   ],
   'sao-paulo': [
     {name:'Rafael',age:34,pos:'GOL',ovr:82,nat:'🇧🇷'},{name:'Young',age:22,pos:'GOL',ovr:68,nat:'🇧🇷'},
@@ -1621,11 +1691,11 @@ const REAL_SQUADS = {
     {name:'Arboleda',age:32,pos:'ZAG',ovr:78,nat:'🇪🇨'},{name:'Alan Franco',age:27,pos:'ZAG',ovr:76,nat:'🇦🇷'},
     {name:'Welington',age:23,pos:'LE',ovr:74,nat:'🇧🇷'},{name:'Patryck',age:22,pos:'LD',ovr:72,nat:'🇧🇷'},
     {name:'Marcos Antonio',age:26,pos:'VOL',ovr:78,nat:'🇧🇷'},{name:'Pablo Maia',age:22,pos:'VOL',ovr:78,nat:'🇧🇷'},
-    {name:'Alisson',age:29,pos:'MEI',ovr:80,nat:'🇧🇷'},{name:'Luciano',age:32,pos:'ATA',ovr:79,nat:'🇧🇷'},
-    {name:'Calleri',age:31,pos:'ATA',ovr:81,nat:'🇦🇷'},{name:'Ferreira',age:26,pos:'ATA',ovr:75,nat:'🇧🇷'},
+    {name:'Alisson',age:29,pos:'MEI',ovr:80,nat:'🇧🇷'},{name:'Luciano',age:32,pos:'PE',ovr:79,nat:'🇧🇷'},
+    {name:'Calleri',age:31,pos:'CA',ovr:81,nat:'🇦🇷'},{name:'Ferreira',age:26,pos:'PD',ovr:75,nat:'🇧🇷'},
     {name:'Sabino',age:26,pos:'ZAG',ovr:73,nat:'🇧🇷'},{name:'Galoppo',age:26,pos:'MEI',ovr:76,nat:'🇦🇷'},
-    {name:'Wellington Rato',age:30,pos:'ATA',ovr:74,nat:'🇧🇷'},{name:'Nestor',age:26,pos:'MEI',ovr:74,nat:'🇧🇷'},
-    {name:'André Silva',age:23,pos:'ATA',ovr:71,nat:'🇧🇷'},{name:'Bobadilla',age:27,pos:'MEI',ovr:73,nat:'🇵🇾'},
+    {name:'Wellington Rato',age:30,pos:'PE',ovr:74,nat:'🇧🇷'},{name:'Nestor',age:26,pos:'MEI',ovr:74,nat:'🇧🇷'},
+    {name:'André Silva',age:23,pos:'CA',ovr:71,nat:'🇧🇷'},{name:'Bobadilla',age:27,pos:'MEI',ovr:73,nat:'🇵🇾'},
     {name:'João Moreira',age:21,pos:'LD',ovr:69,nat:'🇧🇷'},{name:'Lucas',age:37,pos:'LD',ovr:71,nat:'🇧🇷'},
   ],
   'santos': [
@@ -1635,11 +1705,11 @@ const REAL_SQUADS = {
     {name:'Escobar',age:26,pos:'LE',ovr:72,nat:'🇨🇴'},{name:'JP Chermont',age:20,pos:'LD',ovr:73,nat:'🇧🇷'},
     {name:'João Schmidt',age:25,pos:'VOL',ovr:76,nat:'🇧🇷'},{name:'Diego Pituca',age:30,pos:'VOL',ovr:77,nat:'🇧🇷'},
     {name:'Giuliano',age:34,pos:'MEI',ovr:75,nat:'🇧🇷'},{name:'Wendel Silva',age:25,pos:'MEI',ovr:73,nat:'🇧🇷'},
-    {name:'Neymar',age:33,pos:'ATA',ovr:88,nat:'🇧🇷'},{name:'Guilherme',age:28,pos:'ATA',ovr:76,nat:'🇧🇷'},
-    {name:'Tiquinho Soares',age:33,pos:'ATA',ovr:77,nat:'🇧🇷'},{name:'Pedrinho',age:24,pos:'ATA',ovr:74,nat:'🇧🇷'},
-    {name:'Otero',age:33,pos:'MEI',ovr:73,nat:'🇻🇪'},{name:'Rollheiser',age:24,pos:'ATA',ovr:72,nat:'🇦🇷'},
-    {name:'Lucas Braga',age:27,pos:'ATA',ovr:74,nat:'🇧🇷'},{name:'Miguelito',age:18,pos:'ATA',ovr:70,nat:'🇨🇴'},
-    {name:'Soteldo',age:27,pos:'ATA',ovr:76,nat:'🇻🇪'},{name:'Thaciano',age:29,pos:'MEI',ovr:72,nat:'🇧🇷'},
+    {name:'Neymar',age:33,pos:'PE',ovr:88,nat:'🇧🇷'},{name:'Guilherme',age:28,pos:'CA',ovr:76,nat:'🇧🇷'},
+    {name:'Tiquinho Soares',age:33,pos:'CA',ovr:77,nat:'🇧🇷'},{name:'Pedrinho',age:24,pos:'PD',ovr:74,nat:'🇧🇷'},
+    {name:'Otero',age:33,pos:'MEI',ovr:73,nat:'🇻🇪'},{name:'Rollheiser',age:24,pos:'CA',ovr:72,nat:'🇦🇷'},
+    {name:'Lucas Braga',age:27,pos:'PE',ovr:74,nat:'🇧🇷'},{name:'Miguelito',age:18,pos:'PE',ovr:70,nat:'🇨🇴'},
+    {name:'Soteldo',age:27,pos:'PE',ovr:76,nat:'🇻🇪'},{name:'Thaciano',age:29,pos:'MEI',ovr:72,nat:'🇧🇷'},
   ],
   'atletico-mg': [
     {name:'Everson',age:33,pos:'GOL',ovr:82,nat:'🇧🇷'},{name:'Matheus Mendes',age:24,pos:'GOL',ovr:69,nat:'🇧🇷'},
@@ -1647,10 +1717,10 @@ const REAL_SQUADS = {
     {name:'Battaglia',age:29,pos:'ZAG',ovr:78,nat:'🇦🇷'},{name:'Rubens',age:25,pos:'LE',ovr:74,nat:'🇧🇷'},
     {name:'Mariano',age:32,pos:'LD',ovr:74,nat:'🇧🇷'},{name:'Saravia',age:32,pos:'LD',ovr:75,nat:'🇦🇷'},
     {name:'Otávio',age:29,pos:'VOL',ovr:80,nat:'🇧🇷'},{name:'Alan Franco',age:27,pos:'VOL',ovr:77,nat:'🇦🇷'},
-    {name:'Eduardo Vargas',age:34,pos:'ATA',ovr:77,nat:'🇨🇱'},{name:'Paulinho',age:23,pos:'ATA',ovr:80,nat:'🇧🇷'},
-    {name:'Bernard',age:31,pos:'MEI',ovr:76,nat:'🇧🇷'},{name:'Hulk',age:38,pos:'ATA',ovr:74,nat:'🇧🇷'},
+    {name:'Eduardo Vargas',age:34,pos:'CA',ovr:77,nat:'🇨🇱'},{name:'Paulinho',age:23,pos:'PD',ovr:80,nat:'🇧🇷'},
+    {name:'Bernard',age:31,pos:'PE',ovr:76,nat:'🇧🇷'},{name:'Hulk',age:38,pos:'CA',ovr:74,nat:'🇧🇷'},
     {name:'Igor Gomes',age:26,pos:'MEI',ovr:76,nat:'🇧🇷'},{name:'Fausto Vera',age:25,pos:'VOL',ovr:78,nat:'🇦🇷'},
-    {name:'Alisson',age:26,pos:'ATA',ovr:74,nat:'🇧🇷'},{name:'Lyanco',age:27,pos:'ZAG',ovr:76,nat:'🇧🇷'},
+    {name:'Alisson',age:26,pos:'PD',ovr:74,nat:'🇧🇷'},{name:'Lyanco',age:27,pos:'ZAG',ovr:76,nat:'🇧🇷'},
     {name:'Gustavo Scarpa',age:30,pos:'MEI',ovr:79,nat:'🇧🇷'},{name:'Patrick',age:28,pos:'MEI',ovr:76,nat:'🇧🇷'},
     {name:'Caio Maia',age:22,pos:'MEI',ovr:71,nat:'🇧🇷'},{name:'Cadu',age:22,pos:'LD',ovr:70,nat:'🇧🇷'},
   ],
@@ -1661,9 +1731,9 @@ const REAL_SQUADS = {
     {name:'Marlon',age:27,pos:'LE',ovr:74,nat:'🇧🇷'},{name:'Kaiki Bruno',age:21,pos:'LD',ovr:72,nat:'🇧🇷'},
     {name:'Lucas Romero',age:30,pos:'VOL',ovr:79,nat:'🇦🇷'},{name:'Ramiro',age:31,pos:'VOL',ovr:74,nat:'🇦🇷'},
     {name:'Matheus Pereira',age:28,pos:'MEI',ovr:85,nat:'🇧🇷'},{name:'Álvaro Barreal',age:24,pos:'MEI',ovr:77,nat:'🇦🇷'},
-    {name:'Kaio Jorge',age:23,pos:'ATA',ovr:79,nat:'🇧🇷'},{name:'Arthur Gomes',age:26,pos:'ATA',ovr:74,nat:'🇧🇷'},
-    {name:'Lautaro Díaz',age:26,pos:'ATA',ovr:75,nat:'🇦🇷'},{name:'Rafa Silva',age:31,pos:'ATA',ovr:76,nat:'🇧🇷'},
-    {name:'Nikão',age:32,pos:'ATA',ovr:73,nat:'🇧🇷'},{name:'Juan Dinenno',age:29,pos:'ATA',ovr:75,nat:'🇦🇷'},
+    {name:'Kaio Jorge',age:23,pos:'CA',ovr:79,nat:'🇧🇷'},{name:'Arthur Gomes',age:26,pos:'PD',ovr:74,nat:'🇧🇷'},
+    {name:'Lautaro Díaz',age:26,pos:'PE',ovr:75,nat:'🇦🇷'},{name:'Rafa Silva',age:31,pos:'PE',ovr:76,nat:'🇧🇷'},
+    {name:'Nikão',age:32,pos:'PD',ovr:73,nat:'🇧🇷'},{name:'Juan Dinenno',age:29,pos:'CA',ovr:75,nat:'🇦🇷'},
     {name:'Christian',age:22,pos:'MEI',ovr:71,nat:'🇧🇷'},{name:'Eduardo',age:26,pos:'MEI',ovr:73,nat:'🇧🇷'},
     {name:'Silas',age:22,pos:'LE',ovr:70,nat:'🇧🇷'},{name:'Villalba',age:28,pos:'LD',ovr:73,nat:'🇦🇷'},
   ],
@@ -1674,9 +1744,9 @@ const REAL_SQUADS = {
     {name:'Renê',age:31,pos:'LE',ovr:76,nat:'🇧🇷'},{name:'Alexandro',age:22,pos:'LE',ovr:71,nat:'🇧🇷'},
     {name:'Rômulo',age:24,pos:'VOL',ovr:75,nat:'🇧🇷'},{name:'Thiago Maia',age:27,pos:'VOL',ovr:78,nat:'🇧🇷'},
     {name:'Bruno Tabata',age:27,pos:'MEI',ovr:78,nat:'🇧🇷'},{name:'Alan Patrick',age:33,pos:'MEI',ovr:79,nat:'🇧🇷'},
-    {name:'Hyoran',age:30,pos:'MEI',ovr:74,nat:'🇧🇷'},{name:'Wesley',age:22,pos:'ATA',ovr:78,nat:'🇧🇷'},
-    {name:'Borré',age:28,pos:'ATA',ovr:80,nat:'🇨🇴'},{name:'Valencia',age:32,pos:'ATA',ovr:77,nat:'🇨🇴'},
-    {name:'Enner Valencia',age:35,pos:'ATA',ovr:75,nat:'🇪🇨'},{name:'Gustavo Prado',age:21,pos:'ATA',ovr:70,nat:'🇧🇷'},
+    {name:'Hyoran',age:30,pos:'MEI',ovr:74,nat:'🇧🇷'},{name:'Wesley',age:22,pos:'PD',ovr:78,nat:'🇧🇷'},
+    {name:'Borré',age:28,pos:'CA',ovr:80,nat:'🇨🇴'},{name:'Valencia',age:32,pos:'CA',ovr:77,nat:'🇨🇴'},
+    {name:'Enner Valencia',age:35,pos:'CA',ovr:75,nat:'🇪🇨'},{name:'Gustavo Prado',age:21,pos:'ATA',ovr:70,nat:'🇧🇷'},
     {name:'Fernando',age:30,pos:'VOL',ovr:76,nat:'🇧🇷'},{name:'Maurício',age:22,pos:'MEI',ovr:74,nat:'🇧🇷'},
     {name:'Igor Gomes',age:26,pos:'MEI',ovr:74,nat:'🇧🇷'},{name:'Hugo Melo',age:23,pos:'LD',ovr:71,nat:'🇧🇷'},
   ],
@@ -1687,11 +1757,11 @@ const REAL_SQUADS = {
     {name:'Reinaldo',age:33,pos:'LE',ovr:75,nat:'🇧🇷'},{name:'Mayk',age:25,pos:'LD',ovr:73,nat:'🇧🇷'},
     {name:'Villasanti',age:26,pos:'VOL',ovr:79,nat:'🇵🇾'},{name:'Dodi',age:26,pos:'VOL',ovr:77,nat:'🇧🇷'},
     {name:'Cristaldo',age:29,pos:'MEI',ovr:81,nat:'🇦🇷'},{name:'Edenilson',age:33,pos:'MEI',ovr:76,nat:'🇧🇷'},
-    {name:'Nathan Fernandes',age:21,pos:'MEI',ovr:72,nat:'🇧🇷'},{name:'Pepê',age:27,pos:'ATA',ovr:79,nat:'🇧🇷'},
-    {name:'Braithwaite',age:33,pos:'ATA',ovr:77,nat:'🇩🇰'},{name:'André Henrique',age:30,pos:'ATA',ovr:74,nat:'🇧🇷'},
-    {name:'Soteldo',age:27,pos:'ATA',ovr:76,nat:'🇻🇪'},{name:'Diego Costa',age:31,pos:'ATA',ovr:73,nat:'🇧🇷'},
+    {name:'Nathan Fernandes',age:21,pos:'MEI',ovr:72,nat:'🇧🇷'},{name:'Pepê',age:27,pos:'PD',ovr:79,nat:'🇧🇷'},
+    {name:'Braithwaite',age:33,pos:'CA',ovr:77,nat:'🇩🇰'},{name:'André Henrique',age:30,pos:'CA',ovr:74,nat:'🇧🇷'},
+    {name:'Soteldo',age:27,pos:'PE',ovr:76,nat:'🇻🇪'},{name:'Diego Costa',age:31,pos:'ATA',ovr:73,nat:'🇧🇷'},
     {name:'Cuéllar',age:33,pos:'VOL',ovr:76,nat:'🇨🇴'},{name:'Du Queiroz',age:25,pos:'VOL',ovr:74,nat:'🇧🇷'},
-    {name:'Everton Galdino',age:26,pos:'ATA',ovr:73,nat:'🇧🇷'},{name:'Pavon',age:28,pos:'ATA',ovr:74,nat:'🇦🇷'},
+    {name:'Everton Galdino',age:26,pos:'PE',ovr:73,nat:'🇧🇷'},{name:'Pavon',age:28,pos:'PD',ovr:74,nat:'🇦🇷'},
   ],
   'botafogo': [
     {name:'John',age:27,pos:'GOL',ovr:80,nat:'🇧🇷'},{name:'Gatito Fernández',age:36,pos:'GOL',ovr:74,nat:'🇵🇾'},
@@ -1700,11 +1770,11 @@ const REAL_SQUADS = {
     {name:'Cuiabano',age:22,pos:'LE',ovr:74,nat:'🇧🇷'},{name:'Hugo',age:25,pos:'LD',ovr:73,nat:'🇧🇷'},
     {name:'Gregore',age:30,pos:'VOL',ovr:79,nat:'🇧🇷'},{name:'Marlon Freitas',age:28,pos:'VOL',ovr:80,nat:'🇧🇷'},
     {name:'Almada',age:23,pos:'MEI',ovr:81,nat:'🇦🇷'},{name:'Eduardo',age:26,pos:'MEI',ovr:73,nat:'🇧🇷'},
-    {name:'Savarino',age:27,pos:'MEI',ovr:80,nat:'🇻🇪'},{name:'Tiquinho Soares',age:33,pos:'ATA',ovr:77,nat:'🇧🇷'},
-    {name:'Igor Jesus',age:23,pos:'ATA',ovr:79,nat:'🇧🇷'},{name:'Júnior Santos',age:27,pos:'ATA',ovr:77,nat:'🇧🇷'},
-    {name:'Matheus Nascimento',age:21,pos:'ATA',ovr:74,nat:'🇧🇷'},{name:'Óscar Romero',age:32,pos:'MEI',ovr:75,nat:'🇵🇾'},
+    {name:'Savarino',age:27,pos:'MEI',ovr:80,nat:'🇻🇪'},{name:'Tiquinho Soares',age:33,pos:'CA',ovr:77,nat:'🇧🇷'},
+    {name:'Igor Jesus',age:23,pos:'CA',ovr:79,nat:'🇧🇷'},{name:'Júnior Santos',age:27,pos:'PE',ovr:77,nat:'🇧🇷'},
+    {name:'Matheus Nascimento',age:21,pos:'CA',ovr:74,nat:'🇧🇷'},{name:'Óscar Romero',age:32,pos:'MEI',ovr:75,nat:'🇵🇾'},
     {name:'Pablo',age:33,pos:'ZAG',ovr:73,nat:'🇧🇷'},{name:'Carlos Alberto',age:22,pos:'MEI',ovr:72,nat:'🇧🇷'},
-    {name:'Kauan Cabelinho',age:22,pos:'ATA',ovr:72,nat:'🇧🇷'},{name:'Jeffinho',age:25,pos:'ATA',ovr:73,nat:'🇧🇷'},
+    {name:'Kauan Cabelinho',age:22,pos:'PE',ovr:72,nat:'🇧🇷'},{name:'Jeffinho',age:25,pos:'PD',ovr:73,nat:'🇧🇷'},
   ],
   'fluminense': [
     {name:'Fábio',age:43,pos:'GOL',ovr:79,nat:'🇧🇷'},{name:'Vitor Eudes',age:22,pos:'GOL',ovr:67,nat:'🇧🇷'},
@@ -1713,11 +1783,11 @@ const REAL_SQUADS = {
     {name:'Marcelo',age:36,pos:'LE',ovr:74,nat:'🇧🇷'},{name:'Diogo Barbosa',age:30,pos:'LE',ovr:73,nat:'🇧🇷'},
     {name:'André',age:23,pos:'VOL',ovr:83,nat:'🇧🇷'},{name:'Martinelli',age:23,pos:'VOL',ovr:76,nat:'🇧🇷'},
     {name:'Alexsander',age:21,pos:'MEI',ovr:73,nat:'🇧🇷'},{name:'Ganso',age:34,pos:'MEI',ovr:76,nat:'🇧🇷'},
-    {name:'Lima',age:26,pos:'MEI',ovr:74,nat:'🇧🇷'},{name:'Keno',age:33,pos:'ATA',ovr:73,nat:'🇧🇷'},
-    {name:'Jhon Arias',age:27,pos:'ATA',ovr:82,nat:'🇨🇴'},{name:'Cano',age:36,pos:'ATA',ovr:76,nat:'🇦🇷'},
-    {name:'Germán Cano',age:36,pos:'ATA',ovr:76,nat:'🇦🇷'},{name:'Lelê',age:24,pos:'ATA',ovr:73,nat:'🇧🇷'},
+    {name:'Lima',age:26,pos:'MEI',ovr:74,nat:'🇧🇷'},{name:'Keno',age:33,pos:'PE',ovr:73,nat:'🇧🇷'},
+    {name:'Jhon Arias',age:27,pos:'PD',ovr:82,nat:'🇨🇴'},{name:'Cano',age:36,pos:'CA',ovr:76,nat:'🇦🇷'},
+    {name:'Germán Cano',age:36,pos:'CA',ovr:76,nat:'🇦🇷'},{name:'Lelê',age:24,pos:'PE',ovr:73,nat:'🇧🇷'},
     {name:'Bernal',age:21,pos:'MEI',ovr:72,nat:'🇨🇴'},{name:'Terans',age:27,pos:'MEI',ovr:74,nat:'🇺🇾'},
-    {name:'Renato Augusto',age:34,pos:'MEI',ovr:74,nat:'🇧🇷'},{name:'Kevin Serna',age:26,pos:'ATA',ovr:73,nat:'🇨🇴'},
+    {name:'Renato Augusto',age:34,pos:'MEI',ovr:74,nat:'🇧🇷'},{name:'Kevin Serna',age:26,pos:'PD',ovr:73,nat:'🇨🇴'},
   ],
   'vasco': [
     {name:'Léo Jardim',age:28,pos:'GOL',ovr:79,nat:'🇧🇷'},{name:'Keiller',age:26,pos:'GOL',ovr:69,nat:'🇧🇷'},
@@ -1726,11 +1796,11 @@ const REAL_SQUADS = {
     {name:'Puma Rodríguez',age:27,pos:'LD',ovr:75,nat:'🇺🇾'},{name:'Piton',age:27,pos:'LE',ovr:73,nat:'🇧🇷'},
     {name:'Matheus Carvalho',age:24,pos:'VOL',ovr:75,nat:'🇧🇷'},{name:'Sforza',age:22,pos:'VOL',ovr:74,nat:'🇨🇭'},
     {name:'Payet',age:38,pos:'MEI',ovr:78,nat:'🇫🇷'},{name:'Galdames',age:26,pos:'MEI',ovr:76,nat:'🇨🇱'},
-    {name:'Rayan',age:18,pos:'ATA',ovr:77,nat:'🇧🇷'},{name:'Vegetti',age:35,pos:'ATA',ovr:79,nat:'🇦🇷'},
-    {name:'Rossi',age:25,pos:'ATA',ovr:73,nat:'🇦🇷'},{name:'Adson',age:23,pos:'ATA',ovr:73,nat:'🇧🇷'},
+    {name:'Rayan',age:18,pos:'PE',ovr:77,nat:'🇧🇷'},{name:'Vegetti',age:35,pos:'CA',ovr:79,nat:'🇦🇷'},
+    {name:'Rossi',age:25,pos:'PD',ovr:73,nat:'🇦🇷'},{name:'Adson',age:23,pos:'PD',ovr:73,nat:'🇧🇷'},
     {name:'Emerson Rodríguez',age:20,pos:'ATA',ovr:71,nat:'🇨🇴'},{name:'Leandrinho',age:24,pos:'MEI',ovr:72,nat:'🇧🇷'},
     {name:'Hugo Moura',age:27,pos:'VOL',ovr:73,nat:'🇧🇷'},{name:'Zuccarello',age:21,pos:'MEI',ovr:73,nat:'🇧🇷'},
-    {name:'Jean David',age:27,pos:'ATA',ovr:72,nat:'🇨🇦'},{name:'Coutinho',age:32,pos:'MEI',ovr:77,nat:'🇧🇷'},
+    {name:'Jean David',age:27,pos:'CA',ovr:72,nat:'🇨🇦'},{name:'Coutinho',age:32,pos:'MEI',ovr:77,nat:'🇧🇷'},
   ],
   'bahia': [
     {name:'Marcos Felipe',age:27,pos:'GOL',ovr:79,nat:'🇧🇷'},{name:'Adriel',age:21,pos:'GOL',ovr:67,nat:'🇧🇷'},
@@ -1739,10 +1809,10 @@ const REAL_SQUADS = {
     {name:'Luciano Juba',age:26,pos:'LE',ovr:74,nat:'🇧🇷'},{name:'Matheus Bahia',age:26,pos:'LE',ovr:73,nat:'🇧🇷'},
     {name:'Caio Alexandre',age:26,pos:'VOL',ovr:75,nat:'🇧🇷'},{name:'Jean Lucas',age:26,pos:'VOL',ovr:79,nat:'🇧🇷'},
     {name:'Rodrigo Nestor',age:25,pos:'MEI',ovr:79,nat:'🇧🇷'},{name:'Everton Ribeiro',age:35,pos:'MEI',ovr:77,nat:'🇧🇷'},
-    {name:'Luciano Rodríguez',age:22,pos:'ATA',ovr:79,nat:'🇺🇾'},{name:'Everaldo',age:31,pos:'ATA',ovr:75,nat:'🇧🇷'},
-    {name:'Ademir',age:28,pos:'ATA',ovr:74,nat:'🇧🇷'},{name:'Biel',age:24,pos:'ATA',ovr:74,nat:'🇧🇷'},
+    {name:'Luciano Rodríguez',age:22,pos:'CA',ovr:79,nat:'🇺🇾'},{name:'Everaldo',age:31,pos:'CA',ovr:75,nat:'🇧🇷'},
+    {name:'Ademir',age:28,pos:'PE',ovr:74,nat:'🇧🇷'},{name:'Biel',age:24,pos:'PD',ovr:74,nat:'🇧🇷'},
     {name:'Thaciano',age:29,pos:'MEI',ovr:73,nat:'🇧🇷'},{name:'Cauly',age:27,pos:'MEI',ovr:76,nat:'🇧🇷'},
-    {name:'Santiago Arias',age:32,pos:'LD',ovr:73,nat:'🇨🇴'},{name:'Óscar Estupiñán',age:27,pos:'ATA',ovr:75,nat:'🇨🇴'},
+    {name:'Santiago Arias',age:32,pos:'LD',ovr:73,nat:'🇨🇴'},{name:'Óscar Estupiñán',age:27,pos:'CA',ovr:75,nat:'🇨🇴'},
     {name:'Acevedo',age:24,pos:'VOL',ovr:72,nat:'🇨🇴'},{name:'de Pena',age:30,pos:'MEI',ovr:73,nat:'🇺🇾'},
   ],
   'fortaleza': [
@@ -1752,9 +1822,9 @@ const REAL_SQUADS = {
     {name:'Bruno Pacheco',age:29,pos:'LE',ovr:74,nat:'🇧🇷'},{name:'Mancuso',age:22,pos:'LD',ovr:71,nat:'🇦🇷'},
     {name:'Zé Welison',age:29,pos:'VOL',ovr:74,nat:'🇧🇷'},{name:'Rossetto',age:30,pos:'VOL',ovr:74,nat:'🇧🇷'},
     {name:'Hércules',age:24,pos:'MEI',ovr:76,nat:'🇧🇷'},{name:'Calebe',age:24,pos:'MEI',ovr:74,nat:'🇧🇷'},
-    {name:'Pikachu',age:32,pos:'LD',ovr:73,nat:'🇧🇷'},{name:'Lucero',age:32,pos:'ATA',ovr:78,nat:'🇦🇷'},
-    {name:'Moisés',age:29,pos:'ATA',ovr:75,nat:'🇧🇷'},{name:'Marinho',age:33,pos:'ATA',ovr:74,nat:'🇧🇷'},
-    {name:'Breno Lopes',age:28,pos:'ATA',ovr:74,nat:'🇧🇷'},{name:'Renato Kayzer',age:28,pos:'ATA',ovr:73,nat:'🇧🇷'},
+    {name:'Pikachu',age:32,pos:'LD',ovr:73,nat:'🇧🇷'},{name:'Lucero',age:32,pos:'CA',ovr:78,nat:'🇦🇷'},
+    {name:'Moisés',age:29,pos:'PE',ovr:75,nat:'🇧🇷'},{name:'Marinho',age:33,pos:'PE',ovr:74,nat:'🇧🇷'},
+    {name:'Breno Lopes',age:28,pos:'PE',ovr:74,nat:'🇧🇷'},{name:'Renato Kayzer',age:28,pos:'CA',ovr:73,nat:'🇧🇷'},
     {name:'Du',age:28,pos:'MEI',ovr:72,nat:'🇧🇷'},{name:'Pochettino',age:24,pos:'MEI',ovr:74,nat:'🇦🇷'},
     {name:'Kervin Andrade',age:22,pos:'MEI',ovr:71,nat:'🇻🇪'},{name:'Tomás Pochettino',age:24,pos:'MEI',ovr:73,nat:'🇦🇷'},
   ],
@@ -1765,11 +1835,11 @@ const REAL_SQUADS = {
     {name:'Nicolas',age:20,pos:'LE',ovr:70,nat:'🇧🇷'},{name:'Matheus Bahia',age:26,pos:'LE',ovr:73,nat:'🇧🇷'},
     {name:'Richardson',age:26,pos:'VOL',ovr:74,nat:'🇧🇷'},{name:'Lourenço',age:20,pos:'VOL',ovr:71,nat:'🇧🇷'},
     {name:'De Lucca',age:29,pos:'MEI',ovr:73,nat:'🇧🇷'},{name:'Mugni',age:33,pos:'MEI',ovr:73,nat:'🇦🇷'},
-    {name:'Saulo Mineiro',age:27,pos:'ATA',ovr:76,nat:'🇧🇷'},{name:'Barceló',age:22,pos:'ATA',ovr:72,nat:'🇺🇾'},
-    {name:'Erick Pulgar',age:30,pos:'VOL',ovr:79,nat:'🇨🇱'},{name:'Facundo Castro',age:23,pos:'ATA',ovr:72,nat:'🇺🇾'},
-    {name:'Aylon',age:22,pos:'ATA',ovr:71,nat:'🇧🇷'},{name:'Guilherme Castilho',age:27,pos:'MEI',ovr:73,nat:'🇧🇷'},
-    {name:'Janderson',age:25,pos:'ATA',ovr:71,nat:'🇧🇷'},{name:'Andrey',age:24,pos:'MEI',ovr:70,nat:'🇧🇷'},
-    {name:'Léo Rafael',age:24,pos:'LD',ovr:70,nat:'🇧🇷'},{name:'Caíque',age:23,pos:'ATA',ovr:71,nat:'🇧🇷'},
+    {name:'Saulo Mineiro',age:27,pos:'CA',ovr:76,nat:'🇧🇷'},{name:'Barceló',age:22,pos:'CA',ovr:72,nat:'🇺🇾'},
+    {name:'Erick Pulgar',age:30,pos:'VOL',ovr:79,nat:'🇨🇱'},{name:'Facundo Castro',age:23,pos:'CA',ovr:72,nat:'🇺🇾'},
+    {name:'Aylon',age:22,pos:'PE',ovr:71,nat:'🇧🇷'},{name:'Guilherme Castilho',age:27,pos:'MEI',ovr:73,nat:'🇧🇷'},
+    {name:'Janderson',age:25,pos:'PD',ovr:71,nat:'🇧🇷'},{name:'Andrey',age:24,pos:'MEI',ovr:70,nat:'🇧🇷'},
+    {name:'Léo Rafael',age:24,pos:'LD',ovr:70,nat:'🇧🇷'},{name:'Caíque',age:23,pos:'CA',ovr:71,nat:'🇧🇷'},
   ],
   'sport': [
     {name:'Caíque França',age:27,pos:'GOL',ovr:75,nat:'🇧🇷'},{name:'Renan',age:23,pos:'GOL',ovr:67,nat:'🇧🇷'},
@@ -1778,9 +1848,9 @@ const REAL_SQUADS = {
     {name:'Felipinho',age:24,pos:'LE',ovr:71,nat:'🇧🇷'},{name:'Igor Cariús',age:27,pos:'LD',ovr:72,nat:'🇧🇷'},
     {name:'Sérgio Oliveira',age:32,pos:'VOL',ovr:79,nat:'🇵🇹'},{name:'Fabrício Daniel',age:22,pos:'VOL',ovr:71,nat:'🇧🇷'},
     {name:'Lucas Lima',age:31,pos:'MEI',ovr:75,nat:'🇧🇷'},{name:'Lenny Lobato',age:20,pos:'MEI',ovr:72,nat:'🇧🇷'},
-    {name:'Gonçalo Paciência',age:29,pos:'ATA',ovr:78,nat:'🇵🇹'},{name:'Bruyne',age:23,pos:'ATA',ovr:72,nat:'🇧🇷'},
-    {name:'Barletta',age:24,pos:'ATA',ovr:74,nat:'🇦🇷'},{name:'Romarinho',age:31,pos:'ATA',ovr:72,nat:'🇧🇷'},
-    {name:'Zé Lucas',age:27,pos:'ATA',ovr:71,nat:'🇧🇷'},{name:'Chrístian',age:27,pos:'MEI',ovr:72,nat:'🇧🇷'},
+    {name:'Gonçalo Paciência',age:29,pos:'CA',ovr:78,nat:'🇵🇹'},{name:'Bruyne',age:23,pos:'PD',ovr:72,nat:'🇧🇷'},
+    {name:'Barletta',age:24,pos:'CA',ovr:74,nat:'🇦🇷'},{name:'Romarinho',age:31,pos:'PE',ovr:72,nat:'🇧🇷'},
+    {name:'Zé Lucas',age:27,pos:'PD',ovr:71,nat:'🇧🇷'},{name:'Chrístian',age:27,pos:'MEI',ovr:72,nat:'🇧🇷'},
     {name:'Hereda',age:24,pos:'LD',ovr:71,nat:'🇳🇮'},{name:'Aldair',age:23,pos:'MEI',ovr:70,nat:'🇧🇷'},
     {name:'Jefferson',age:23,pos:'LE',ovr:70,nat:'🇧🇷'},{name:'Eduardo',age:23,pos:'VOL',ovr:71,nat:'🇧🇷'},
   ],
@@ -1932,8 +2002,117 @@ const TEAMS_RAW = {
   ]
 };
 
-const FIRST_NAMES = ['Carlos','Rafael','Bruno','Thiago','Lucas','Gabriel','André','Felipe','Diego','Rodrigo','Marcelo','Eduardo','Vinícius','Matheus','João','Patrick','Alan','Caio','Igor','Leandro','Willian','Alex','Paulo','Sergio','Daniel'];
-const LAST_NAMES = ['Silva','Santos','Oliveira','Costa','Souza','Lima','Ferreira','Carvalho','Alves','Rodrigues','Nascimento','Araújo','Barbosa','Pereira','Martins','Gomes','Gonçalves','Dias','Castro','Moreira'];
+// ── Player name generation ─────────────────────────────────
+// Single-name nicknames (apelidos) — very common in Brazilian football
+const BR_NICKNAMES = [
+  'Fred','Hulk','Dentinho','Ferreirinha','Vitinho','Claudinho','Juninho','Rafinha','Rodriginho',
+  'Leandrinho','Marcelinho','Rodriguinho','Thaciano','Aloísio','Nenê','Tinga','Galo','Beto',
+  'Nikão','Hyoran','Renê','Rodinei','Fabrício','Lucão','Wanderson','Patrick','William','Anderson',
+  'Christian','Eduardo','Guilherme','Marquinhos','Richarlison','Endrick','Claudinho','Rony',
+  'Gio','Malcom','Gerson','Pedro','Matheus','Alisson','Ederson','Weverton','Éverton','Tiquinho',
+  'Pedrinho','Soteldo','Otero','Pepê','Jeffinho','Cabelinho','Lelê','Keno','Savarino','Pavon',
+  'Cano','Borré','Calleri','Ferreirinha','Thiago','Lucas','Bruno','Diego','Rafael','Felipe',
+];
+
+// Brazilian first names
+const BR_FIRST = [
+  'Carlos','Rafael','Bruno','Thiago','Lucas','Gabriel','André','Felipe','Diego','Rodrigo',
+  'Marcelo','Eduardo','Vinícius','Matheus','João','Alan','Caio','Igor','Leandro','Paulo',
+  'Sergio','Daniel','Gustavo','Fernando','Ricardo','Alexandre','Roberto','Fábio','Leonardo',
+  'Renato','Everton','Luís','Marco','William','Wanderson','Anderson','Cleiton','Victor','Vítor',
+  'Hudson','Roger','Dênis','Régis','Clayton','Guilherme','Mateus','Kaio','Weverton','Reinaldo',
+  'Marlon','Robson','Elton','Elvis','Welton','Bruninho','Pedrão','Flavinho','Thadeu','Nilton',
+  'Reginaldo','Evanilson','Higor','Wendel','Talles','Jefferson','Emerson','Isaque','Sandro',
+];
+
+// Brazilian last names
+const BR_LAST = [
+  'Silva','Santos','Oliveira','Costa','Souza','Lima','Ferreira','Carvalho','Alves','Rodrigues',
+  'Nascimento','Araújo','Barbosa','Pereira','Martins','Gomes','Gonçalves','Dias','Castro','Moreira',
+  'Pinto','Freitas','Nunes','Cardoso','Batista','Melo','Lopes','Machado','Ribeiro','Ramos',
+  'Vieira','Cunha','Teixeira','Coelho','Magalhães','Farias','Braga','Tavares','Luz','Vasconcelos',
+  'Mendes','Borges','Cruz','Correia','Pires','Monteiro','Andrade','Campos','Assis','Guimarães',
+  'Fernandes','Azevedo','Soares','Miranda','Brito','Rocha','Cavalcante','Rezende','Leite','Dantas',
+  'Marques','Figueiredo','Bandeira','Lacerda','Siqueira','Menezes','Bezerra','Medeiros','Amorim',
+];
+
+// Compound Brazilian first names (very typical in Brazilian football)
+const BR_COMPOUND_FIRST = [
+  'João Pedro','Luís Gustavo','Marco Antônio','João Paulo','Pedro Henrique','Carlos Alberto',
+  'Paulo Sérgio','Marco Aurélio','Pablo Maia','Thiago Maia','João Victor','Léo Pereira',
+  'Igor Julião','Yan Couto','Kaio Jorge','Elias Manoel','Wesley Franca','Jean Carlos',
+  'João Guilherme','Lucas Moura','Bruno Henrique','Felipe Anderson','Fabrício Bruno',
+  'Gabriel Barbosa','Matheus Pereira','Pedro Raul','João Neto','Luiz Adriano','Alan Patrick',
+];
+
+// Argentine players (most common foreigners in Brazil)
+const ARG_FIRST = ['Agustín','Marcos','Nicolás','Rodrigo','Federico','Matías','Facundo','Tomás',
+  'Santiago','Maximiliano','Franco','Ignacio','Lautaro','Lucas','Iván','Ezequiel','Braian','Enzo'];
+const ARG_LAST = ['García','Herrera','González','López','Fernández','Romero','Moreno','Díaz',
+  'Sánchez','Pérez','Gómez','Martínez','Juárez','Vera','Castro','Suárez','Medina','Álvarez',
+  'Barreal','Ramírez','Domínguez','Giménez','Benítez','Zárate','Nandez','Lucero'];
+
+// Uruguayan players
+const URU_FIRST = ['Darwin','Sebastián','Martín','Maxi','Nahitan','Giorgian','Ronald','Matías','Agustín','Damián'];
+const URU_LAST = ['Núñez','Coates','Rodrigues','Araujo','Castro','De La Cruz','Olivera','Piquerez','Varela','Torres'];
+
+// Colombian/Venezuelan players
+const COL_FIRST = ['Luis','Radamel','Juan','David','Jhon','Jorge','Kevin','Cucho','Jheyson','Yerry'];
+const COL_LAST = ['Díaz','Falcao','Moreno','Ospina','Arias','Arroyo','Andrade','Escobar','Serna','Quintero','Borré','Valencia'];
+
+// Paraguayan players
+const PAR_FIRST = ['Ángel','Oscar','Richard','Diego','Rodrigo','Antony','Gabriel'];
+const PAR_LAST = ['Romero','González','Benítez','Alcaraz','Villalba','Gómez','Bobadilla','Alonso'];
+
+// European/other
+const EUR_FIRST = ['Memphis','Braithwaite','Jorge','Piero','Tomas','André','Sergio'];
+const EUR_LAST = ['Depay','Ríos','Jorginho','Marin','Rossi','Pulgar','Savarino','Plata','Rollheiser'];
+
+function genPlayerName(){
+  const r = Math.random();
+  if(r < 0.22) {
+    // Single nickname (Brazilian style — 22%)
+    return pick(BR_NICKNAMES);
+  } else if(r < 0.42) {
+    // Compound first name + last (20%)
+    return pick(BR_COMPOUND_FIRST) + ' ' + pick(BR_LAST);
+  } else if(r < 0.62) {
+    // First + Last Brazilian (20%)
+    return pick(BR_FIRST) + ' ' + pick(BR_LAST);
+  } else if(r < 0.72) {
+    // First + double last (10%)
+    return pick(BR_FIRST) + ' ' + pick(BR_LAST) + ' ' + pick(BR_LAST);
+  } else if(r < 0.81) {
+    // Argentine (9%)
+    return pick(ARG_FIRST) + ' ' + pick(ARG_LAST);
+  } else if(r < 0.87) {
+    // Uruguayan (6%)
+    return pick(URU_FIRST) + ' ' + pick(URU_LAST);
+  } else if(r < 0.93) {
+    // Colombian/Venezuelan (6%)
+    return pick(COL_FIRST) + ' ' + pick(COL_LAST);
+  } else if(r < 0.96) {
+    // Paraguayan (3%)
+    return pick(PAR_FIRST) + ' ' + pick(PAR_LAST);
+  } else {
+    // European/other (4%)
+    return pick(EUR_FIRST) + ' ' + pick(EUR_LAST);
+  }
+}
+function genPlayerNat(name){
+  // Infer nationality from name for display flag
+  const argNames = [...ARG_FIRST,...ARG_LAST];
+  const uruNames = [...URU_FIRST,...URU_LAST];
+  const colNames = [...COL_FIRST,...COL_LAST];
+  const parNames = [...PAR_FIRST,...PAR_LAST];
+  const eurFirst = EUR_FIRST;
+  if(eurFirst.some(n=>name.startsWith(n))) return pick(['🇳🇱','🇩🇰','🇨🇱','🇻🇪','🇮🇹','🇵🇹','🇪🇨']);
+  if(argNames.some(n=>name.includes(n))&&Math.random()<0.85) return '🇦🇷';
+  if(uruNames.some(n=>name.includes(n))&&Math.random()<0.8) return '🇺🇾';
+  if(colNames.some(n=>name.includes(n))&&Math.random()<0.8) return '🇨🇴';
+  if(parNames.some(n=>name.includes(n))&&Math.random()<0.8) return '🇵🇾';
+  return '🇧🇷';
+}
 
 function rnd(min,max){ return Math.floor(Math.random()*(max-min+1))+min; }
 function pick(arr){ return arr[rnd(0,arr.length-1)]; }
@@ -1943,30 +2122,35 @@ function generatePlayer(forceLevel, position, index){
   const baseMax = forceLevel===5?90:forceLevel===4?78:forceLevel===3?68:forceLevel===2?58:48;
   const ovr = rnd(baseMin,baseMax);
   const age = rnd(18,35);
-  const name = pick(FIRST_NAMES)+' '+pick(LAST_NAMES);
+  const name = genPlayerName();
+  const nat  = genPlayerNat(name);
   const value = Math.round(ovr*ovr*rnd(100,300));
   const wage = Math.round(value/20);
-  const pos_weights = {GOL:0.09,ZAG:0.18,LD:0.09,LE:0.09,VOL:0.18,MEI:0.19,ATA:0.18};
+  const pos_weights = {GOL:0.08,ZAG:0.16,LD:0.08,LE:0.08,VOL:0.16,MEI:0.14,PE:0.09,PD:0.09,CA:0.08,ATA:0.04};
   const pos = position || weightedPos();
   function weightedPos(){
     const r=Math.random(); let cum=0;
     for(const[p,w] of Object.entries(pos_weights)){ cum+=w; if(r<cum) return p; }
-    return 'ATA';
+    return 'CA';
   }
   const attrs = {};
   const base = ovr + rnd(-5,5);
-  attrs.VEL = clamp(base + (pos==='ATA'?rnd(5,15):rnd(-5,5)),20,99);
+  // isAtt = any attacking position
+  const isAtt = pos==='ATA'||pos==='PE'||pos==='PD'||pos==='CA';
+  const isWing = pos==='PE'||pos==='PD';
+  const isCF   = pos==='CA';
+  attrs.VEL = clamp(base + (isWing?rnd(8,18):isAtt?rnd(5,12):rnd(-5,5)),20,99);
   attrs.RES = clamp(base + rnd(-5,5),20,99);
-  attrs.TEC = clamp(base + (pos==='MEI'||pos==='ATA'?rnd(3,10):rnd(-5,5)),20,99);
-  attrs.PAS = clamp(base + (pos==='MEI'||pos==='VOL'?rnd(3,10):rnd(-5,5)),20,99);
-  attrs.CHU = clamp(base + (pos==='ATA'?rnd(8,15):rnd(-10,5)),20,99);
-  attrs.DEF = clamp(base + (pos==='ZAG'||pos==='LD'||pos==='LE'||pos==='VOL'?rnd(5,12):rnd(-15,-3)),20,99);
-  attrs.CAB = clamp(base + (pos==='ZAG'||pos==='ATA'?rnd(5,10):rnd(-5,5)),20,99);
+  attrs.TEC = clamp(base + (isWing?rnd(6,14):pos==='MEI'?rnd(5,12):isAtt?rnd(3,10):rnd(-5,5)),20,99);
+  attrs.PAS = clamp(base + (pos==='MEI'||pos==='VOL'?rnd(3,10):isWing?rnd(2,8):rnd(-5,5)),20,99);
+  attrs.CHU = clamp(base + (isCF?rnd(10,18):isAtt?rnd(6,14):rnd(-10,5)),20,99);
+  attrs.DEF = clamp(base + (pos==='ZAG'||pos==='LD'||pos==='LE'||pos==='VOL'?rnd(5,12):isAtt?rnd(-18,-5):rnd(-10,0)),20,99);
+  attrs.CAB = clamp(base + (pos==='ZAG'?rnd(5,12):isCF?rnd(8,15):isAtt?rnd(-3,5):rnd(-5,5)),20,99);
   attrs.MOR = rnd(50,90);
   attrs.FOR = rnd(60,95);
   const ovr_calc = Math.round(Object.values(attrs).slice(0,7).reduce((a,b)=>a+b,0)/7);
   const growthRate = age<=20?rnd(3,6):age<=23?rnd(1,4):age<=27?rnd(0,2):age<=30?rnd(-1,1):age<=33?rnd(-2,0):rnd(-3,-1);
-  return { id: position+'-'+index+'-'+Math.floor(Math.random()*9999999), name, age, pos, ovr:ovr_calc, attrs, value, wage, contract: rnd(1,4), injured: false, injuredWeeks: 0, suspended: false, yellowCards: 0, goals: 0, assists: 0, gamesPlayed: 0, club: null, stats: {goals:0,assists:0,games:0,yellowCards:0,redCards:0}, growthRate, ovrHistory:[{week:1,ovr:ovr_calc}], peakOvr:ovr_calc };
+  return { id: position+'-'+index+'-'+Math.floor(Math.random()*9999999), name, nat, age, pos, ovr:ovr_calc, attrs, value, wage, contract: rnd(1,4), injured: false, injuredWeeks: 0, suspended: false, yellowCards: 0, goals: 0, assists: 0, gamesPlayed: 0, club: null, stats: {goals:0,assists:0,games:0,yellowCards:0,redCards:0}, growthRate, ovrHistory:[{week:1,ovr:ovr_calc}], peakOvr:ovr_calc };
 }
 function clamp(v,min,max){ return Math.max(min,Math.min(max,v)); }
 
@@ -1979,13 +2163,16 @@ function generateSquad(team){
       const base = ovr + rnd(-3,3);
       const pos = rp.pos;
       const attrs = {};
-      attrs.VEL = clamp(base + (pos==='ATA'?rnd(5,12):rnd(-5,5)),20,99);
+      const isAtt2 = pos==='ATA'||pos==='PE'||pos==='PD'||pos==='CA';
+      const isWing2 = pos==='PE'||pos==='PD';
+      const isCF2   = pos==='CA';
+      attrs.VEL = clamp(base + (isWing2?rnd(8,18):isAtt2?rnd(5,12):rnd(-5,5)),20,99);
       attrs.RES = clamp(base + rnd(-5,5),20,99);
-      attrs.TEC = clamp(base + (pos==='MEI'||pos==='ATA'?rnd(3,10):rnd(-5,5)),20,99);
-      attrs.PAS = clamp(base + (pos==='MEI'||pos==='VOL'?rnd(3,10):rnd(-5,5)),20,99);
-      attrs.CHU = clamp(base + (pos==='ATA'?rnd(8,15):rnd(-10,5)),20,99);
-      attrs.DEF = clamp(base + (pos==='ZAG'||pos==='LD'||pos==='LE'||pos==='VOL'?rnd(5,12):rnd(-15,-3)),20,99);
-      attrs.CAB = clamp(base + (pos==='ZAG'||pos==='ATA'?rnd(5,10):rnd(-5,5)),20,99);
+      attrs.TEC = clamp(base + (isWing2?rnd(6,14):pos==='MEI'?rnd(5,12):isAtt2?rnd(3,10):rnd(-5,5)),20,99);
+      attrs.PAS = clamp(base + (pos==='MEI'||pos==='VOL'?rnd(3,10):isWing2?rnd(2,8):rnd(-5,5)),20,99);
+      attrs.CHU = clamp(base + (isCF2?rnd(10,18):isAtt2?rnd(6,14):rnd(-10,5)),20,99);
+      attrs.DEF = clamp(base + (pos==='ZAG'||pos==='LD'||pos==='LE'||pos==='VOL'?rnd(5,12):isAtt2?rnd(-18,-5):rnd(-10,0)),20,99);
+      attrs.CAB = clamp(base + (pos==='ZAG'?rnd(5,12):isCF2?rnd(8,15):isAtt2?rnd(-3,5):rnd(-5,5)),20,99);
       attrs.MOR = rnd(55,92);
       attrs.FOR = rnd(65,95);
       const ovr_calc = Math.round(Object.values(attrs).slice(0,7).reduce((a,b)=>a+b,0)/7);
@@ -2005,7 +2192,7 @@ function generateSquad(team){
     return squad;
   }
   // Gerar proceduralmente para times sem elenco real
-  const positions = ['GOL','GOL','ZAG','ZAG','ZAG','ZAG','LD','LD','LE','LE','VOL','VOL','VOL','MEI','MEI','MEI','ATA','ATA','ATA','ATA','ATA','ATA'];
+  const positions = ['GOL','GOL','ZAG','ZAG','ZAG','ZAG','LD','LD','LE','LE','VOL','VOL','VOL','MEI','MEI','MEI','PE','PE','PD','PD','CA','CA'];
   positions.forEach((pos,i)=>{
     const p = generatePlayer(team.force, pos, i);
     p.club = team.id;
@@ -2353,8 +2540,8 @@ async function simulateMatch(homeId, awayId, isCupMatch=false){
   }
   // Initialize stamina for all players
   [...homeSquad,...awaySquad].forEach(p=>initPlayerStamina(p));
-  const homeScorerProb = homeSquad.filter(p=>p.pos==='ATA'||p.pos==='MEI');
-  const awayScorerProb = awaySquad.filter(p=>p.pos==='ATA'||p.pos==='MEI');
+  const homeScorerProb = homeSquad.filter(p=>p.pos==='ATA'||p.pos==='PE'||p.pos==='PD'||p.pos==='CA'||p.pos==='MEI');
+  const awayScorerProb = awaySquad.filter(p=>p.pos==='ATA'||p.pos==='PE'||p.pos==='PD'||p.pos==='CA'||p.pos==='MEI');
   eventMinutes.forEach(min=>{
     const r = Math.random();
     const isHomeEvent = Math.random() < homeWinProb;
@@ -2404,22 +2591,22 @@ async function simulateMatch(homeId, awayId, isCupMatch=false){
         events.push({min,type:'goal',isOwnGoal:true,text:`⚽ GOL CONTRA! ${ogScorer?ogScorer.name:'Defensor'} (${defTeam.name}) manda para a própria rede — ${homeScore}x${awayScore}`,isHome:isHomeEvent,isMyGoal});
       } else if(isAnnulled){
         // Gol anulado: placar não muda, evento especial
-        const scorer = atkSquadG.filter(p=>p.pos==='ATA'||p.pos==='MEI').length > 0
-          ? pick(atkSquadG.filter(p=>p.pos==='ATA'||p.pos==='MEI')) : pick(atkSquadG);
+        const scorer = atkSquadG.filter(p=>p.pos==='ATA'||p.pos==='PE'||p.pos==='PD'||p.pos==='CA'||p.pos==='MEI').length > 0
+          ? pick(atkSquadG.filter(p=>p.pos==='ATA'||p.pos==='PE'||p.pos==='PD'||p.pos==='CA'||p.pos==='MEI')) : pick(atkSquadG);
         const annulIcon = annulReason === 'impedimento' ? '🚩' : '🤚';
         events.push({min,type:'annulled',text:`${annulIcon} GOL ANULADO! ${scorer?scorer.name:'Jogador'} (${team.name}) marca, mas árbitro apita ${annulReason} — ${homeScore}x${awayScore}`,isHome:isHomeEvent});
         const isMyTeamG = (isHomeEvent&&homeId===gameState.teamId)||(!isHomeEvent&&awayId===gameState.teamId);
         if(isMyTeamG) showNotif(`${annulIcon} Gol de ${scorer?.name||'seu jogador'} anulado por ${annulReason}!`, 'warning');
       } else {
         // Gol normal
-        const scorer = atkSquadG.filter(p=>p.pos==='ATA'||p.pos==='MEI').length > 0
-          ? pick(atkSquadG.filter(p=>p.pos==='ATA'||p.pos==='MEI')) : pick(atkSquadG);
+        const scorer = atkSquadG.filter(p=>p.pos==='ATA'||p.pos==='PE'||p.pos==='PD'||p.pos==='CA'||p.pos==='MEI').length > 0
+          ? pick(atkSquadG.filter(p=>p.pos==='ATA'||p.pos==='PE'||p.pos==='PD'||p.pos==='CA'||p.pos==='MEI')) : pick(atkSquadG);
         if(isHomeEvent){ homeScore++; if(scorer){ scorer.stats.goals++; scorer.lastMatchGoals=(scorer.lastMatchGoals||0)+1; scorer.lastMatchRating=(scorer.lastMatchRating||6)+1.5; updatePlayerForm(scorer,true,false,90); } }
         else            { awayScore++; if(scorer){ scorer.stats.goals++; scorer.lastMatchGoals=(scorer.lastMatchGoals||0)+1; scorer.lastMatchRating=(scorer.lastMatchRating||6)+1.5; updatePlayerForm(scorer,true,false,90); } }
         // Credit assist to nearest midfielder/attacker who isn't scorer
         if(scorer && Math.random()<0.75){
           const assistSq = isHomeEvent?homeSquad:awaySquad;
-          const asster = assistSq.find(p=>p!==scorer&&(p.pos==='MEI'||p.pos==='ATA'||p.pos==='VOL'));
+          const asster = assistSq.find(p=>p!==scorer&&(p.pos==='MEI'||p.pos==='ATA'||p.pos==='PE'||p.pos==='PD'||p.pos==='CA'||p.pos==='VOL'));
           if(asster){ asster.stats.assists=(asster.stats.assists||0)+1; asster.lastMatchAssists=(asster.lastMatchAssists||0)+1; asster.lastMatchRating=(asster.lastMatchRating||6)+0.8; }
         }
         const isMyGoal = (isHomeEvent&&homeId===gameState.teamId)||(!isHomeEvent&&awayId===gameState.teamId);
@@ -2471,7 +2658,7 @@ async function simulateMatch(homeId, awayId, isCupMatch=false){
       const r2 = Math.random();
       if(r2 < cornerGoalChance && (homeScore+awayScore) < maxGoals){
         // GOL de escanteio (cabeçada ou bola na área)
-        const headers = squad.filter(p=>p.pos==='ZAG'||p.pos==='ATA'||p.pos==='VOL');
+        const headers = squad.filter(p=>p.pos==='ZAG'||p.pos==='ATA'||p.pos==='CA'||p.pos==='CA'||p.pos==='VOL');
         const scorer  = headers.length ? pick(headers) : pick(squad);
         if(isHomeEvent){ homeScore++; if(scorer){ scorer.stats.goals++; scorer.lastMatchGoals=(scorer.lastMatchGoals||0)+1; scorer.lastMatchRating=(scorer.lastMatchRating||6)+1.5; updatePlayerForm(scorer,true,false,90); } }
         else            { awayScore++; if(scorer){ scorer.stats.goals++; scorer.lastMatchGoals=(scorer.lastMatchGoals||0)+1; scorer.lastMatchRating=(scorer.lastMatchRating||6)+1.5; updatePlayerForm(scorer,true,false,90); } }
@@ -2479,7 +2666,7 @@ async function simulateMatch(homeId, awayId, isCupMatch=false){
         events.push({min,type:'goal',text:`⚽ GOL DE CABEÇA! ${scorer?scorer.name:'Jogador'} aproveita escanteio (${team.name}) — ${homeScore}x${awayScore}`,isHome:isHomeEvent,isMyGoal});
       } else if(r2 < cornerGoalChance + 0.25){
         // Quase-gol: cabeçada para fora ou defesa
-        const nearMiss = squad.filter(p=>p.pos==='ZAG'||p.pos==='ATA');
+        const nearMiss = squad.filter(p=>p.pos==='ZAG'||p.pos==='ATA'||p.pos==='CA');
         const p = nearMiss.length ? pick(nearMiss) : null;
         events.push({min,type:'corner',text:`🔵 Escanteio: ${p?p.name+' cabeceia para fora':'cabeçada travada'} (${team.name})`,isHome:isHomeEvent});
       } else {
@@ -2508,7 +2695,7 @@ async function simulateMatch(homeId, awayId, isCupMatch=false){
       // Check it's NOT in the attacker's own half (they were fouled while attacking)
       if(isDangerous && r4 < fkGoalChance && (homeScore+awayScore) < maxGoals){
         // GOL de falta!
-        const specialists = atkSquad.filter(p=>p.pos==='MEI'||p.pos==='ATA'||p.pos==='VOL');
+        const specialists = atkSquad.filter(p=>p.pos==='MEI'||p.pos==='ATA'||p.pos==='PE'||p.pos==='PD'||p.pos==='CA'||p.pos==='VOL');
         const scorer = specialists.length ? pick(specialists) : pick(atkSquad);
         const isHome4goal = !isHomeEvent; // attacker = fouled team = opposite of who committed foul
         if(isHome4goal){ homeScore++; if(scorer){ scorer.stats.goals++; updatePlayerForm(scorer,true,false,90); } }
@@ -2551,7 +2738,7 @@ async function simulateMatch(homeId, awayId, isCupMatch=false){
         // ── IMPEDIMENTO ──────────────────────────────────────────────────
         const offTeam  = isHomeEvent ? homeTeam : awayTeam;
         const offSquad = isHomeEvent ? homeSquad : awaySquad;
-        const offPlayer = offSquad.filter(p=>p.pos==='ATA'||p.pos==='MEI');
+        const offPlayer = offSquad.filter(p=>p.pos==='ATA'||p.pos==='PE'||p.pos==='PD'||p.pos==='CA'||p.pos==='MEI');
         const op = offPlayer.length ? pick(offPlayer) : null;
         events.push({min,type:'offside',text:`🚩 Impedimento de ${op?op.name:'jogador'} (${offTeam.name}) — gol anulado!`,isHome:isHomeEvent});
       } else if(r5 < 0.52){
@@ -2562,7 +2749,7 @@ async function simulateMatch(homeId, awayId, isCupMatch=false){
         const defSqTrav = isHomeEvent ? awaySquad : homeSquad;
         const atkOvrTrav = travSquad.length ? travSquad.reduce((s,p)=>s+p.ovr,0)/travSquad.length : 65;
         const defOvrTrav = defSqTrav.length ? defSqTrav.reduce((s,p)=>s+p.ovr,0)/defSqTrav.length : 65;
-        const shooter = travSquad.filter(p=>p.pos==='ATA'||p.pos==='MEI');
+        const shooter = travSquad.filter(p=>p.pos==='ATA'||p.pos==='PE'||p.pos==='PD'||p.pos==='CA'||p.pos==='MEI');
         const sp = shooter.length ? pick(shooter) : null;
         // Rebound goal chance: ~15% base + ovr adj
         const reboundChance = 0.15 + (atkOvrTrav - defOvrTrav) * 0.003;
@@ -3140,16 +3327,16 @@ function simulateMatchFast(homeId, awayId){
   // Update scorer stats (goals/assists) for top players — for rankings
   const allPlayers = [...hSq, ...aSq];
   for(let g=0;g<hScore;g++){
-    const atkH = hSq.filter(p=>p.pos==='ATA'||p.pos==='MEI');
+    const atkH = hSq.filter(p=>p.pos==='ATA'||p.pos==='PE'||p.pos==='PD'||p.pos==='CA'||p.pos==='MEI');
     const scorer = atkH.length?pick(atkH):pick(hSq);
     if(scorer){ scorer.stats=(scorer.stats||{}); scorer.stats.goals=(scorer.stats.goals||0)+1; scorer.gamesPlayed=(scorer.gamesPlayed||0)+1; }
-    if(Math.random()<0.75){ const asst=hSq.find(p=>p!==scorer&&(p.pos==='MEI'||p.pos==='ATA'||p.pos==='VOL')); if(asst){asst.stats=(asst.stats||{}); asst.stats.assists=(asst.stats.assists||0)+1;} }
+    if(Math.random()<0.75){ const asst=hSq.find(p=>p!==scorer&&(p.pos==='MEI'||p.pos==='ATA'||p.pos==='PE'||p.pos==='PD'||p.pos==='CA'||p.pos==='VOL')); if(asst){asst.stats=(asst.stats||{}); asst.stats.assists=(asst.stats.assists||0)+1;} }
   }
   for(let g=0;g<aScore;g++){
-    const atkA = aSq.filter(p=>p.pos==='ATA'||p.pos==='MEI');
+    const atkA = aSq.filter(p=>p.pos==='ATA'||p.pos==='PE'||p.pos==='PD'||p.pos==='CA'||p.pos==='MEI');
     const scorer = atkA.length?pick(atkA):pick(aSq);
     if(scorer){ scorer.stats=(scorer.stats||{}); scorer.stats.goals=(scorer.stats.goals||0)+1; scorer.gamesPlayed=(scorer.gamesPlayed||0)+1; }
-    if(Math.random()<0.75){ const asst=aSq.find(p=>p!==scorer&&(p.pos==='MEI'||p.pos==='ATA'||p.pos==='VOL')); if(asst){asst.stats=(asst.stats||{}); asst.stats.assists=(asst.stats.assists||0)+1;} }
+    if(Math.random()<0.75){ const asst=aSq.find(p=>p!==scorer&&(p.pos==='MEI'||p.pos==='ATA'||p.pos==='PE'||p.pos==='PD'||p.pos==='CA'||p.pos==='VOL')); if(asst){asst.stats=(asst.stats||{}); asst.stats.assists=(asst.stats.assists||0)+1;} }
   }
   // Update goalkeeper goals-conceded for clean sheet ranking
   const hGk = hSq.find(p=>p.pos==='GOL');
@@ -3968,7 +4155,7 @@ function renderSquad(){
   else if(statusFilter==='injured') filtered = filtered.filter(p=>p.injured);
   else if(statusFilter==='suspended') filtered = filtered.filter(p=>p.suspended);
 
-  const POS_ORDER = {GOL:0,LD:1,LE:2,ZAG:3,VOL:4,MEI:5,ATA:6};
+  const POS_ORDER = {GOL:0,LD:1,LE:2,ZAG:3,VOL:4,MEI:5,PE:6,PD:7,CA:8,ATA:9};
   const sortFns = {
     pos:     (a,b) => (POS_ORDER[a.pos]??9) - (POS_ORDER[b.pos]??9),
     starter: (a,b) => (lineup.includes(b.id)?1:0) - (lineup.includes(a.id)?1:0),
@@ -6082,7 +6269,7 @@ async function runCupPenalties(mySquad, oppTeamName, myTeamId, homeTeamId){
 function pickCupKickers(mySquad, myName, oppName){
   return new Promise(resolve=>{
     const sorted=[...mySquad].sort((a,b)=>{
-      const sc=p=>((p.attrs?.CHU||50)*0.6+(p.attrs?.TEC||50)*0.4)+(p.pos==='ATA'?10:p.pos==='MEI'?5:0);
+      const sc=p=>((p.attrs?.CHU||50)*0.6+(p.attrs?.TEC||50)*0.4)+(p.pos==='ATA'||p.pos==='PE'||p.pos==='PD'||p.pos==='CA'?10:p.pos==='MEI'?5:0);
       return sc(b)-sc(a);
     }).slice(0,15);
     const div=document.getElementById('match-stats-post');
@@ -7767,7 +7954,7 @@ function generateYouthPlayer(academyQuality){
   p.attrs.VEL = clamp(base2+rnd(0,10),20,90);
   p.attrs.TEC = clamp(base2+rnd(-5,8),20,90);
   p.attrs.PAS = clamp(base2+rnd(-5,8),20,90);
-  p.attrs.CHU = clamp(base2+(pos==='ATA'?rnd(3,10):rnd(-8,3)),20,90);
+  p.attrs.CHU = clamp(base2+(pos==='ATA'||pos==='PE'||pos==='PD'||pos==='CA'?rnd(3,10):rnd(-8,3)),20,90);
   p.attrs.DEF = clamp(base2+(pos==='ZAG'||pos==='VOL'?rnd(3,10):rnd(-10,-2)),20,90);
   p.attrs.CAB = clamp(base2+rnd(-5,5),20,90);
   p.attrs.RES = clamp(base2+rnd(5,15),20,99); // youth are fit
