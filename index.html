@@ -4190,7 +4190,6 @@ function renderSquad(){
   const lineup = gameState.myTactics.lineup || [];
   const html = `<table>
     <thead><tr>
-      ${th('starter','⭐','Ordenar por titulares')}
       ${th('pos','Pos','Ordenar por posição')}
       ${th('name','Nome','Ordenar por nome')}
       ${th('ovr','OVR','OVR')}
@@ -4201,7 +4200,7 @@ function renderSquad(){
       ${th('value','Valor','Valor de mercado')}
       ${th('contract','Ctrt','Contrato')}
       ${th('wage','Salário','Salário semanal')}
-      <th title="Titular">Titular</th>
+      ${th('starter','⭐ Titular','Ordenar por titulares')}
       <th></th>
     </tr></thead>
     <tbody>${filtered.map(p=>{
