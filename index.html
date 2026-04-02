@@ -3245,7 +3245,7 @@ function showPanel(id){
   if(id==='finances') renderFinances();
   if(id==='transfers') { renderTransfers(); switchTransferTab('search'); }
   if(id==='calendar') renderCalendar();
-  if(id==='league') renderLeague('A');
+  if(id==='league'){ const _mySerie = gameState.teams.find(t=>t.id===gameState.teamId)?.serie||'A'; renderLeague(_mySerie); }
   if(id==='cup') renderCup();
   if(id==='libertadores') renderLibertadores();
   if(id==='supercopa') renderSupercopa();
@@ -3895,7 +3895,7 @@ let squadSortAsc = false;
 
 function sortSquadBy(col){
   if(squadSortCol === col){ squadSortAsc = !squadSortAsc; }
-  else { squadSortCol = col; squadSortAsc = (col === 'name' || col === 'pos'); }
+  else { squadSortCol = col; squadSortAsc = (col === 'name' || col === 'pos' || col === 'starter'); }
   renderSquad();
 }
 
@@ -3912,8 +3912,10 @@ function renderSquad(){
   else if(statusFilter==='injured') filtered = filtered.filter(p=>p.injured);
   else if(statusFilter==='suspended') filtered = filtered.filter(p=>p.suspended);
 
+  const POS_ORDER = {GOL:0,LD:1,LE:2,ZAG:3,VOL:4,MEI:5,ATA:6};
   const sortFns = {
-    pos:     (a,b) => a.pos.localeCompare(b.pos),
+    pos:     (a,b) => (POS_ORDER[a.pos]??9) - (POS_ORDER[b.pos]??9),
+    starter: (a,b) => (lineup.includes(b.id)?1:0) - (lineup.includes(a.id)?1:0),
     name:    (a,b) => a.name.localeCompare(b.name),
     age:     (a,b) => a.age - b.age,
     ovr:     (a,b) => b.ovr - a.ovr,
@@ -3945,6 +3947,7 @@ function renderSquad(){
   const lineup = gameState.myTactics.lineup || [];
   const html = `<table>
     <thead><tr>
+      ${th('starter','⭐','Ordenar por titulares')}
       ${th('pos','Pos','Ordenar por posição')}
       ${th('name','Nome','Ordenar por nome')}
       ${th('ovr','OVR','OVR')}
