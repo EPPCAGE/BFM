@@ -2147,63 +2147,66 @@ function generateRoundRobin(teams, serie){
   return rounds;
 }
 
+// Leg schedules: each phase has 2 legs
+const CUP_PHASE_SCHED = [
+  {name:'32avos de Final', leg1:1,  leg2:2 },
+  {name:'16avos de Final', leg1:3,  leg2:4 },
+  {name:'Oitavas de Final',leg1:6,  leg2:7 },
+  {name:'Quartas de Final',leg1:9,  leg2:10},
+  {name:'Semifinal',       leg1:13, leg2:14},
+  {name:'Final',           leg1:17, leg2:18},
+];
+
 function assignCupRounds(bracket){
-  // Copa do Brasil interleaved with the 38-round league season:
-  // Fase 1 (64→32): after round 2   → played on round 3
-  // Oitavas (32→16): after round 8  → played on round 9
-  // Quartas (16→8):  after round 16 → played on round 17
-  // Semifinal (8→4): after round 24 → played on round 25
-  // Final (4→2→1):   after round 32 → played on round 33
-  const phaseRounds = [2, 5, 9, 13, 17]; // compressed for 19-round season
-  bracket.forEach((phase, i) => {
-    const scheduledRound = phaseRounds[i] || (3 + i*8);
-    phase.scheduledRound = scheduledRound;
-    phase.matches.forEach(m => { m.scheduledRound = scheduledRound; });
+  bracket.forEach((phase,i)=>{
+    const s = CUP_PHASE_SCHED[i]||{leg1:1,leg2:2};
+    phase.leg1Round = s.leg1;
+    phase.leg2Round = s.leg2;
+    phase.scheduledRound = s.leg1; // backward-compat
   });
 }
 
 function generateCupBracket(teams, teamId){
-  const sh = arr => { const a=[...arr]; for(let i=a.length-1;i>0;i--){ const j=rnd(0,i); [a[i],a[j]]=[a[j],a[i]]; } return a; };
-  const byS = s => sh(teams.filter(t=>t.serie===s).map(t=>t.id));
-  const serieA=byS('A'), serieB=byS('B'), serieC=byS('C'), serieD=byS('D');
-  const myId = teamId;
-  const myTeam = teams.find(t=>t.id===myId);
-  const mySerie = myTeam?.serie || 'A';
+  const sh = arr=>{ const a=[...arr]; for(let i=a.length-1;i>0;i--){ const j=rnd(0,i);[a[i],a[j]]=[a[j],a[i]]; } return a; };
+  const byS = s=>sh(teams.filter(t=>t.serie===s).map(t=>t.id));
+  const serieA=byS('A'),serieB=byS('B'),serieC=byS('C'),serieD=byS('D');
+  const myTeam = teams.find(t=>t.id===teamId);
 
-  // Fase 1: C + D + some B
-  const fase1teams = sh([...serieC, ...serieD, ...serieB.slice(0,4)]);
-  while(fase1teams.length < 64){
-    const next = serieB.find(id=>!fase1teams.includes(id));
-    if(next) fase1teams.push(next); else break;
+  // 32avos: 64 teams — D(20)+C(20)+B(20)+A(4)
+  let pool32 = sh([...serieD,...serieC,...serieB,...serieA.slice(0,4)]).slice(0,64);
+  // Guarantee player's team is in pool (if not, replace last slot)
+  if(!pool32.includes(teamId)) pool32[63]=teamId;
+  pool32 = sh(pool32);
+
+  // remaining A teams get byes to Oitavas
+  const oitavasByes = serieA.filter(id=>!pool32.includes(id)).slice(0,16);
+
+  function makePairs(ids){
+    const ms=[];
+    for(let i=0;i<ids.length-1;i+=2)
+      ms.push({homeId:ids[i],awayId:ids[i+1],leg1:null,leg2:null,winner:null,penalties:null,homeScore:null,awayScore:null,played:false,competition:'Copa do Brasil'});
+    return ms;
   }
-  const fase1matches = [];
-  for(let i=0;i<Math.min(64,fase1teams.length)-1;i+=2)
-    fase1matches.push({homeId:fase1teams[i],awayId:fase1teams[i+1],homeScore:null,awayScore:null,played:false,competition:'Copa do Brasil - Fase 1'});
 
-  // Oitavas byes: Série A + remaining B
-  const oitavasByes = [...serieA, ...serieB.slice(4,20)];
-
-  const phases = [
-    {name:'Fase 1 (64)',  matches:fase1matches, winners:[], byes:oitavasByes},
-    {name:'Oitavas (32)', matches:[], winners:[], byes:[]},
-    {name:'Quartas (8)',  matches:[], winners:[]},
-    {name:'Semifinal',   matches:[], winners:[]},
-    {name:'Final',       matches:[], winners:[], leg1Done:false},
-  ];
-
+  const phases = CUP_PHASE_SCHED.map(s=>({name:s.name, matches:[], winners:[]}));
+  phases[0].matches = makePairs(pool32);
+  phases[2].byes    = oitavasByes; // A teams join at oitavas
   return phases;
 }
 
 function getNextCupMatch(){
-  if(!gameState || !gameState.cupBracket) return null;
-  const currentRound = gameState.round || 1;
+  if(!gameState||!gameState.cupBracket) return null;
+  const cur = gameState.round||1;
   for(const phase of gameState.cupBracket){
-    // Only show cup match when we've reached its scheduled round
-    const scheduled = phase.scheduledRound || 0;
-    if(currentRound < scheduled) continue;
     for(const m of phase.matches){
-      if(!m.played && (m.homeId===gameState.teamId || m.awayId===gameState.teamId))
-        return {match:m, phase};
+      if(m.played) continue;
+      if(m.homeId!==gameState.teamId && m.awayId!==gameState.teamId) continue;
+      // Leg 1 ready?
+      if(!m.leg1 && cur >= (phase.leg1Round||1))
+        return {match:m, phase, leg:1};
+      // Leg 2 ready (leg1 must be done)?
+      if(m.leg1 && !m.leg2 && cur >= (phase.leg2Round||2))
+        return {match:m, phase, leg:2};
     }
   }
   return null;
@@ -2211,39 +2214,57 @@ function getNextCupMatch(){
 
 function advanceCupPhase(phaseIdx){
   const phases = gameState.cupBracket;
-  const phase  = phases[phaseIdx];
+  const phase = phases[phaseIdx];
   if(!phase) return;
-
-  // Collect winners of this phase
-  const winners = phase.matches
-    .filter(m=>m.played)
-    .map(m=> m.homeScore > m.awayScore ? m.homeId : m.awayId);
-
-  const byes = phase.byes || [];
+  // Collect winners from played matchups
+  const winners = phase.matches.filter(m=>m.played&&m.winner).map(m=>m.winner);
+  const byes = phase.byes||[];
   phase.winners = winners;
-
   const nextPhase = phases[phaseIdx+1];
-  if(!nextPhase || nextPhase.matches.length > 0) return; // already populated
-
-  const pool = [...winners, ...byes];
-  // shuffle and pair
-  for(let i=pool.length-1;i>0;i--){ const j=rnd(0,i); [pool[i],pool[j]]=[pool[j],pool[i]]; }
+  if(!nextPhase||nextPhase.matches.length>0) return;
+  let pool = [...winners,...byes];
+  for(let i=pool.length-1;i>0;i--){ const j=rnd(0,i);[pool[i],pool[j]]=[pool[j],pool[i]]; }
   for(let i=0;i<pool.length-1;i+=2){
-    if(pool[i] && pool[i+1])
-      nextPhase.matches.push({homeId:pool[i], awayId:pool[i+1], homeScore:null, awayScore:null, played:false});
+    if(pool[i]&&pool[i+1])
+      nextPhase.matches.push({homeId:pool[i],awayId:pool[i+1],leg1:null,leg2:null,winner:null,penalties:null,homeScore:null,awayScore:null,played:false,competition:'Copa do Brasil'});
   }
 }
 
 function simulateCupPhaseAI(phaseIdx){
-  // Simulate all AI matches in a cup phase
   const phase = gameState.cupBracket[phaseIdx];
   if(!phase) return;
-  phase.matches.forEach(async m=>{
-    if(!m.played && m.homeId!==gameState.teamId && m.awayId!==gameState.teamId){
-      const r = await simulateMatch(m.homeId, m.awayId, true);
-      m.homeScore = r.homeScore; m.awayScore = r.awayScore; m.played = true;
+  phase.matches.forEach(m=>{
+    if(m.played||m.homeId===gameState.teamId||m.awayId===gameState.teamId) return;
+    // Simulate leg1 if needed
+    if(!m.leg1){
+      const r=simulateMatchFast(m.homeId,m.awayId);
+      m.leg1={homeScore:r.homeScore,awayScore:r.awayScore};
     }
+    // Simulate leg2 if needed (reversed sides)
+    if(!m.leg2){
+      const r=simulateMatchFast(m.awayId,m.homeId);
+      m.leg2={homeScore:r.homeScore,awayScore:r.awayScore};
+    }
+    // Determine winner by aggregate (leg2 home=awayId, leg2 away=homeId)
+    const aggHome = m.leg1.homeScore + m.leg2.awayScore; // original homeId total
+    const aggAway = m.leg1.awayScore + m.leg2.homeScore; // original awayId total
+    if(aggHome>aggAway){ m.winner=m.homeId; }
+    else if(aggAway>aggHome){ m.winner=m.awayId; }
+    else {
+      // Penalties for AI: 50/50 weighted by OVR
+      const hOvr=(gameState.squads[m.homeId]||[]).reduce((s,p)=>s+p.ovr,0)||100;
+      const aOvr=(gameState.squads[m.awayId]||[]).reduce((s,p)=>s+p.ovr,0)||100;
+      m.winner = Math.random()<(hOvr/(hOvr+aOvr)) ? m.homeId : m.awayId;
+      const pen=_simPens(); m.penalties={homeGoals:pen.a,awayGoals:pen.b,winner:m.winner};
+    }
+    m.homeScore=aggHome; m.awayScore=aggAway; m.played=true;
   });
+}
+function _simPens(){
+  let a=0,b=0;
+  for(let i=0;i<5;i++){ if(Math.random()<0.75)a++; if(Math.random()<0.75)b++; }
+  if(a===b){ if(Math.random()<0.5)a++;else b++; }
+  return {a,b};
 }
 
 function shuffle(arr){ for(let i=arr.length-1;i>0;i--){ const j=rnd(0,i); [arr[i],arr[j]]=[arr[j],arr[i]]; } }
@@ -3868,9 +3889,17 @@ function getNextMatch(){
 
   // Check if there's a cup match due at this round
   const cupNext = getNextCupMatch();
-  const cupDue = cupNext && !cupNext.match.played && (cupNext.phase.scheduledRound||99) <= currentRound;
-  if(cupDue){
-    return {...cupNext.match, _isCup:true, _cupPhaseIdx: gameState.cupBracket.indexOf(cupNext.phase)};
+  if(cupNext){
+    const m = cupNext.match, leg = cupNext.leg;
+    const phIdx = gameState.cupBracket.indexOf(cupNext.phase);
+    // Leg 2: roles reversed (original away team hosts)
+    const homeId = leg===1 ? m.homeId : m.awayId;
+    const awayId = leg===1 ? m.awayId : m.homeId;
+    const legLabel = leg===1 ? 'Jogo de Ida' : 'Jogo de Volta';
+    const phaseName = cupNext.phase.name;
+    return {homeId, awayId, homeScore:null, awayScore:null, played:false,
+            _isCup:true, _cupPhaseIdx:phIdx, _cupLeg:leg,
+            competition:`Copa do Brasil — ${phaseName} (${legLabel})`};
   }
 
   // Check Supercopa legs (served after regular season ends)
@@ -5855,90 +5884,164 @@ function renderLeague(serie){
 function renderCup(){
   if(!gameState) return;
   const phases = gameState.cupBracket;
+  const myId = gameState.teamId;
 
-  // ── My path + action button ──────────────────────────────
+  // ── Helper: render a two-leg matchup card ─────────────────
+  function renderMatchupCard(m, showPhaseLabel){
+    const ht = gameState.teams.find(t=>t.id===m.homeId);
+    const at = gameState.teams.find(t=>t.id===m.awayId);
+    const myH = m.homeId===myId, myA = m.awayId===myId;
+    const htName = ht?.name||'?', atName = at?.name||'?';
+
+    // Aggregate scores (homeId total vs awayId total)
+    const aggH = m.leg1 ? (m.leg1.homeScore + (m.leg2?m.leg2.awayScore:0)) : null;
+    const aggA = m.leg1 ? (m.leg1.awayScore + (m.leg2?m.leg2.homeScore:0)) : null;
+
+    // Winner styling
+    const winH = m.winner===m.homeId, winA = m.winner===m.awayId;
+    const borderCol = (myH||myA) ? 'var(--accent-green)' : 'rgba(255,255,255,0.08)';
+    const statusCol = !m.played ? 'var(--text-muted)'
+      : (myH&&winH)||(myA&&winA) ? 'var(--accent-green)'
+      : (myH||myA) ? 'var(--accent-red)'
+      : 'var(--accent-yellow)';
+
+    // Leg 1 display
+    const leg1Str = m.leg1
+      ? `<span style="color:var(--text-secondary);">${m.leg1.homeScore}–${m.leg1.awayScore}</span>`
+      : `<span style="color:var(--text-muted);font-style:italic;">–</span>`;
+
+    // Leg 2 display (reversed sides: awayId plays at home)
+    const leg2Str = m.leg2
+      ? `<span style="color:var(--text-secondary);">${m.leg2.homeScore}–${m.leg2.awayScore}</span>`
+      : `<span style="color:var(--text-muted);font-style:italic;">–</span>`;
+
+    // Penalties display
+    const penStr = m.penalties
+      ? `<span style="color:var(--accent-yellow);font-size:10px;"> (pen. ${m.penalties.homeGoals}–${m.penalties.awayGoals})</span>`
+      : '';
+
+    // Aggregate display
+    const aggStr = aggH!==null
+      ? `<div style="font-size:12px;font-weight:700;color:${statusCol};text-align:center;margin-top:4px;">
+           Agg: ${aggH}–${aggA}${penStr}
+           ${m.winner?` <span style="color:${winH?'var(--accent-green)':'var(--accent-yellow)'}">→ ${winH?htName:atName}</span>`:''}
+         </div>`
+      : '';
+
+    return `<div style="border:1px solid ${borderCol};border-radius:6px;padding:10px 12px;margin-bottom:8px;background:rgba(255,255,255,0.02);">
+      ${showPhaseLabel?`<div style="font-size:10px;color:var(--accent-blue);font-weight:600;margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px;">${showPhaseLabel}</div>`:''}
+      <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">
+        <span style="flex:1;font-size:12px;font-weight:${myH?700:400};color:${myH?'var(--accent-green)':'var(--text-primary)'};">${getTeamBadgeSVG(ht?.id,18)} ${htName}</span>
+        <span style="font-size:10px;color:var(--text-muted);min-width:80px;text-align:center;">Ida: ${leg1Str}</span>
+        <span style="flex:1;font-size:12px;font-weight:${myA?700:400};color:${myA?'var(--accent-green)':'var(--text-primary)'};text-align:right;">${atName} ${getTeamBadgeSVG(at?.id,18)}</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:6px;">
+        <span style="flex:1;font-size:11px;color:var(--text-muted);">${atName} (mandante)</span>
+        <span style="font-size:10px;color:var(--text-muted);min-width:80px;text-align:center;">Volta: ${leg2Str}</span>
+        <span style="flex:1;font-size:11px;color:var(--text-muted);text-align:right;">${htName} (visitante)</span>
+      </div>
+      ${aggStr}
+    </div>`;
+  }
+
+  // ── Action button ─────────────────────────────────────────
   const myPath = document.getElementById('cup-my-path');
-  const myMatches = phases.flatMap((ph,pi)=>ph.matches
-    .filter(m=>m.homeId===gameState.teamId||m.awayId===gameState.teamId)
-    .map(m=>({...m,phaseIdx:pi,phaseName:ph.name})));
-
   const nextCup = getNextCupMatch();
   let actionBtn = '';
+
   if(nextCup){
-    const opp = gameState.teams.find(t=>t.id===(nextCup.match.homeId===gameState.teamId?nextCup.match.awayId:nextCup.match.homeId));
-    const cupRound = nextCup.phase.scheduledRound || '?';
-    const isAvailable = (gameState.round||1) >= (nextCup.phase.scheduledRound||0);
-    if(isAvailable){
+    const m = nextCup.match;
+    const opp = gameState.teams.find(t=>t.id===(m.homeId===myId?m.awayId:m.homeId));
+    const legLabel = nextCup.leg===1 ? '1ª Mão (Ida)' : '2ª Mão (Volta)';
+    const isHome = (nextCup.leg===1 ? m.homeId : m.awayId) === myId;
+    const isAvail = (gameState.round||1) >= (nextCup.leg===1 ? nextCup.phase.leg1Round : nextCup.phase.leg2Round)||0;
+
+    if(isAvail){
+      // Show leg1 result as context when in leg2
+      const leg1Context = (nextCup.leg===2 && m.leg1)
+        ? `<div style="font-size:11px;color:var(--text-muted);margin-bottom:4px;">Resultado da Ida: ${m.leg1.homeScore}–${m.leg1.awayScore} (${gameState.teams.find(t=>t.id===m.homeId)?.name||'?'} × ${gameState.teams.find(t=>t.id===m.awayId)?.name||'?'})</div>`
+        : '';
       actionBtn = `<div style="background:rgba(0,230,118,0.08);border:1px solid var(--accent-green);border-radius:8px;padding:14px;margin-bottom:14px;text-align:center;">
-        <div style="font-size:13px;font-weight:700;color:var(--accent-green);margin-bottom:6px;">⚽ ${nextCup.phase.name} — Jogo disponível!</div>
-        <div style="font-size:12px;color:var(--text-secondary);margin-bottom:4px;">vs ${opp?.name||'?'} ${nextCup.match.homeId===gameState.teamId?'(Mandante)':'(Visitante)'}</div>
+        <div style="font-size:13px;font-weight:700;color:var(--accent-green);margin-bottom:6px;">⚽ ${nextCup.phase.name} — ${legLabel}</div>
+        ${leg1Context}
+        <div style="font-size:12px;color:var(--text-secondary);margin-bottom:4px;">vs ${opp?.name||'?'} — ${isHome?'🏟️ Mandante':'✈️ Visitante'}</div>
         <div style="font-size:11px;color:var(--accent-yellow);">🎮 Clique em <strong>"Simular Próximo Jogo"</strong> no painel principal para jogar</div>
       </div>`;
     } else {
+      const waitRound = nextCup.leg===1 ? nextCup.phase.leg1Round : nextCup.phase.leg2Round;
       actionBtn = `<div style="background:rgba(41,121,255,0.06);border:1px solid rgba(41,121,255,0.25);border-radius:8px;padding:14px;margin-bottom:14px;text-align:center;">
-        <div style="font-size:13px;font-weight:700;color:var(--accent-blue);margin-bottom:6px;">🗓️ ${nextCup.phase.name}</div>
-        <div style="font-size:12px;color:var(--text-secondary);margin-bottom:4px;">vs ${opp?.name||'?'} ${nextCup.match.homeId===gameState.teamId?'(Mandante)':'(Visitante)'}</div>
-        <div style="font-size:11px;color:var(--text-muted);">Será jogado automaticamente na Rodada ${cupRound} (atual: ${gameState.round})</div>
+        <div style="font-size:13px;font-weight:700;color:var(--accent-blue);margin-bottom:6px;">🗓️ ${nextCup.phase.name} — ${legLabel}</div>
+        <div style="font-size:12px;color:var(--text-secondary);margin-bottom:4px;">vs ${opp?.name||'?'} — ${isHome?'Mandante':'Visitante'}</div>
+        <div style="font-size:11px;color:var(--text-muted);">Rodada ${waitRound} (atual: ${gameState.round})</div>
       </div>`;
     }
   } else {
-    // Check if all matches in current phase are done → advance
-    const curPhaseIdx = phases.findIndex(ph=>ph.matches.length>0 && ph.matches.some(m=>!m.played));
-    if(curPhaseIdx===-1){
-      // All phases done or cup not started
-      const anyUnplayed = phases.some(ph=>ph.matches.some(m=>!m.played));
-      if(!anyUnplayed && phases.some(ph=>ph.matches.length>0)){
-        actionBtn = '<div class="text-muted text-sm" style="text-align:center;padding:12px;">🏆 Copa do Brasil encerrada!</div>';
-      } else {
-        actionBtn = '<div class="text-muted text-sm" style="text-align:center;padding:12px;">Seu time não está na Copa do Brasil nesta fase.</div>';
-      }
+    const lastPhaseWithMatches = [...phases].reverse().find(ph=>ph.matches.length>0);
+    const allDone = lastPhaseWithMatches && lastPhaseWithMatches.matches.every(m=>m.played);
+    const curUnfinished = phases.find(ph=>ph.matches.length>0 && ph.matches.some(m=>!m.played));
+
+    if(allDone && lastPhaseWithMatches?.name==='Final'){
+      const finalM = lastPhaseWithMatches.matches[0];
+      const champion = finalM && gameState.teams.find(t=>t.id===finalM.winner);
+      actionBtn = `<div style="background:rgba(255,215,0,0.08);border:1px solid gold;border-radius:8px;padding:14px;margin-bottom:14px;text-align:center;">
+        <div style="font-size:14px;font-weight:700;color:gold;">🏆 Copa do Brasil encerrada!</div>
+        ${champion?`<div style="font-size:12px;color:var(--text-secondary);margin-top:4px;">Campeão: <strong>${champion.name}</strong></div>`:''}
+      </div>`;
+    } else if(curUnfinished && curUnfinished.matches.every(m=>m.played)){
+      const phIdx = phases.indexOf(curUnfinished);
+      actionBtn = `<div style="text-align:center;padding:12px;">
+        <button class="btn btn-secondary" onclick="advanceCupRound(${phIdx})">⏭️ Avançar para próxima fase da Copa</button>
+      </div>`;
+    } else if(curUnfinished){
+      actionBtn = '<div class="text-muted text-sm" style="text-align:center;padding:12px;">Seu time foi eliminado da Copa do Brasil.</div>';
     } else {
-      // My team eliminated or not yet entered — check if phase can advance
-      const ph = phases[curPhaseIdx];
-      const allDone = ph.matches.every(m=>m.played);
-      if(allDone){
-        actionBtn = `<div style="text-align:center;padding:12px;">
-          <button class="btn btn-secondary" onclick="advanceCupRound(${curPhaseIdx})">⏭️ Avançar para próxima fase da Copa</button>
-        </div>`;
-      } else {
-        actionBtn = '<div class="text-muted text-sm" style="text-align:center;padding:12px;">Seu time foi eliminado da Copa do Brasil.</div>';
-      }
+      actionBtn = '<div class="text-muted text-sm" style="text-align:center;padding:12px;">Seu time não está na Copa do Brasil nesta temporada.</div>';
     }
   }
 
-  myPath.innerHTML = actionBtn + (myMatches.length===0
-    ? '<div class="text-muted text-sm">Nenhuma partida de Copa registrada ainda.</div>'
-    : myMatches.map(m=>{
-        const ht = gameState.teams.find(t=>t.id===m.homeId);
-        const at = gameState.teams.find(t=>t.id===m.awayId);
-        const isHome = m.homeId===gameState.teamId;
-        const myScore = isHome?m.homeScore:m.awayScore;
-        const opScore = isHome?m.awayScore:m.homeScore;
-        const col = !m.played?'var(--text-muted)':myScore>opScore?'var(--accent-green)':myScore<opScore?'var(--accent-red)':'var(--accent-yellow)';
-        return `<div class="match-card" style="border-left:3px solid ${col};">
-          <div class="match-team" style="gap:6px;display:flex;align-items:center;">${getTeamBadgeSVG(ht?.id,24)}<span class="${isHome?'my':''}">${ht?.name}</span></div>
-          <div style="text-align:center;min-width:50px;font-weight:700;color:${col};">${m.played?m.homeScore+'×'+m.awayScore:m.phaseName}</div>
-          <div class="match-team" style="gap:6px;display:flex;align-items:center;justify-content:flex-end;"><span class="${!isHome?'my':''}">${at?.name}</span>${getTeamBadgeSVG(at?.id,24)}</div>
-        </div>`;
-      }).join(''));
+  // ── My matches in the cup ─────────────────────────────────
+  const myMatchCards = phases.flatMap(ph=>
+    ph.matches
+      .filter(m=>m.homeId===myId||m.awayId===myId)
+      .map(m=>renderMatchupCard(m, ph.name))
+  );
 
-  // ── Bracket display ───────────────────────────────────────
+  myPath.innerHTML = actionBtn + (myMatchCards.length===0
+    ? '<div class="text-muted text-sm">Nenhuma partida de Copa registrada ainda.</div>'
+    : myMatchCards.join(''));
+
+  // ── Bracket display (all phases) ─────────────────────────
   const div = document.getElementById('cup-bracket');
-  div.innerHTML = phases.map(phase=>{
-    if(phase.matches.length===0) return `<div class="bracket-round"><div class="bracket-round-title">${phase.name}</div><div class="text-xs text-muted" style="padding:8px;">Aguardando fase anterior</div></div>`;
+  div.innerHTML = phases.map((phase,pi)=>{
+    if(phase.matches.length===0){
+      const byes = phase.byes||[];
+      const byeStr = byes.length>0
+        ? `<div style="font-size:10px;color:var(--text-muted);padding:4px 8px;">+${byes.length} times com bye direto</div>`
+        : '<div class="text-xs text-muted" style="padding:8px;">Aguardando fase anterior</div>';
+      return `<div class="bracket-round"><div class="bracket-round-title">${phase.name}</div>${byeStr}</div>`;
+    }
+    const shown = phase.matches.slice(0,4);
+    const extra = phase.matches.length - shown.length;
+    const phaseDone = phase.matches.every(m=>m.played);
     return `<div class="bracket-round">
-      <div class="bracket-round-title">${phase.name}</div>
-      ${phase.matches.slice(0,6).map(m=>{
+      <div class="bracket-round-title">${phase.name} <span style="font-size:10px;font-weight:400;color:${phaseDone?'var(--accent-green)':'var(--text-muted)'};">${phaseDone?'✓ Encerrada':`${phase.matches.filter(m=>m.played).length}/${phase.matches.length}`}</span></div>
+      ${shown.map(m=>{
         const ht = gameState.teams.find(t=>t.id===m.homeId);
         const at = gameState.teams.find(t=>t.id===m.awayId);
-        const myH = m.homeId===gameState.teamId, myA = m.awayId===gameState.teamId;
-        const played = m.played;
+        const myH = m.homeId===myId, myA = m.awayId===myId;
+        const aggH = m.leg1 ? (m.leg1.homeScore+(m.leg2?m.leg2.awayScore:0)) : null;
+        const aggA = m.leg1 ? (m.leg1.awayScore+(m.leg2?m.leg2.homeScore:0)) : null;
+        const winH = m.winner===m.homeId, winA = m.winner===m.awayId;
+        const scoreStr = aggH!==null
+          ? (m.played ? `${aggH}–${aggA}${m.penalties?'(p)':''}` : `${aggH}–${aggA}*`)
+          : '?–?';
         return `<div class="bracket-match" style="${myH||myA?'border:1px solid var(--accent-green);border-radius:4px;':''}">
-          <div class="team ${played&&m.homeScore>m.awayScore?'winner':played?'loser':''}" style="${myH?'color:var(--accent-green);font-weight:700;':''}">${ht?getTeamBadgeSVG(ht.id,18)+' '+ht.name:'?'} ${played?m.homeScore:''}</div>
-          <div class="team ${played&&m.awayScore>m.homeScore?'winner':played?'loser':''}" style="${myA?'color:var(--accent-green);font-weight:700;':''}">${at?getTeamBadgeSVG(at.id,18)+' '+at.name:'?'} ${played?m.awayScore:''}</div>
+          <div class="team ${winH?'winner':m.played?'loser':''}" style="${myH?'color:var(--accent-green);font-weight:700;':''}">${ht?getTeamBadgeSVG(ht.id,16)+' '+ht.name:'?'} ${m.played?`<strong>${aggH??''}</strong>`:''}</div>
+          <div style="font-size:10px;color:var(--text-muted);text-align:center;padding:2px 0;">${scoreStr}</div>
+          <div class="team ${winA?'winner':m.played?'loser':''}" style="${myA?'color:var(--accent-green);font-weight:700;':''}">${at?getTeamBadgeSVG(at.id,16)+' '+at.name:'?'} ${m.played?`<strong>${aggA??''}</strong>`:''}</div>
         </div>`;
       }).join('')}
-      ${phase.matches.length>6?`<div class="text-xs text-muted" style="text-align:center;padding:4px;">+${phase.matches.length-6} jogos</div>`:''}
+      ${extra>0?`<div class="text-xs text-muted" style="text-align:center;padding:4px;">+${extra} jogos</div>`:''}
     </div>`;
   }).join('');
 }
@@ -5960,6 +6063,179 @@ function advanceCupRound(phaseIdx){
     showNotif('🏆 Copa do Brasil: próxima fase liberada!','success');
     autoSave(); renderCup();
   }, 300);
+}
+
+// ── Copa do Brasil Penalty Shootout ──────────────────────────
+// selectedKickers: resolved from picker; oppTeamName: string
+let _cupPenResolve = null;
+let _cupPenKickers = [];
+
+async function runCupPenalties(mySquad, oppTeamName, myTeamId, homeTeamId){
+  const myTeamName = gameState.teams.find(t=>t.id===myTeamId)?.name||'Seu Time';
+  // Phase 1: pick 5 kickers
+  _cupPenKickers = [];
+  const kickers = await pickCupKickers(mySquad, myTeamName, oppTeamName);
+  // Phase 2: animate shootout
+  return await animateCupShootout(kickers, mySquad, myTeamId, oppTeamName, homeTeamId===myTeamId);
+}
+
+function pickCupKickers(mySquad, myName, oppName){
+  return new Promise(resolve=>{
+    const sorted=[...mySquad].sort((a,b)=>{
+      const sc=p=>((p.attrs?.CHU||50)*0.6+(p.attrs?.TEC||50)*0.4)+(p.pos==='ATA'?10:p.pos==='MEI'?5:0);
+      return sc(b)-sc(a);
+    }).slice(0,15);
+    const div=document.getElementById('match-stats-post');
+    div.style.display='block';
+    const renderPicker=()=>{
+      const sel=_cupPenKickers;
+      div.innerHTML=`
+        <div style="background:var(--bg-card);border-radius:8px;border:1px solid var(--accent-yellow);overflow:hidden;">
+          <div style="background:rgba(255,215,0,0.1);padding:12px;text-align:center;border-bottom:1px solid var(--border);">
+            <div style="font-size:16px;font-weight:700;color:var(--accent-yellow);">🥅 Disputa de Pênaltis</div>
+            <div style="font-size:12px;color:var(--text-muted);margin-top:2px;">${myName} vs ${oppName}</div>
+            <div style="font-size:11px;margin-top:6px;color:var(--text-secondary);">Escolha seus <strong>5 cobradores</strong> na ordem</div>
+          </div>
+          <div style="padding:10px;">
+            <div style="display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap;">
+              ${[0,1,2,3,4].map(i=>`<div style="flex:1;min-width:80px;padding:6px 8px;background:${sel[i]?'rgba(0,230,118,0.15)':'var(--bg-primary)'};border:1px solid ${sel[i]?'var(--accent-green)':'var(--border)'};border-radius:6px;text-align:center;font-size:11px;">
+                <div style="color:var(--text-muted);font-size:10px;">${i+1}º cobrador</div>
+                <div style="font-weight:700;color:${sel[i]?'var(--accent-green)':'var(--text-muted)'};">${sel[i]?sel[i].name:'—'}</div>
+              </div>`).join('')}
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-bottom:8px;">
+              ${sorted.map((p,i)=>{
+                const alrIdx=sel.findIndex(s=>s.id===p.id);
+                const alr=alrIdx>-1;
+                return `<button class="btn btn-xs ${alr?'btn-secondary':''}" onclick="cupPenToggle('${p.id}',${i})" style="${alr?'opacity:0.5;':''}text-align:left;padding:5px 8px;">
+                  <span class="badge-pos badge-${p.pos}" style="font-size:9px;">${p.pos}</span> ${p.name}
+                  <span style="float:right;color:var(--text-muted);font-size:10px;">CHU:${p.attrs?.CHU||'?'}</span>
+                  ${alr?`<span style="float:right;color:var(--accent-green);margin-right:4px;">#${alrIdx+1}</span>`:''}
+                </button>`;
+              }).join('')}
+            </div>
+            <button class="btn btn-primary" style="width:100%;" onclick="confirmCupKickers()" ${sel.length<5?'disabled':''}>
+              ⚽ Iniciar Cobrança de Pênaltis (${sel.length}/5)
+            </button>
+          </div>
+        </div>`;
+    };
+    window._cupPenPickerResolve = resolve;
+    window._cupPenPickerSquad = sorted;
+    renderPicker();
+  });
+}
+window.cupPenToggle = function(playerId, squadIdx){
+  const p=window._cupPenPickerSquad[squadIdx];
+  if(!p) return;
+  const idx=_cupPenKickers.findIndex(k=>k.id===p.id);
+  if(idx>-1) _cupPenKickers.splice(idx,1);
+  else if(_cupPenKickers.length<5) _cupPenKickers.push(p);
+  // re-render picker
+  const sorted=window._cupPenPickerSquad;
+  const div=document.getElementById('match-stats-post');
+  const sel=_cupPenKickers;
+  div.querySelector('[onclick="confirmCupKickers()"]').disabled=sel.length<5;
+  div.querySelector('[onclick="confirmCupKickers()"]').textContent=`⚽ Iniciar Cobrança de Pênaltis (${sel.length}/5)`;
+  div.querySelectorAll('[onclick^="cupPenToggle"]').forEach((btn,i)=>{
+    const alrIdx=sel.findIndex(s=>s.id===sorted[i].id);
+    btn.className='btn btn-xs '+(alrIdx>-1?'btn-secondary':'');
+    btn.style.opacity=alrIdx>-1?'0.5':'1';
+    const sp=btn.querySelector('span[style*="float:right;color:var(--accent-green)"]');
+    if(sp) sp.remove();
+    if(alrIdx>-1){ const s=document.createElement('span');s.style='float:right;color:var(--accent-green);margin-right:4px;';s.textContent='#'+(alrIdx+1);btn.appendChild(s); }
+  });
+  const slots=div.querySelectorAll('[style*="1º cobrador"],[style*="2º cobrador"],[style*="3º cobrador"],[style*="4º cobrador"],[style*="5º cobrador"]');
+  // Rebuild by re-rendering fully for simplicity
+  const rebuild=()=>{
+    const s=sel;
+    slots.forEach((slot,i)=>{
+      const nameEl=slot.querySelector('div:last-child');
+      if(nameEl){nameEl.textContent=s[i]?s[i].name:'—';nameEl.style.color=s[i]?'var(--accent-green)':'var(--text-muted)';}
+      slot.style.background=s[i]?'rgba(0,230,118,0.15)':'var(--bg-primary)';
+      slot.style.borderColor=s[i]?'var(--accent-green)':'var(--border)';
+    });
+  };
+  rebuild();
+};
+window.confirmCupKickers = function(){
+  if(_cupPenKickers.length<5){ showNotif('Selecione 5 cobradores!','warning'); return; }
+  if(window._cupPenPickerResolve){ window._cupPenPickerResolve([..._cupPenKickers]); window._cupPenPickerResolve=null; }
+};
+
+async function animateCupShootout(myKickers, mySquad, myTeamId, oppName, iAmHome){
+  const div=document.getElementById('match-stats-post');
+  const myName=gameState.teams.find(t=>t.id===myTeamId)?.name||'Seu Time';
+  // AI picks 5 kickers from opponent squad
+  const _allCupMatches = gameState.cupBracket.flatMap(p=>p.matches);
+  const _curCupMatch = _allCupMatches.find(m=>!m.played&&(m.homeId===myTeamId||m.awayId===myTeamId));
+  const oppId = _curCupMatch ? (_curCupMatch.homeId===myTeamId ? _curCupMatch.awayId : _curCupMatch.homeId) : null;
+  const oppSquad = (gameState.squads[oppId]||[]).filter(p=>!p.injured&&!p.suspended);
+  const aiKickers=[...oppSquad].sort((a,b)=>((b.attrs?.CHU||50)*0.6+(b.attrs?.TEC||50)*0.4)-((a.attrs?.CHU||50)*0.6+(a.attrs?.TEC||50)*0.4)).slice(0,5);
+  // Fill AI if short
+  while(aiKickers.length<5) aiKickers.push({name:'Jogador AI',attrs:{CHU:65,TEC:65},pos:'ATA'});
+
+  let myGoals=0,oppGoals=0;
+  const kicks=[];
+  // 5 rounds alternating (MY kick, then OPP kick)
+  for(let i=0;i<5;i++){
+    const myK=myKickers[i];
+    const myConv=Math.max(0.45,Math.min(0.92,((myK.attrs?.CHU||65)*0.55+(myK.attrs?.TEC||65)*0.45)/100+0.05));
+    const myScored=Math.random()<myConv;
+    if(myScored) myGoals++;
+    const aiK=aiKickers[i]||aiKickers[0];
+    const aiConv=Math.max(0.45,Math.min(0.87,((aiK.attrs?.CHU||65)*0.55+(aiK.attrs?.TEC||65)*0.45)/100));
+    const aiScored=Math.random()<aiConv;
+    if(aiScored) oppGoals++;
+    kicks.push({myName:myK.name,myScored,aiName:aiK.name,aiScored,myTotal:myGoals,oppTotal:oppGoals});
+    // Early clincher: if one side can't catch up
+    const remaining=5-(i+1);
+    if(myGoals>oppGoals+remaining||oppGoals>myGoals+remaining) break;
+  }
+  // Sudden death if tied after 5
+  let round=5;
+  while(myGoals===oppGoals&&round<10){
+    round++;
+    const myK=myKickers[round%5]||myKickers[0];
+    const myScored=Math.random()<0.75;
+    if(myScored) myGoals++;
+    const aiScored=Math.random()<0.72;
+    if(aiScored) oppGoals++;
+    kicks.push({myName:myK.name,myScored,aiName:aiKickers[round%5]?.name||'Jogador AI',aiScored,myTotal:myGoals,oppTotal:oppGoals,sudden:true});
+    if(myGoals!==oppGoals) break;
+  }
+  // If still tied (shouldn't happen but safeguard), flip coin
+  if(myGoals===oppGoals){ if(Math.random()<0.5) myGoals++; else oppGoals++; }
+
+  // Animate kicks in the match events area
+  const eventsDiv=document.getElementById('match-events');
+  const addKickLine=(html)=>{
+    const d=document.createElement('div'); d.className='event-line'; d.innerHTML=html;
+    eventsDiv.appendChild(d); eventsDiv.scrollTop=eventsDiv.scrollHeight;
+  };
+  addKickLine(`<span class="event-minute">Pens</span><span style="font-weight:700;color:var(--accent-yellow);">🥅 Início da Disputa de Pênaltis</span>`);
+  for(let i=0;i<kicks.length;i++){
+    const k=kicks[i];
+    await sleep(matchSkip?0:1200);
+    // My kick
+    addKickLine(`<span class="event-minute">${k.sudden?'SD':i+1}ª</span><span>${k.myScored?'⚽':'❌'} <strong>${myName}</strong>: ${k.myName} — ${k.myScored?'CONVERTEU!':'defendido.'} <span style="color:var(--accent-green);font-weight:700;">${k.myTotal}</span>×${k.oppTotal}</span>`);
+    await sleep(matchSkip?0:900);
+    addKickLine(`<span class="event-minute">${k.sudden?'SD':i+1}ª</span><span>${k.aiScored?'⚽':'❌'} <strong>${oppName}</strong>: ${k.aiName} — ${k.aiScored?'CONVERTEU!':'defendido.'} <span style="color:var(--accent-yellow);">${k.myTotal}</span>×<span style="color:var(--accent-green);font-weight:700;">${k.oppTotal}</span></span>`);
+  }
+  await sleep(matchSkip?0:800);
+  const iWon=myGoals>oppGoals;
+  const winColor=iWon?'var(--accent-green)':'var(--accent-red)';
+  addKickLine(`<span class="event-minute">FIM</span><span style="font-weight:900;font-size:15px;color:${winColor};">${iWon?'🏆 CLASSIFICADO':'❌ ELIMINADO'} — Pênaltis ${myGoals}×${oppGoals}</span>`);
+
+  div.innerHTML=`<div style="background:var(--bg-card);border-radius:8px;border:2px solid ${winColor};padding:16px;text-align:center;">
+    <div style="font-size:22px;margin-bottom:6px;">${iWon?'🏆':'😔'}</div>
+    <div style="font-size:18px;font-weight:900;color:${winColor};">${iWon?'CLASSIFICADO!':'ELIMINADO'}</div>
+    <div style="font-size:15px;margin-top:6px;color:var(--text-secondary);">Pênaltis: ${myGoals} × ${oppGoals}</div>
+  </div>`;
+
+  if(iWon) return myTeamId;
+  const _lostMatch = gameState.cupBracket.flatMap(p=>p.matches).find(m=>!m.played&&(m.homeId===myTeamId||m.awayId===myTeamId));
+  return _lostMatch ? (_lostMatch.homeId===myTeamId ? _lostMatch.awayId : _lostMatch.homeId) : 'ai_team';
 }
 
 function renderSupercopa(){
@@ -6352,23 +6628,64 @@ async function openMatchModal(){
       renderSupercopa();
     }
   } else if(isCupMatch){
-    // Find the actual cup match object and update it
+    const cupLeg = match._cupLeg||1;
     const phase = gameState.cupBracket[cupPhaseIdx];
-    if(phase){
-      const cupM = phase.matches.find(m=>m.homeId===match.homeId&&m.awayId===match.awayId);
-      if(cupM){ cupM.homeScore=result.homeScore; cupM.awayScore=result.awayScore; cupM.played=true; }
+    // Find the matchup (homeId/awayId may be reversed in leg2, so search both ways)
+    const cupM = phase?.matches.find(m=>
+      (m.homeId===match.homeId&&m.awayId===match.awayId)||
+      (m.homeId===match.awayId&&m.awayId===match.homeId));
+    if(cupM){
+      const legResult={homeScore:result.homeScore,awayScore:result.awayScore};
+      if(cupLeg===1){
+        cupM.leg1=legResult;
+        const opp=gameState.teams.find(t=>t.id===(cupM.homeId===gameState.teamId?cupM.awayId:cupM.homeId));
+        showNotif(`🏆 Jogo de Ida: ${result.homeScore}×${result.awayScore} — Volta vs ${opp?.name} na próxima!`,'success');
+        addNews('⚽','Copa do Brasil',`${phase.name} — Ida concluída`,
+          `${homeTeam?.name} ${result.homeScore}×${result.awayScore} ${awayTeam?.name}. Jogo de Volta pendente.`);
+      } else {
+        // Leg 2 — calculate aggregate
+        cupM.leg2=legResult;
+        // original homeId total = leg1.homeScore + leg2.awayScore
+        // original awayId total = leg1.awayScore + leg2.homeScore
+        const aggHome=(cupM.leg1?.homeScore||0)+(cupM.leg2.awayScore);
+        const aggAway=(cupM.leg1?.awayScore||0)+(cupM.leg2.homeScore);
+        cupM.homeScore=aggHome; cupM.awayScore=aggAway;
+        const myIsOrigHome = cupM.homeId===gameState.teamId;
+        const myAgg = myIsOrigHome?aggHome:aggAway;
+        const oppAgg = myIsOrigHome?aggAway:aggHome;
+        const oppTeamName=(gameState.teams.find(t=>t.id===(myIsOrigHome?cupM.awayId:cupM.homeId)))?.name||'Adversário';
+        if(myAgg>oppAgg){
+          cupM.winner=gameState.teamId; cupM.played=true;
+          showNotif(`🏆 Classificado! Agregado ${myAgg}×${oppAgg}`,'success');
+          grantXP(15,`Classificado na ${phase.name} da Copa`);
+          addNews('🏆','Copa do Brasil','Classificado! — '+phase.name,
+            gameState.teams.find(t=>t.id===gameState.teamId)?.name+' avança com agregado '+myAgg+'×'+oppAgg);
+        } else if(oppAgg>myAgg){
+          cupM.winner=(myIsOrigHome?cupM.awayId:cupM.homeId); cupM.played=true;
+          showNotif(`❌ Eliminado. Agregado ${myAgg}×${oppAgg}`,'warning');
+          addNews('❌','Copa do Brasil','Eliminado — '+phase.name,
+            gameState.teams.find(t=>t.id===gameState.teamId)?.name+' é eliminado com agregado '+myAgg+'×'+oppAgg);
+        } else {
+          // AGGREGATE DRAW → Penalties
+          const statsDiv=document.getElementById('match-stats-post');
+          if(statsDiv) statsDiv.innerHTML=`<div style="text-align:center;padding:16px;font-size:15px;font-weight:700;color:var(--accent-yellow);">⚖️ Empate no agregado ${myAgg}×${oppAgg}!<br>Vai para os pênaltis!</div>`;
+          await sleep(1500);
+          const mySquadForPens=(gameState.squads[gameState.teamId]||[]).filter(p=>!p.injured&&!p.suspended);
+          const penWinner=await runCupPenalties(mySquadForPens, oppTeamName, myIsOrigHome?cupM.homeId:cupM.awayId, cupM.homeId);
+          const iWonPens=penWinner===gameState.teamId;
+          cupM.winner=penWinner; cupM.played=true;
+          if(iWonPens){ grantXP(20,'Classificado nos pênaltis — Copa'); addNews('🏆','Copa do Brasil','Classificado nos pênaltis!',gameState.teams.find(t=>t.id===gameState.teamId)?.name+' se classifica nos pênaltis na '+phase.name); }
+          else addNews('❌','Copa do Brasil','Eliminado nos pênaltis',gameState.teams.find(t=>t.id===gameState.teamId)?.name+' é eliminado nos pênaltis na '+phase.name);
+        }
+        // Simulate AI leg2 matches and advance phase
+        simulateCupPhaseAI(cupPhaseIdx);
+        setTimeout(()=>{
+          const ph=gameState.cupBracket[cupPhaseIdx];
+          if(ph&&ph.matches.every(m2=>m2.played)) advanceCupRound(cupPhaseIdx);
+          renderCup();
+        },400);
+      }
     }
-    // Simulate remaining AI cup matches in this phase
-    simulateCupPhaseAI(cupPhaseIdx);
-    setTimeout(()=>{
-      const ph = gameState.cupBracket[cupPhaseIdx];
-      if(ph && ph.matches.every(m2=>m2.played)) advanceCupRound(cupPhaseIdx);
-      renderCup();
-    }, 400);
-    const iWon = (match.homeId===gameState.teamId&&result.homeScore>result.awayScore)||(match.awayId===gameState.teamId&&result.awayScore>result.homeScore);
-    addNews(iWon?'🏆':'❌','Copa do Brasil',(iWon?'Classificado!':'Eliminado!')+' — Copa do Brasil',
-      gameState.teams.find(t=>t.id===gameState.teamId)?.name+' '+(iWon?'avança':'é eliminado')+' da '+
-      (gameState.cupBracket[cupPhaseIdx]?.name||'Copa'));
   } else {
     match.homeScore = result.homeScore;
     match.awayScore = result.awayScore;
@@ -7634,10 +7951,42 @@ async function runHolidayLoop(){
 
       // Mark the REAL schedule entry (nextMatch may be a shallow copy for cup/special matches)
       if(nextMatch._isCup){
-        // Cup match — find real entry in cupBracket
+        // Cup match — find real entry in cupBracket (two-leg system)
         const phase = gameState.cupBracket[nextMatch._cupPhaseIdx];
-        if(phase){ const m = phase.matches?.find(m=>m.homeId===homeId&&m.awayId===awayId&&!m.played);
-          if(m){ m.homeScore=r.homeScore; m.awayScore=r.awayScore; m.played=true; } }
+        if(phase){
+          // homeId/awayId in nextMatch are already leg-corrected (leg2 reverses sides)
+          // The original match object uses original homeId/awayId
+          const leg = nextMatch._cupLeg;
+          const origHomeId = leg===1 ? homeId : awayId; // recover original home
+          const origAwayId = leg===1 ? awayId : homeId;
+          const cupM = phase.matches?.find(m=>m.homeId===origHomeId&&m.awayId===origAwayId&&!m.played);
+          if(cupM){
+            if(leg===1){
+              cupM.leg1 = {homeScore:r.homeScore, awayScore:r.awayScore};
+            } else {
+              // leg2 — homeScore/awayScore are reversed sides (awayId hosts in leg2)
+              cupM.leg2 = {homeScore:r.homeScore, awayScore:r.awayScore};
+              // Determine winner by aggregate
+              const aggOrig = cupM.leg1.homeScore + cupM.leg2.awayScore; // origHomeId total
+              const aggOther = cupM.leg1.awayScore + cupM.leg2.homeScore; // origAwayId total
+              if(aggOrig>aggOther){ cupM.winner=cupM.homeId; }
+              else if(aggOther>aggOrig){ cupM.winner=cupM.awayId; }
+              else {
+                // Penalties: assistant manager — simulate quickly
+                const pen=_simPens();
+                const myIsOrig = gameState.teamId===cupM.homeId;
+                cupM.winner = Math.random()<0.5 ? cupM.homeId : cupM.awayId;
+                cupM.penalties = {homeGoals:pen.a, awayGoals:pen.b, winner:cupM.winner};
+              }
+              cupM.homeScore=aggOrig; cupM.awayScore=aggOther; cupM.played=true;
+              // Advance phase if all matches done
+              const phIdx = nextMatch._cupPhaseIdx;
+              if(phase.matches.every(m=>m.played)){
+                advanceCupPhase(phIdx);
+              }
+            }
+          }
+        }
       } else {
         // League match — find in schedule
         const serie = myTeam.serie;
