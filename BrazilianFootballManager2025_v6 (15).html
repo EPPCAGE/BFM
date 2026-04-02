@@ -437,31 +437,35 @@ select:focus { border-color: var(--accent-blue); }
 <!-- NEW GAME -->
 <div id="newgame-screen">
   <div class="newgame-panel">
-    <div class="newgame-title">⚽ Novo Jogo</div>
-    <p class="text-secondary mb16" style="font-size:13px;">Escolha seu clube e comece sua carreira</p>
+    <div class="newgame-title">⚽ BFM 2025</div>
+    <p class="text-secondary mb16" style="font-size:13px;text-align:center;">Toda grande carreira começa do zero.<br>Sua jornada inicia na <strong style="color:var(--accent-yellow);">Série D</strong>.</p>
     <div class="form-group">
       <label class="form-label">Nome do Técnico</label>
       <input type="text" class="form-input" id="coach-name" placeholder="Digite seu nome..." value="José Silva">
     </div>
-    <div class="form-group">
-      <label class="form-label">Filtrar por Série</label>
-      <div class="tab-bar" id="serie-filter">
-        <button class="tab-btn active" onclick="filterSerie('A')">Série A</button>
-        <button class="tab-btn" onclick="filterSerie('B')">Série B</button>
-        <button class="tab-btn" onclick="filterSerie('C')">Série C</button>
-        <button class="tab-btn" onclick="filterSerie('D')">Série D</button>
-      </div>
+    <div style="display:flex;flex-direction:column;gap:12px;margin-top:8px;">
+      <button class="btn" style="padding:18px;background:linear-gradient(135deg,#1a3a1a,#0d2b0d);border:2px solid var(--accent-green);border-radius:10px;display:flex;align-items:center;gap:14px;text-align:left;cursor:pointer;" onclick="startRandomSerieD()">
+        <span style="font-size:32px;">🎲</span>
+        <div>
+          <div style="font-size:15px;font-weight:700;color:var(--accent-green);">Sorteio da Série D</div>
+          <div style="font-size:12px;color:var(--text-muted);margin-top:2px;">Seja sorteado aleatoriamente para um clube da Série D e inicie sua ascensão</div>
+        </div>
+      </button>
+      <button class="btn" style="padding:18px;background:linear-gradient(135deg,#1a1a3a,#0d0d2b);border:2px solid #7c3aed;border-radius:10px;display:flex;align-items:center;gap:14px;text-align:left;cursor:pointer;" onclick="showCustomTeamScreen()">
+        <span style="font-size:32px;">🏟️</span>
+        <div>
+          <div style="font-size:15px;font-weight:700;color:#a78bfa;">Criar Meu Clube</div>
+          <div style="font-size:12px;color:var(--text-muted);margin-top:2px;">Funde seu próprio clube na Série D e escolha nome, cores e escudo</div>
+        </div>
+      </button>
     </div>
-    <div class="form-group">
-      <label class="form-label">Selecione um Clube</label>
-      <div class="team-grid" id="team-select-grid"></div>
+    <div id="serieDteams-section" style="display:none;margin-top:12px;">
+      <label class="form-label">Escolha o clube sorteado</label>
+      <div class="team-grid" id="team-select-grid" style="max-height:220px;overflow-y:auto;"></div>
+      <button class="btn btn-primary" onclick="confirmRandomTeam()" style="width:100%;margin-top:8px;">🚀 Confirmar e Começar!</button>
     </div>
-    <div style="display:flex;gap:8px;margin-top:20px;">
-      <button class="btn btn-primary" onclick="startNewGame()" style="flex:1;">🚀 Começar Carreira</button>
-      <button class="btn btn-secondary" onclick="loadGame()" style="flex:1;">💾 Carregar Jogo</button>
-    </div>
-    <div style="margin-top:10px;">
-      <button class="btn" style="width:100%;background:linear-gradient(135deg,#7c3aed,#4f46e5);color:#fff;border:none;" onclick="showCustomTeamScreen()">⚽ Criar Meu Clube — Série D</button>
+    <div style="margin-top:14px;border-top:1px solid var(--border);padding-top:12px;">
+      <button class="btn btn-secondary" onclick="loadGame()" style="width:100%;">💾 Carregar Jogo Salvo</button>
     </div>
   </div>
 </div>
@@ -1194,6 +1198,79 @@ function playCrowdCheer(duration=3.0){
     src.start(); src.stop(ctx.currentTime+duration);
   } catch(e){ console.warn('audio error',e); }
 }
+
+// Continuous crowd ambient during match
+let _crowdAmbientNode = null;
+let _crowdAmbientGain = null;
+function startCrowdAmbient(){
+  try {
+    if(_crowdAmbientNode) return; // already running
+    const ctx = getACtx();
+    const SR = ctx.sampleRate;
+    // 6-second looping crowd noise buffer
+    const dur = 6;
+    const buf = ctx.createBuffer(2, SR*dur, SR);
+    for(let ch=0;ch<2;ch++){
+      const d = buf.getChannelData(ch);
+      for(let i=0;i<SR*dur;i++){
+        const t = i/SR;
+        // Low rumble + high buzz layered
+        const rumble = Math.sin(2*Math.PI*80*t)*0.06 + Math.sin(2*Math.PI*120*t)*0.04;
+        const noise = (Math.random()*2-1)*0.25;
+        // Slow amplitude swell to simulate chanting cycles
+        const swell = 0.6 + 0.4*Math.sin(2*Math.PI*0.18*t);
+        d[i] = (rumble + noise) * swell * (ch===1?0.92:1);
+      }
+    }
+    const src = ctx.createBufferSource();
+    src.buffer = buf; src.loop = true;
+    const bpf = ctx.createBiquadFilter();
+    bpf.type = 'bandpass'; bpf.frequency.value = 500; bpf.Q.value = 0.4;
+    const gain = ctx.createGain();
+    gain.gain.setValueAtTime(0, ctx.currentTime);
+    gain.gain.linearRampToValueAtTime(0.4, ctx.currentTime+2.0);
+    src.connect(bpf); bpf.connect(gain); gain.connect(ctx.destination);
+    src.start();
+    _crowdAmbientNode = src;
+    _crowdAmbientGain = gain;
+  } catch(e){ console.warn('crowd ambient error',e); }
+}
+function stopCrowdAmbient(){
+  try {
+    if(!_crowdAmbientNode) return;
+    const ctx = getACtx();
+    _crowdAmbientGain.gain.setValueAtTime(_crowdAmbientGain.gain.value, ctx.currentTime);
+    _crowdAmbientGain.gain.linearRampToValueAtTime(0, ctx.currentTime+2.0);
+    const n = _crowdAmbientNode;
+    setTimeout(()=>{ try{ n.stop(); }catch(e){} }, 2200);
+    _crowdAmbientNode = null;
+    _crowdAmbientGain = null;
+  } catch(e){ console.warn('stop crowd error',e); }
+}
+
+// Subtle button click sound
+function playClickSound(){
+  try {
+    const ctx = getACtx();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = 'sine'; osc.frequency.value = 900;
+    gain.gain.setValueAtTime(0.08, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime+0.06);
+    osc.connect(gain); gain.connect(ctx.destination);
+    osc.start(ctx.currentTime); osc.stop(ctx.currentTime+0.06);
+  } catch(e){}
+}
+
+// Wire click sound to all buttons globally
+document.addEventListener('click', e=>{
+  const target = e.target;
+  if(target && (target.tagName==='BUTTON' || target.classList.contains('btn') ||
+     target.classList.contains('sidebar-item') || target.classList.contains('tab-btn') ||
+     target.classList.contains('team-option') || target.classList.contains('contract-action'))) {
+    playClickSound();
+  }
+}, true);
 
 function playWhistle(count=1, duration=0.55){
   // Play real referee whistle MP3 (embedded base64)
@@ -2570,6 +2647,9 @@ async function runMatchAnimation(result){
   const awayTeam = gameState.teams.find(t=>t.id===result.awayId);
   eventsDiv.innerHTML='';
   scoreDisplay.style.display='block';
+  // CRITICAL: reset live scores to 0 — never read pre-computed result scores during animation
+  result.homeScore = 0;
+  result.awayScore = 0;
   let hs=0,as=0;
   // Set matchRef for intervention panel
   matchIntervention.matchRef = result;
@@ -2593,8 +2673,8 @@ async function runMatchAnimation(result){
   };
   updateScore();
 
-  // Kickoff whistle
-  if(!matchSkip){ playKickoffWhistle(); await sleep(700); }
+  // Kickoff whistle + crowd ambient
+  if(!matchSkip){ playKickoffWhistle(); startCrowdAmbient(); await sleep(700); }
   for(const ev of result.events){
     matchIntervention.liveMinute = ev.min;
     progress.style.width = (ev.min/90*100)+'%';
@@ -3810,6 +3890,7 @@ function renderSquad(){
   const th = (col, label, title='') =>
     `<th style="cursor:pointer;white-space:nowrap;" onclick="sortSquadBy('${col}')" title="${title}">${label}${arrow(col)}</th>`;
 
+  const lineup = gameState.myTactics.lineup || [];
   const html = `<table>
     <thead><tr>
       ${th('pos','Pos','Ordenar por posição')}
@@ -3822,6 +3903,7 @@ function renderSquad(){
       ${th('value','Valor','Valor de mercado')}
       ${th('contract','Ctrt','Contrato')}
       ${th('wage','Salário','Salário semanal')}
+      <th title="Titular">Titular</th>
       <th></th>
     </tr></thead>
     <tbody>${filtered.map(p=>{
@@ -3832,9 +3914,13 @@ function renderSquad(){
       const expiring = p.contract <= 1;
       const contractStyle = expiring ? 'color:var(--accent-red);font-weight:700;' : p.contract===2?'color:var(--accent-yellow);':'' ;
       const statusTxt = p.injured?(p.injuryLabel||'🔴 Lesionado'):p.suspended?'🚫 Suspenso':'🟢 OK';
-      return `<tr>
+      const isStarter = lineup.includes(p.id);
+      const starBtn = isStarter
+        ? `<button class="btn btn-xs" style="background:rgba(255,215,0,0.15);border-color:gold;color:gold;" onclick="toggleStarterFromSquad('${p.id}')" title="Remover dos titulares">⭐ Titular</button>`
+        : `<button class="btn btn-xs btn-secondary" onclick="toggleStarterFromSquad('${p.id}')" title="Adicionar como titular">☆</button>`;
+      return `<tr style="${isStarter?'background:rgba(255,215,0,0.05);':''}">
         <td><span class="badge-pos badge-${p.pos}">${p.pos}</span></td>
-        <td style="font-weight:600;cursor:pointer;" onclick="openPlayerModal('${p.id}','${gameState.teamId}')">${p.nat||'🇧🇷'} ${p.name}${p.isYouth?'<span style="font-size:10px;color:var(--accent-yellow);margin-left:3px;">🌟</span>':''}</td>
+        <td style="font-weight:600;cursor:pointer;" onclick="openPlayerModal('${p.id}','${gameState.teamId}')">${p.nat||'🇧🇷'} ${isStarter?'<span style="color:gold;font-size:11px;">⭐</span> ':''}${p.name}${p.isYouth?'<span style="font-size:10px;color:var(--accent-yellow);margin-left:3px;">🌟</span>':''}</td>
         <td style="color:${ovrColor};font-weight:700;font-size:16px;">${p.ovr}</td>
         <td><div style="display:flex;align-items:center;gap:4px;"><div style="width:48px;height:6px;background:var(--bg-secondary);border-radius:3px;overflow:hidden;"><div style="width:${st}%;height:100%;background:${sc};border-radius:3px;"></div></div><span style="font-size:10px;color:${sc};">${st}%</span></div></td>
         <td title="${form.label}"><span style="color:${form.color};font-size:15px;">${form.emoji}</span></td>
@@ -3843,10 +3929,40 @@ function renderSquad(){
         <td class="text-xs" style="color:var(--accent-yellow);">${fmtMoney(p.value)}</td>
         <td class="text-xs" style="${contractStyle}">${expiring?'⚠️ ':''}${p.contract}a</td>
         <td class="text-xs">R$${fmtK(p.wage)}</td>
+        <td>${starBtn}</td>
         <td style="display:flex;gap:3px;"><button class="btn btn-xs btn-secondary" onclick="openPlayerModal('${p.id}','${gameState.teamId}')" title="Ver">👁</button><button class="btn btn-xs btn-secondary" onclick="openContractModal('${p.id}')" title="Contrato">📋</button><button class="btn btn-xs btn-secondary" onclick="openRenamePlayer('${p.id}')" title="Renomear">✏️</button></td>
       </tr>`;
     }).join('')}</tbody></table>`;
     document.getElementById('squad-table').innerHTML = html;
+}
+
+function toggleStarterFromSquad(playerId){
+  if(!gameState) return;
+  const lineup = gameState.myTactics.lineup || [];
+  const bench = gameState.myTactics.bench || [];
+  const idx = lineup.indexOf(playerId);
+  if(idx !== -1){
+    // Remove from lineup
+    gameState.myTactics.lineup.splice(idx, 1);
+    showNotif('Jogador removido dos titulares.','info');
+  } else {
+    // Count available slots (formation determines 11 starters)
+    const formation = gameState.myTactics.formation || '4-4-2';
+    const maxSlots = (FORMATIONS[formation]?.positions?.length) || 11;
+    if(lineup.length >= maxSlots){
+      showNotif(`Escalação completa (${maxSlots} titulares). Remova um antes de adicionar.`,'warning');
+      return;
+    }
+    gameState.myTactics.lineup.push(playerId);
+    // Remove from bench if present
+    const bi = bench.indexOf(playerId);
+    if(bi !== -1) gameState.myTactics.bench.splice(bi, 1);
+    showNotif('⭐ Jogador adicionado como titular!','success');
+  }
+  renderSquad();
+  // Also refresh tactics panel if open
+  if(document.getElementById('pitch')) renderPitch();
+  if(document.getElementById('bench-list')) renderBench();
 }
 
 
@@ -5851,13 +5967,13 @@ async function openMatchModal(){
     match.awayScore = result.awayScore;
     match.played = true;
     applyMatchResult({homeId:match.homeId,awayId:match.awayId,homeScore:match.homeScore,awayScore:match.awayScore}, homeTeam.serie);
-    // Simulate other league matches of the round
+    // Simulate other league matches of the round (fast, no animation)
     const myTeam2 = gameState.teams.find(t=>t.id===gameState.teamId);
     const roundIdx = gameState.round-1;
     if(gameState.schedule[myTeam2.serie]&&gameState.schedule[myTeam2.serie][roundIdx]){
       for(const m of gameState.schedule[myTeam2.serie][roundIdx]){
-        if(!m.played){
-          const r = await simulateMatch(m.homeId, m.awayId);
+        if(!m.played && m.homeId!==gameState.teamId && m.awayId!==gameState.teamId){
+          const r = simulateMatchFast(m.homeId, m.awayId);
           m.homeScore = r.homeScore; m.awayScore = r.awayScore; m.played = true;
           applyMatchResult({homeId:m.homeId,awayId:m.awayId,homeScore:m.homeScore,awayScore:m.awayScore},myTeam2.serie);
         }
@@ -5912,11 +6028,14 @@ async function openMatchModal(){
   checkExpiringContracts();
   // Final whistle sound
   if(!matchSkip) {
+    stopCrowdAmbient();
     playFinalWhistle();
     const _myWon = (result.homeId===gameState.teamId && result.homeScore>result.awayScore) ||
                    (result.awayId===gameState.teamId && result.awayScore>result.homeScore);
     // result.homeScore/awayScore now contain live-tracked scores (set by runMatchAnimation)
     if(_myWon) setTimeout(()=>playCrowdCheer(5.0), 500);
+  } else {
+    stopCrowdAmbient();
   }
   // Build post-match MVP data from my squad
   const mySquadPost = gameState.squads[gameState.teamId] || [];
@@ -8241,48 +8360,64 @@ function showNotif(msg, type='success'){
 // NEW GAME SCREEN
 // ============================================================
 let selectedTeamId = null;
-let selectedSerie = 'A';
-
-function filterSerie(serie){
-  selectedSerie=serie;
-  document.querySelectorAll('#serie-filter .tab-btn').forEach(b=>b.classList.remove('active'));
-  event.target.classList.add('active');
-  renderTeamGrid();
-}
 
 function renderTeamGrid(){
   const grid = document.getElementById('team-select-grid');
-  const teams = TEAMS_RAW[selectedSerie];
-  grid.innerHTML=teams.map(t=>`<div class="team-option ${selectedTeamId===t.id?'selected':''}" onclick="selectTeam('${t.id}')">
+  if(!grid) return;
+  const teams = TEAMS_RAW['D'];
+  grid.innerHTML=teams.map(t=>`<div class="team-option ${selectedTeamId===t.id?'selected':''}" onclick="selectSerieD('${t.id}')">
     ${getTeamBadgeSVG(t.id,28)}
     <div style="font-size:12px;margin:2px 0;">${t.name}</div>
-    <div class="serie text-xs">Série ${selectedSerie} • ${t.state}</div>
-    <div class="stars">${'⭐'.repeat(t.force)}</div>
+    <div class="serie text-xs">Série D • ${t.state}</div>
   </div>`).join('');
 }
 
-function selectTeam(id){
+function selectSerieD(id){
   selectedTeamId=id;
   renderTeamGrid();
 }
 
-function startNewGame(){
+function startRandomSerieD(){
+  const coachName = document.getElementById('coach-name').value.trim()||'Técnico';
+  if(!coachName){ showNotif('Digite seu nome!','warning'); return; }
+  const section = document.getElementById('serieDteams-section');
+  section.style.display = 'block';
+  // Pick a random team from Série D and pre-select it
+  const teams = TEAMS_RAW['D'];
+  const random = teams[Math.floor(Math.random()*teams.length)];
+  selectedTeamId = random.id;
+  renderTeamGrid();
+  // Scroll to team section
+  section.scrollIntoView({behavior:'smooth'});
+}
+
+function confirmRandomTeam(){
   if(!selectedTeamId){ showNotif('Selecione um clube!','warning'); return; }
   const coachName = document.getElementById('coach-name').value.trim()||'Técnico';
+  const teamName = TEAMS_RAW['D'].find(t=>t.id===selectedTeamId)?.name || selectedTeamId;
+  launchGame(selectedTeamId, coachName, `✅ Bem-vindo, ${coachName}! Boa sorte com o ${teamName} na Série D!`);
+}
+
+function launchGame(teamId, coachName, msg){
   document.getElementById('newgame-screen').style.display='none';
   document.getElementById('loading-screen').style.display='flex';
   document.getElementById('loading-msg').textContent='Gerando elencos e calendário...';
   setTimeout(()=>{
-    initGameState(selectedTeamId, coachName);
+    initGameState(teamId, coachName);
     document.getElementById('loading-screen').style.display='none';
     document.getElementById('topbar').style.display='flex';
     document.getElementById('sidebar').style.display='block';
     document.getElementById('main').style.display='block';
     updateTopbar();
     showPanel('dashboard');
-    showNotif(`✅ Bem-vindo, ${coachName}! Boa sorte com o ${gameState.teams.find(t=>t.id===selectedTeamId).name}!`,'success');
+    showNotif(msg||`✅ Bem-vindo, ${coachName}!`,'success');
     autoSave();
   },1200);
+}
+
+// Legacy stub (called by load-game path and init)
+function startNewGame(){
+  confirmRandomTeam();
 }
 
 function confirmNewGame(){
@@ -8330,7 +8465,6 @@ window.addEventListener('load',()=>{
       }catch(e){}
     }
     document.getElementById('newgame-screen').style.display='flex';
-    renderTeamGrid();
   },1000);
 });
 
