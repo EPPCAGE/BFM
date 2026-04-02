@@ -632,6 +632,16 @@ select:focus { border-color: var(--accent-blue); }
         <div id="dash-news-ticker"><div class="text-muted text-sm">Carregando...</div></div>
       </div>
     </div>
+    <div class="grid-2" style="margin-top:12px;">
+      <div class="card">
+        <div class="card-title">🏥 Infirmaria & Suspensões</div>
+        <div id="dash-infirmary"><div class="text-muted text-sm">Carregando...</div></div>
+      </div>
+      <div class="card">
+        <div class="card-title">📈 Estatísticas da Temporada</div>
+        <div id="dash-season-stats"><div class="text-muted text-sm">Carregando...</div></div>
+      </div>
+    </div>
     <div style="margin-top:16px;text-align:center;">
       <button class="btn btn-primary" style="padding:12px 40px;font-size:16px;" id="btn-next-match" onclick="openPreMatchModal()">⚽ Próxima Partida</button>
       <button class="btn btn-secondary" style="padding:12px 24px;font-size:14px;margin-left:10px;" onclick="advanceWeek()">⏭️ Avançar Semana</button>
@@ -646,9 +656,10 @@ select:focus { border-color: var(--accent-blue); }
   <div id="panel-squad" class="panel">
     <div class="section-header">
       <div class="section-title">👥 Elenco</div>
-      <div style="display:flex;gap:8px;align-items:center;">
-        <select id="squad-filter-pos" onchange="renderSquad()">
-          <option value="">Todos Posições</option>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+        <input type="text" id="squad-search" placeholder="🔍 Buscar jogador..." oninput="renderSquad()" style="padding:6px 10px;background:var(--bg-card);border:1px solid var(--border);border-radius:5px;color:var(--text-primary);font-family:'Exo 2',sans-serif;font-size:12px;width:160px;">
+        <select id="squad-filter-pos" onchange="renderSquad()" style="padding:6px 8px;background:var(--bg-card);border:1px solid var(--border);border-radius:5px;color:var(--text-primary);font-family:'Exo 2',sans-serif;font-size:12px;">
+          <option value="">Todas Posições</option>
           <option value="GOL">Goleiros</option>
           <option value="ZAG">Zagueiros</option>
           <option value="LD">Lateral Direito</option>
@@ -657,7 +668,13 @@ select:focus { border-color: var(--accent-blue); }
           <option value="MEI">Meias</option>
           <option value="ATA">Atacantes</option>
         </select>
-        <span class="text-xs text-muted" style="padding:6px 10px;">Clique no cabeçalho para ordenar</span>
+        <select id="squad-filter-status" onchange="renderSquad()" style="padding:6px 8px;background:var(--bg-card);border:1px solid var(--border);border-radius:5px;color:var(--text-primary);font-family:'Exo 2',sans-serif;font-size:12px;">
+          <option value="">Todos Status</option>
+          <option value="ok">Disponíveis</option>
+          <option value="injured">Lesionados</option>
+          <option value="suspended">Suspensos</option>
+        </select>
+        <span class="text-xs text-muted" style="padding:6px 4px;">Clique no cabeçalho para ordenar</span>
       </div>
     </div>
     <div class="card">
@@ -728,9 +745,11 @@ select:focus { border-color: var(--accent-blue); }
         ✅ Treino desta semana já aplicado. Aguarde a próxima rodada para treinar novamente.
       </div>
       <div class="grid-3" id="training-options"></div>
-      <div style="margin-top:16px;">
+      <div style="margin-top:16px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
         <button class="btn btn-primary" id="btn-apply-training" onclick="applyTraining()">✅ Aplicar Treinamento</button>
+        <button class="btn btn-secondary btn-sm" id="btn-preview-training" onclick="previewTraining()" style="font-size:12px;">🔍 Pré-visualizar Ganhos</button>
       </div>
+      <div id="training-preview" style="display:none;margin-top:12px;background:var(--bg-primary);border:1px solid var(--border);border-radius:8px;padding:12px;"></div>
     </div>
     <div class="card">
       <div class="card-title">Estado da Equipe</div>
@@ -2135,8 +2154,8 @@ async function simulateMatch(homeId, awayId, isCupMatch=false){
   const maxGoals = Math.random() < 0.05 ? 6 : Math.random() < 0.20 ? 5 : Math.random() < 0.45 ? 4 : 3;
   // CRITICAL: reset per-match flags on ALL squad members before any filtering
   // so stale flags from previous matches never leak into this one
-  (gameState.squads[homeId]||[]).forEach(p=>{ p.matchYellows=0; p.redCardThisMatch=false; });
-  (gameState.squads[awayId]||[]).forEach(p=>{ p.matchYellows=0; p.redCardThisMatch=false; });
+  (gameState.squads[homeId]||[]).forEach(p=>{ p.matchYellows=0; p.redCardThisMatch=false; p.lastMatchGoals=0; p.lastMatchAssists=0; p.lastMatchRating=6.0; });
+  (gameState.squads[awayId]||[]).forEach(p=>{ p.matchYellows=0; p.redCardThisMatch=false; p.lastMatchGoals=0; p.lastMatchAssists=0; p.lastMatchRating=6.0; });
 
   // Build squads: use the user's actual lineup for their team, top-11 OVR for AI
   const _homeFullSquad = gameState.squads[homeId]||[];
@@ -2221,8 +2240,14 @@ async function simulateMatch(homeId, awayId, isCupMatch=false){
         // Gol normal
         const scorer = atkSquadG.filter(p=>p.pos==='ATA'||p.pos==='MEI').length > 0
           ? pick(atkSquadG.filter(p=>p.pos==='ATA'||p.pos==='MEI')) : pick(atkSquadG);
-        if(isHomeEvent){ homeScore++; if(scorer){ scorer.stats.goals++; updatePlayerForm(scorer,true,false,90); } }
-        else            { awayScore++; if(scorer){ scorer.stats.goals++; updatePlayerForm(scorer,true,false,90); } }
+        if(isHomeEvent){ homeScore++; if(scorer){ scorer.stats.goals++; scorer.lastMatchGoals=(scorer.lastMatchGoals||0)+1; scorer.lastMatchRating=(scorer.lastMatchRating||6)+1.5; updatePlayerForm(scorer,true,false,90); } }
+        else            { awayScore++; if(scorer){ scorer.stats.goals++; scorer.lastMatchGoals=(scorer.lastMatchGoals||0)+1; scorer.lastMatchRating=(scorer.lastMatchRating||6)+1.5; updatePlayerForm(scorer,true,false,90); } }
+        // Credit assist to nearest midfielder/attacker who isn't scorer
+        if(scorer && Math.random()<0.75){
+          const assistSq = isHomeEvent?homeSquad:awaySquad;
+          const asster = assistSq.find(p=>p!==scorer&&(p.pos==='MEI'||p.pos==='ATA'||p.pos==='VOL'));
+          if(asster){ asster.stats.assists=(asster.stats.assists||0)+1; asster.lastMatchAssists=(asster.lastMatchAssists||0)+1; asster.lastMatchRating=(asster.lastMatchRating||6)+0.8; }
+        }
         const isMyGoal = (isHomeEvent&&homeId===gameState.teamId)||(!isHomeEvent&&awayId===gameState.teamId);
         events.push({min,type:'goal',text:`⚽ GOL! ${scorer?scorer.name:'Jogador'} (${team.name}) — ${homeScore}x${awayScore}`,isHome:isHomeEvent,isMyGoal});
       }
@@ -2274,8 +2299,8 @@ async function simulateMatch(homeId, awayId, isCupMatch=false){
         // GOL de escanteio (cabeçada ou bola na área)
         const headers = squad.filter(p=>p.pos==='ZAG'||p.pos==='ATA'||p.pos==='VOL');
         const scorer  = headers.length ? pick(headers) : pick(squad);
-        if(isHomeEvent){ homeScore++; if(scorer){ scorer.stats.goals++; updatePlayerForm(scorer,true,false,90); } }
-        else            { awayScore++; if(scorer){ scorer.stats.goals++; updatePlayerForm(scorer,true,false,90); } }
+        if(isHomeEvent){ homeScore++; if(scorer){ scorer.stats.goals++; scorer.lastMatchGoals=(scorer.lastMatchGoals||0)+1; scorer.lastMatchRating=(scorer.lastMatchRating||6)+1.5; updatePlayerForm(scorer,true,false,90); } }
+        else            { awayScore++; if(scorer){ scorer.stats.goals++; scorer.lastMatchGoals=(scorer.lastMatchGoals||0)+1; scorer.lastMatchRating=(scorer.lastMatchRating||6)+1.5; updatePlayerForm(scorer,true,false,90); } }
         const isMyGoal = (isHomeEvent&&homeId===gameState.teamId)||(!isHomeEvent&&awayId===gameState.teamId);
         events.push({min,type:'goal',text:`⚽ GOL DE CABEÇA! ${scorer?scorer.name:'Jogador'} aproveita escanteio (${team.name}) — ${homeScore}x${awayScore}`,isHome:isHomeEvent,isMyGoal});
       } else if(r2 < cornerGoalChance + 0.25){
@@ -2861,7 +2886,7 @@ function effectiveOvr(player){
 // Drain stamina during match — called per event per player
 function drainStamina(player, isStarter){
   initPlayerStamina(player);
-  const res = (p=>p.attrs&&p.attrs.RES||60)(player);
+  const res = (player.attrs && player.attrs.RES) || 60;
   if(isStarter){
     // Starters lose 0.4-0.8 per event, less if high RES
     const drain = Math.max(0.2, 0.8 - (res - 60) * 0.01);
@@ -3378,10 +3403,29 @@ function renderDashboard(){
       </div>
     </div>`;
   // Form card
-  const results = getMyResults().slice(-5);
-  const formStr = results.map(r=>r.win?'<span style="color:var(--accent-green);font-weight:700">V</span>':r.draw?'<span style="color:var(--accent-yellow);font-weight:700">E</span>':'<span style="color:var(--accent-red);font-weight:700">D</span>').join(' ');
+  const allResults = getMyResults();
+  const results = allResults.slice(-5);
+  const formStr = results.map(r=>{
+    const bg = r.win?'var(--accent-green)':r.draw?'var(--accent-yellow)':'var(--accent-red)';
+    const letter = r.win?'V':r.draw?'E':'D';
+    return `<span style="display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:5px;background:${bg}20;border:1px solid ${bg};color:${bg};font-weight:700;font-size:14px;">${letter}</span>`;
+  }).join('');
+  // Calculate current streak
+  let streak = 0, streakType = '';
+  const rev = [...allResults].reverse();
+  for(const r of rev){
+    if(streak===0){ streakType=r.win?'V':r.draw?'E':'D'; streak=1; }
+    else if((streakType==='V'&&r.win)||(streakType==='E'&&r.draw)||(streakType==='D'&&r.loss)){ streak++; }
+    else break;
+  }
+  const streakColor = streakType==='V'?'var(--accent-green)':streakType==='E'?'var(--accent-yellow)':'var(--accent-red)';
+  const streakLabel = streak>=3 ? (streakType==='V'?`🔥 ${streak}V seguidas`:streakType==='D'?`❄️ ${streak}D seguidas`:`${streak}E seguidas`):'';
   renderJerseyCard();
-  document.getElementById('dash-form').innerHTML=`<div class="card-title">Forma Recente</div><div style="font-size:22px;letter-spacing:6px;margin:8px 0;">${formStr||'<span class="text-muted">Nenhum jogo</span>'}</div><div class="text-xs text-muted">Últimos 5 jogos</div>`;
+  document.getElementById('dash-form').innerHTML=`<div class="card-title">Forma Recente</div>
+    <div style="display:flex;gap:5px;margin:8px 0;flex-wrap:wrap;">${formStr||'<span class="text-muted text-sm">Nenhum jogo</span>'}</div>
+    <div class="text-xs text-muted">${allResults.length} jogos • ${allResults.filter(r=>r.win).length}V ${allResults.filter(r=>r.draw).length}E ${allResults.filter(r=>r.loss).length}D</div>
+    ${streakLabel?`<div style="margin-top:5px;font-size:12px;font-weight:700;color:${streakColor};">${streakLabel}</div>`:''}
+  `;
   // Position card
   document.getElementById('dash-position').innerHTML=`<div class="card-title">Posição na Tabela</div><div style="font-size:40px;font-weight:700;font-family:'Rajdhani',sans-serif;color:var(--accent-blue);">${pos}º</div><div class="text-xs text-muted">Série ${myTeam.serie} • ${myTeam.pts} pontos</div><div class="text-xs text-muted">${myTeam.w}V ${myTeam.d}E ${myTeam.l}D</div>`;
   // Next match — show current round first, else next upcoming
@@ -3436,13 +3480,27 @@ function renderDashboard(){
 
   // ── FINANCE ADVISOR ────────────────────────────────────────
   const lastFin = (gameState.financeAlerts||[])[0];
-  let finHtml = '';
+  const weeklyWages = squad.reduce((s,p)=>s+p.wage,0);
+  const budget = gameState.finances.budget;
+  const weeksLeft = weeklyWages>0 ? Math.floor(budget/weeklyWages) : 999;
+  const budgetHealthPct = Math.min(100, Math.round((budget/(weeklyWages*20))*100)); // 20 weeks = healthy
+  const budgetColor = weeksLeft>=10?'var(--accent-green)':weeksLeft>=5?'var(--accent-yellow)':'var(--accent-red)';
+  const budgetLabel = weeksLeft>=15?'Saudável':weeksLeft>=8?'Razoável':weeksLeft>=4?'Atenção':'Crítico';
+  let finHtml = `
+    <div style="margin-bottom:10px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+        <span style="font-size:11px;color:var(--text-muted);">Saúde financeira</span>
+        <span style="font-size:11px;font-weight:700;color:${budgetColor};">${budgetLabel}</span>
+      </div>
+      <div style="height:8px;background:var(--bg-secondary);border-radius:4px;overflow:hidden;"><div style="height:8px;width:${Math.min(100,budgetHealthPct)}%;background:${budgetColor};border-radius:4px;transition:width 0.5s;"></div></div>
+      <div style="font-size:10px;color:var(--text-muted);margin-top:3px;">${weeksLeft<999?weeksLeft+' semanas de folha restantes':'Folha coberta'} • ${fmtMoney(weeklyWages)}/sem</div>
+    </div>`;
   if(lastFin){
     const statusColor = lastFin.status==='critical'?'var(--accent-red)':lastFin.status==='warning'?'var(--accent-yellow)':'var(--accent-green)';
     const warnHtml = lastFin.warnings.map(w=>`<div style="color:${statusColor};font-size:12px;font-weight:700;margin-bottom:4px;">${w}</div>`).join('');
     const suggHtml = lastFin.suggestions.map(s=>`<div style="font-size:11px;color:var(--text-secondary);margin-bottom:3px;">→ ${s}</div>`).join('');
-    finHtml = `${warnHtml}<div style="font-size:11px;color:var(--text-muted);margin:6px 0 4px;">Folha semanal: ${fmtMoney(lastFin.weeklyWages)} | Caixa: ${fmtMoney(lastFin.budget)}</div>${suggHtml}`;
-  } else { finHtml = '<div class="text-muted text-sm">Análise financeira disponível em breve.</div>'; }
+    finHtml += `${warnHtml}${suggHtml}`;
+  }
   document.getElementById('dash-finance').innerHTML = finHtml;
 
   // ── YOUTH ACADEMY ──────────────────────────────────────────
@@ -3482,6 +3540,104 @@ function renderDashboard(){
       <div style="font-size:12px;color:var(--text-secondary);margin-bottom:6px;">Série ${gameState.boardTarget.serie}</div>
       <div style="font-size:12px;">Situação: <span style="font-weight:700;color:${metCol};">${btC?.met?'✅ OK':'❌ Em risco'}</span> ${btC?'('+btC.myPos+'º/'+btC.total+')':''}</div>
       <button class="btn btn-secondary btn-sm" style="margin-top:8px;" onclick="showPanel('coach')">👔 Ver Técnico & Diretoria</button>`;
+  }
+
+  // ── INFIRMARY & SUSPENSIONS ────────────────────────────────
+  const infEl = document.getElementById('dash-infirmary');
+  if(infEl){
+    const injured = squad.filter(p=>p.injured);
+    const suspended = squad.filter(p=>p.suspended);
+    const avgMorale = Math.round(squad.reduce((s,p)=>s+(p.attrs&&p.attrs.MOR||70),0)/Math.max(1,squad.length));
+    const moraleColor = avgMorale>=75?'var(--accent-green)':avgMorale>=55?'var(--accent-yellow)':'var(--accent-red)';
+    const moraleLabel = avgMorale>=80?'Excelente':avgMorale>=70?'Boa':avgMorale>=55?'Regular':avgMorale>=40?'Baixa':'Péssima';
+    let infHtml = `<div style="display:flex;gap:8px;margin-bottom:10px;">
+      <div style="flex:1;background:var(--bg-secondary);border-radius:6px;padding:8px;text-align:center;">
+        <div style="font-size:10px;color:var(--text-muted);">Lesionados</div>
+        <div style="font-size:22px;font-weight:900;color:${injured.length>0?'var(--accent-red)':'var(--accent-green)'};">${injured.length}</div>
+      </div>
+      <div style="flex:1;background:var(--bg-secondary);border-radius:6px;padding:8px;text-align:center;">
+        <div style="font-size:10px;color:var(--text-muted);">Suspensos</div>
+        <div style="font-size:22px;font-weight:900;color:${suspended.length>0?'var(--accent-yellow)':'var(--accent-green)'};">${suspended.length}</div>
+      </div>
+      <div style="flex:1;background:var(--bg-secondary);border-radius:6px;padding:8px;text-align:center;">
+        <div style="font-size:10px;color:var(--text-muted);">Moral Médio</div>
+        <div style="font-size:16px;font-weight:900;color:${moraleColor};">${avgMorale} <span style="font-size:10px;">${moraleLabel}</span></div>
+      </div>
+    </div>`;
+    if(injured.length>0){
+      infHtml += injured.map(p=>`<div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--border);font-size:12px;">
+        <span class="badge-pos badge-${p.pos}" style="font-size:10px;">${p.pos}</span>
+        <span style="flex:1;font-weight:600;">${p.name}</span>
+        <span style="color:var(--accent-red);">${p.injuryLabel||'Lesão'}</span>
+        <span style="color:var(--text-muted);font-size:11px;">${p.injuredWeeks}sem</span>
+      </div>`).join('');
+    }
+    if(suspended.length>0){
+      infHtml += suspended.map(p=>`<div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--border);font-size:12px;">
+        <span class="badge-pos badge-${p.pos}" style="font-size:10px;">${p.pos}</span>
+        <span style="flex:1;font-weight:600;">${p.name}</span>
+        <span style="color:var(--accent-yellow);">🚫 Suspenso</span>
+        <span style="color:var(--text-muted);font-size:11px;">${p.suspendedGames||1}j</span>
+      </div>`).join('');
+    }
+    if(injured.length===0 && suspended.length===0){
+      infHtml += '<div style="color:var(--accent-green);font-size:12px;padding:6px 0;">✅ Elenco completo — nenhum jogador indisponível!</div>';
+    }
+    infEl.innerHTML = infHtml;
+  }
+
+  // ── SEASON STATS ──────────────────────────────────────────────
+  const ssEl = document.getElementById('dash-season-stats');
+  if(ssEl){
+    const wins = allResults.filter(r=>r.win).length;
+    const draws = allResults.filter(r=>r.draw).length;
+    const losses = allResults.filter(r=>r.loss).length;
+    const gf = allResults.reduce((s,r)=>{
+      const iHome = r.homeId===gameState.teamId;
+      return s + (iHome ? r.homeScore : r.awayScore);
+    }, 0);
+    const ga = allResults.reduce((s,r)=>{
+      const iHome = r.homeId===gameState.teamId;
+      return s + (iHome ? r.awayScore : r.homeScore);
+    }, 0);
+    const cleanSheets = allResults.filter(r=>{
+      const iHome = r.homeId===gameState.teamId;
+      return (iHome ? r.awayScore : r.homeScore) === 0;
+    }).length;
+    const topScorer = squad.filter(p=>(p.stats?.goals||0)>0).sort((a,b)=>(b.stats?.goals||0)-(a.stats?.goals||0))[0];
+    const topAssist = squad.filter(p=>(p.stats?.assists||0)>0).sort((a,b)=>(b.stats?.assists||0)-(a.stats?.assists||0))[0];
+    const avgOvr = Math.round(squad.reduce((s,p)=>s+p.ovr,0)/Math.max(1,squad.length));
+    ssEl.innerHTML = `
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:10px;">
+        <div style="background:var(--bg-secondary);border-radius:6px;padding:7px;text-align:center;">
+          <div style="font-size:9px;color:var(--text-muted);">VITÓRIAS</div>
+          <div style="font-size:20px;font-weight:900;color:var(--accent-green);">${wins}</div>
+        </div>
+        <div style="background:var(--bg-secondary);border-radius:6px;padding:7px;text-align:center;">
+          <div style="font-size:9px;color:var(--text-muted);">EMPATES</div>
+          <div style="font-size:20px;font-weight:900;color:var(--accent-yellow);">${draws}</div>
+        </div>
+        <div style="background:var(--bg-secondary);border-radius:6px;padding:7px;text-align:center;">
+          <div style="font-size:9px;color:var(--text-muted);">DERROTAS</div>
+          <div style="font-size:20px;font-weight:900;color:var(--accent-red);">${losses}</div>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:10px;">
+        <div style="background:var(--bg-secondary);border-radius:6px;padding:7px;text-align:center;">
+          <div style="font-size:9px;color:var(--text-muted);">GOLS MARCADOS</div>
+          <div style="font-size:18px;font-weight:900;color:var(--accent-blue);">${gf}</div>
+        </div>
+        <div style="background:var(--bg-secondary);border-radius:6px;padding:7px;text-align:center;">
+          <div style="font-size:9px;color:var(--text-muted);">GOLS SOFRIDOS</div>
+          <div style="font-size:18px;font-weight:900;color:${ga<=gf?'var(--accent-green)':'var(--accent-red)'};">${ga}</div>
+        </div>
+      </div>
+      <div style="font-size:12px;border-top:1px solid var(--border);padding-top:8px;">
+        <div style="display:flex;justify-content:space-between;padding:3px 0;"><span class="text-muted">Jogos sem sofrer gol:</span><span style="font-weight:700;color:var(--accent-green);">${cleanSheets}</span></div>
+        <div style="display:flex;justify-content:space-between;padding:3px 0;"><span class="text-muted">Média OVR do elenco:</span><span style="font-weight:700;color:var(--accent-yellow);">${avgOvr}</span></div>
+        ${topScorer?`<div style="display:flex;justify-content:space-between;padding:3px 0;"><span class="text-muted">Artilheiro:</span><span style="font-weight:700;">${topScorer.name} (${topScorer.stats.goals}⚽)</span></div>`:''}
+        ${topAssist?`<div style="display:flex;justify-content:space-between;padding:3px 0;"><span class="text-muted">Assistências:</span><span style="font-weight:700;">${topAssist.name} (${topAssist.stats.assists}🎯)</span></div>`:''}
+      </div>`;
   }
 
   // ── NEWS TICKER ──────────────────────────────────────────────
@@ -3614,8 +3770,15 @@ function sortSquadBy(col){
 function renderSquad(){
   if(!gameState) return;
   const squad = gameState.squads[gameState.teamId];
-  const posFilter = document.getElementById('squad-filter-pos').value;
-  let filtered = posFilter ? squad.filter(p=>p.pos===posFilter) : [...squad];
+  const posFilter = document.getElementById('squad-filter-pos')?.value || '';
+  const searchFilter = (document.getElementById('squad-search')?.value || '').toLowerCase().trim();
+  const statusFilter = document.getElementById('squad-filter-status')?.value || '';
+  let filtered = [...squad];
+  if(posFilter) filtered = filtered.filter(p=>p.pos===posFilter);
+  if(searchFilter) filtered = filtered.filter(p=>p.name.toLowerCase().includes(searchFilter));
+  if(statusFilter==='ok') filtered = filtered.filter(p=>!p.injured&&!p.suspended);
+  else if(statusFilter==='injured') filtered = filtered.filter(p=>p.injured);
+  else if(statusFilter==='suspended') filtered = filtered.filter(p=>p.suspended);
 
   const sortFns = {
     pos:     (a,b) => a.pos.localeCompare(b.pos),
@@ -4075,11 +4238,48 @@ function selectTraining(id){
   renderAcademyInvestment();
 }
 
+function previewTraining(){
+  if(!gameState.selectedTraining){ showNotif('Selecione um foco de treino primeiro!','warning'); return; }
+  const squad = gameState.squads[gameState.teamId];
+  const focusMap = { fitness:'RES', technical:'TEC', shooting:'CHU', defense:'DEF', tactical:'MOR', rest:'FOR' };
+  const attr = focusMap[gameState.selectedTraining];
+  const trainingNames = { fitness:'Condicionamento', technical:'Técnico', shooting:'Finalizações', defense:'Defesa', tactical:'Tático', rest:'Descanso' };
+  const previewDiv = document.getElementById('training-preview');
+  // Calculate preview gains (deterministic: use average of range)
+  const previews = squad.filter(p=>!p.injured).map(p=>{
+    let gainMin = 1, gainMax = 3;
+    let ageLabel = '';
+    if(p.age<21){ gainMin=Math.round(gainMin*1.5); gainMax=Math.round(gainMax*1.5); ageLabel='<span style="color:var(--accent-green);font-size:10px;"> (jovem ↑)</span>'; }
+    if(p.age>30){ gainMin=Math.round(gainMin*0.7); gainMax=Math.round(gainMax*0.7); ageLabel='<span style="color:var(--text-muted);font-size:10px;"> (veterano ↓)</span>'; }
+    if(gameState.selectedTraining==='shooting'&&p.pos!=='ATA'){ gainMin=0; gainMax=1; }
+    if(gameState.selectedTraining==='defense'&&p.pos!=='ZAG'&&p.pos!=='LD'&&p.pos!=='LE'){ gainMin=0; gainMax=1; }
+    const currentVal = gameState.selectedTraining==='rest' ? (p.attrs.FOR||60) : (p.attrs[attr]||60);
+    const restGainMin = gameState.selectedTraining==='rest'?3:gainMin;
+    const restGainMax = gameState.selectedTraining==='rest'?8:gainMax;
+    return { p, gainMin:gameState.selectedTraining==='rest'?restGainMin:gainMin, gainMax:gameState.selectedTraining==='rest'?restGainMax:gainMax, currentVal, ageLabel };
+  }).sort((a,b)=>a.gainMin-b.gainMin||b.p.ovr-a.p.ovr);
+  const attrLabel = gameState.selectedTraining==='rest'?'FOR':(attr||'');
+  previewDiv.style.display='block';
+  previewDiv.innerHTML=`<div style="font-weight:700;font-size:13px;margin-bottom:8px;color:var(--accent-blue);">🔍 Pré-visualização: Treino ${trainingNames[gameState.selectedTraining]||gameState.selectedTraining} → ${attrLabel}</div>
+    <div style="font-size:11px;color:var(--text-muted);margin-bottom:8px;">Ganhos estimados por jogador disponível (valores reais serão aleatórios no intervalo):</div>
+    <div style="max-height:200px;overflow-y:auto;">
+    <table style="width:100%;border-collapse:collapse;font-size:12px;">
+    <thead><tr style="border-bottom:1px solid var(--border);"><th style="text-align:left;padding:4px 6px;color:var(--text-muted);">Pos</th><th style="text-align:left;padding:4px 6px;color:var(--text-muted);">Jogador</th><th style="text-align:right;padding:4px 6px;color:var(--text-muted);">Atual</th><th style="text-align:right;padding:4px 6px;color:var(--text-muted);">Ganho</th></tr></thead>
+    <tbody>${previews.map(({p,gainMin,gainMax,currentVal,ageLabel})=>`<tr style="border-bottom:1px solid rgba(255,255,255,0.04);">
+      <td style="padding:4px 6px;"><span class="badge-pos badge-${p.pos}" style="font-size:10px;">${p.pos}</span></td>
+      <td style="padding:4px 6px;font-weight:600;">${p.name}${ageLabel}</td>
+      <td style="padding:4px 6px;text-align:right;color:var(--text-muted);">${currentVal}</td>
+      <td style="padding:4px 6px;text-align:right;color:${gainMax>1?'var(--accent-green)':gainMax===1?'var(--accent-yellow)':'var(--text-muted)'};">+${gainMin===gainMax?gainMin:gainMin+'-'+gainMax}</td>
+    </tr>`).join('')}</tbody></table></div>`;
+}
+
 function applyTraining(){
   if(!gameState.selectedTraining){ showNotif('Selecione um foco de treino!','warning'); return; }
   const squad = gameState.squads[gameState.teamId];
   const focusMap = { fitness:'RES', technical:'TEC', shooting:'CHU', defense:'DEF', tactical:'MOR', rest:'FOR' };
   const attr = focusMap[gameState.selectedTraining];
+  const trainingNames = { fitness:'Condicionamento', technical:'Técnico', shooting:'Finalizações', defense:'Defesa', tactical:'Tático', rest:'Descanso' };
+  const gainLog = [];
   squad.forEach(p=>{
     if(p.injured) return;
     let gain = rnd(1,3);
@@ -4087,15 +4287,22 @@ function applyTraining(){
     if(p.age>30) gain = Math.round(gain*0.7);
     if(gameState.selectedTraining==='shooting'&&p.pos!=='ATA') gain=rnd(0,1);
     if(gameState.selectedTraining==='defense'&&p.pos!=='ZAG'&&p.pos!=='LD'&&p.pos!=='LE') gain=rnd(0,1);
-    if(gameState.selectedTraining==='rest') { p.attrs.FOR = clamp(p.attrs.FOR+rnd(3,8),0,99); return; }
+    if(gameState.selectedTraining==='rest') { const g=rnd(3,8); p.attrs.FOR = clamp(p.attrs.FOR+g,0,99); if(g>0) gainLog.push({name:p.name,attr:'FOR',gain:g}); return; }
+    if(gain>0) gainLog.push({name:p.name,attr,gain});
     p.attrs[attr] = clamp(p.attrs[attr]+gain,0,99);
-    if(gameState.selectedTraining==='tactical') p.attrs.MOR = clamp(p.attrs.MOR+rnd(1,5),0,99);
+    if(gameState.selectedTraining==='tactical') { const mg=rnd(1,5); p.attrs.MOR = clamp(p.attrs.MOR+mg,0,99); }
     p.ovr = Math.round([p.attrs.VEL,p.attrs.RES,p.attrs.TEC,p.attrs.PAS,p.attrs.CHU,p.attrs.DEF,p.attrs.CAB].reduce((a,b)=>a+b,0)/7);
   });
-  showNotif(`✅ Treino aplicado: ${gameState.selectedTraining}!`,'success');
+  // Show results summary
+  const topGains = gainLog.sort((a,b)=>b.gain-a.gain).slice(0,3);
+  const topMsg = topGains.length>0 ? ' Destaques: '+topGains.map(g=>`${g.name} (+${g.gain} ${g.attr})`).join(', ') : '';
+  showNotif(`✅ Treino de ${trainingNames[gameState.selectedTraining]||gameState.selectedTraining} aplicado!${topMsg}`,'success');
   gameState.lastTrainingId = gameState.selectedTraining;
   gameState.trainingUsedThisWeek = true;
   gameState.selectedTraining = null;
+  // Hide preview
+  const previewDiv = document.getElementById('training-preview');
+  if(previewDiv) previewDiv.style.display='none';
   renderTraining();
   autoSave();
 }
@@ -5711,14 +5918,40 @@ async function openMatchModal(){
     // result.homeScore/awayScore now contain live-tracked scores (set by runMatchAnimation)
     if(_myWon) setTimeout(()=>playCrowdCheer(5.0), 500);
   }
+  // Build post-match MVP data from my squad
+  const mySquadPost = gameState.squads[gameState.teamId] || [];
+  const goalscorers = mySquadPost.filter(p=>(p.lastMatchGoals||0)>0).sort((a,b)=>b.lastMatchGoals-a.lastMatchGoals);
+  const assisters = mySquadPost.filter(p=>(p.lastMatchAssists||0)>0).sort((a,b)=>b.lastMatchAssists-a.lastMatchAssists);
+  const mvpPlayer = mySquadPost.filter(p=>!p.injured&&!p.suspended).sort((a,b)=>(b.lastMatchRating||6)-(a.lastMatchRating||6))[0];
+  const mvpRating = mvpPlayer ? Math.min(10, Math.max(5, (mvpPlayer.lastMatchRating||6))).toFixed(1) : '';
+  const goalscorersHtml = goalscorers.length > 0
+    ? goalscorers.map(p=>`<span style="color:var(--accent-green);font-size:12px;">⚽ ${p.name}${p.lastMatchGoals>1?' ×'+p.lastMatchGoals:''}</span>`).join(' • ')
+    : '';
+  const assistsHtml = assisters.length > 0
+    ? assisters.map(p=>`<span style="color:var(--accent-blue);font-size:12px;">🎯 ${p.name}${p.lastMatchAssists>1?' ×'+p.lastMatchAssists:''}</span>`).join(' • ')
+    : '';
+  const ratingColor = mvpRating>=9?'gold':mvpRating>=8?'var(--accent-green)':mvpRating>=7?'var(--accent-yellow)':'var(--text-primary)';
   document.getElementById('match-stats-post').style.display='block';
   document.getElementById('match-stats-post').innerHTML=`
-    <div style="text-align:center;padding:12px;background:var(--bg-card);border-radius:8px;border:1px solid ${resultColor};">
-      <div style="font-size:16px;font-weight:700;color:${resultColor};">${outcome}</div>
-      <div class="text-xs text-muted mt4">${income>0?`🏠 +${fmtMoney(income)} de renda (mandante)`:'🚌 Jogo fora — sem renda de bilheteria'}</div>
-      <div style="margin-top:8px;display:flex;gap:8px;justify-content:center;">
+    <div style="background:var(--bg-card);border-radius:8px;border:1px solid ${resultColor};overflow:hidden;">
+      <div style="padding:12px;text-align:center;border-bottom:1px solid var(--border);">
+        <div style="font-size:18px;font-weight:700;color:${resultColor};">${outcome}</div>
+        <div class="text-xs text-muted mt4">${income>0?`🏠 +${fmtMoney(income)} de renda (mandante)`:'🚌 Jogo fora — sem renda de bilheteria'}</div>
+      </div>
+      ${goalscorersHtml||assistsHtml?`<div style="padding:10px 14px;border-bottom:1px solid var(--border);">
+        ${goalscorersHtml?`<div style="margin-bottom:4px;">${goalscorersHtml}</div>`:''}
+        ${assistsHtml?`<div>${assistsHtml}</div>`:''}
+      </div>`:''}
+      ${mvpPlayer?`<div style="padding:10px 14px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--border);background:rgba(255,215,0,0.04);">
+        <div style="font-size:22px;">⭐</div>
+        <div><div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;">MVP da Partida</div>
+        <div style="font-weight:700;font-size:15px;">${mvpPlayer.name} <span class="badge-pos badge-${mvpPlayer.pos}" style="font-size:9px;">${mvpPlayer.pos}</span></div></div>
+        <div style="margin-left:auto;font-size:26px;font-weight:900;color:${ratingColor};">${mvpRating}</div>
+      </div>`:''}
+      <div style="padding:10px 14px;display:flex;gap:8px;justify-content:center;">
         <button class="btn btn-primary btn-sm" onclick="closeModal('match-modal');showPanel('dashboard');">Ver Painel</button>
         <button class="btn btn-secondary btn-sm" onclick="closeModal('match-modal');showPanel('league');">Ver Tabela</button>
+        <button class="btn btn-secondary btn-sm" onclick="closeModal('match-modal');showPanel('squad');">Ver Elenco</button>
       </div>
     </div>`;
   document.getElementById('btn-skip').style.display='none';
@@ -6998,16 +7231,8 @@ function advanceWeek(){
   // Simulate AI matches for all divisions this round
   const myTeam = gameState.teams.find(t=>t.id===gameState.teamId);
   const roundIdx = gameState.round-1;
-  if(gameState.schedule[myTeam.serie] && gameState.schedule[myTeam.serie][roundIdx]){
-    gameState.schedule[myTeam.serie][roundIdx].forEach(async m=>{
-      if(!m.played && m.homeId!==gameState.teamId && m.awayId!==gameState.teamId){
-        const r = await simulateMatch(m.homeId, m.awayId);
-        m.homeScore=r.homeScore; m.awayScore=r.awayScore; m.played=true;
-        applyMatchResult(m, myTeam.serie);
-      }
-    });
-  }
-  simulateBackgroundRound(roundIdx); // other divisions
+  // Use fast synchronous simulation for all AI matches (no animation needed)
+  simulateBackgroundRound(roundIdx); // handles all divisions including myTeam.serie
   processShirtSalesForRound();
   updateTopbar();
   autoSave();
