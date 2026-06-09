@@ -160,8 +160,9 @@ export function PlayerBoard({
       {/* Energy Pool */}
       <EnergyPool energyPool={playerState.energyPool} label={label} />
 
-      {/* Play Area */}
-      <div>
+      {/* Play Area + Discard */}
+      <div className="flex gap-2 items-start">
+        <div className="flex-1">
         <div className="text-xs text-slate-400 mb-1 font-semibold">
           Em Jogo ({playerState.playArea.length}/5)
           {isSelectingFriendly && <span className="ml-2 text-green-400 animate-pulse">← Selecione o alvo</span>}
@@ -202,6 +203,40 @@ export function PlayerBoard({
           {playerState.playArea.length === 0 && (
             <span className="text-slate-500 text-xs italic">Nenhum Pokémon em jogo</span>
           )}
+        </div>
+        </div>
+
+        {/* Discard Pile */}
+        <div className="flex-shrink-0 flex flex-col items-center gap-1">
+          <div className="text-xs text-slate-400 font-semibold">Descarte</div>
+          {(() => {
+            const top = playerState.discardPile.length > 0
+              ? playerState.discardPile[playerState.discardPile.length - 1]
+              : null;
+            return (
+              <div
+                className="relative rounded-lg overflow-hidden border border-slate-600"
+                style={{ width: 56, height: 78 }}
+                data-card-hover
+                onMouseEnter={(e) => { if (top && !cardMenu) showTooltip(top, e); }}
+                onMouseMove={moveTooltip}
+                onMouseLeave={hideTooltip}
+              >
+                {top ? (
+                  <>
+                    <CardImage card={top} className="w-full h-full" />
+                    {playerState.discardPile.length > 1 && (
+                      <div className="absolute bottom-0 left-0 right-0 bg-black/70 text-[9px] text-center text-slate-300">
+                        ×{playerState.discardPile.length}
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <div className="w-full h-full bg-slate-800 flex items-center justify-center text-slate-600 text-[10px]">vazio</div>
+                )}
+              </div>
+            );
+          })()}
         </div>
       </div>
 
