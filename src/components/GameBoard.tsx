@@ -10,11 +10,12 @@ export function GameBoard() {
   const {
     gameState, endTurnAction,
     playEnergyFromHandAction, playEnergyFromDeckAction, playEnergyFromDiscardAction,
-    summonAction, attackAction, playTrainerAction, resetGame,
+    summonAction, attackAction, abilityAttackAction, playTrainerAction, resetGame,
   } = useGameStore();
 
   const [attackMode, setAttackMode] = useState<{ attackerInstanceId: string; attackIndex: number } | null>(null);
   const [pendingTrainer, setPendingTrainer] = useState<PendingTrainer>(null);
+  const [pendingTeleport, setPendingTeleport] = useState<{ attackerInstanceId: string; attackIndex: number } | null>(null);
 
   if (!gameState) return null;
 
@@ -23,6 +24,17 @@ export function GameBoard() {
 
   function handleAttack(attackerInstanceId: string, attackIndex: number) {
     if (!gameState) return;
+    const attacker = gameState.players.player.playArea.find(pk => pk.instanceId === attackerInstanceId);
+    const attack = attacker?.def.attacks[attackIndex];
+    // 0-damage ability-attacks: no target needed
+    if (attack && attack.damage === 0 && attack.effectType) {
+      if (attack.effectType === 'teleport') {
+        setPendingTeleport({ attackerInstanceId, attackIndex });
+      } else {
+        abilityAttackAction(attackerInstanceId, attackIndex);
+      }
+      return;
+    }
     if (!canAttack(gameState, 'player', attackerInstanceId, attackIndex)) return;
     setAttackMode({ attackerInstanceId, attackIndex });
   }
@@ -49,13 +61,19 @@ export function GameBoard() {
     setPendingTrainer(null);
   }
 
+  function handleSelectTeleportTarget(handIndex: number) {
+    if (!pendingTeleport) return;
+    abilityAttackAction(pendingTeleport.attackerInstanceId, pendingTeleport.attackIndex, handIndex);
+    setPendingTeleport(null);
+  }
+
   function handleEnergyPlay(source: 'hand' | 'deck' | 'discard', index?: number) {
     if (source === 'hand' && index !== undefined) playEnergyFromHandAction(index);
     else if (source === 'deck') playEnergyFromDeckAction();
     else if (source === 'discard') playEnergyFromDiscardAction();
   }
 
-  const cancelMode = attackMode || pendingTrainer;
+  const cancelMode = attackMode || pendingTrainer || pendingTeleport;
 
   return (
     <div className="flex flex-col h-screen bg-slate-900 overflow-hidden">
@@ -75,7 +93,7 @@ export function GameBoard() {
         <div className="flex gap-2">
           {cancelMode && (
             <button
-              onClick={() => { setAttackMode(null); setPendingTrainer(null); }}
+              onClick={() => { setAttackMode(null); setPendingTrainer(null); setPendingTeleport(null); }}
               className="px-3 py-1 bg-slate-600 hover:bg-slate-500 text-white text-xs rounded"
             >
               ✕ Cancelar
@@ -122,6 +140,11 @@ export function GameBoard() {
           ⚔️ Selecione um Pokémon vulnerável do oponente para atacar
         </div>
       )}
+      {pendingTeleport && (
+        <div className="bg-indigo-700 text-white text-sm text-center py-1 flex-shrink-0">
+          🌀 Teletransporte: clique em um Pokémon Básico da sua mão para trocar
+        </div>
+      )}
       {pendingTrainer?.targetType === 'friendly' && (
         <div className="bg-green-700 text-white text-sm text-center py-1 flex-shrink-0">
           💊 Selecione um de seus Pokémon como alvo
@@ -160,6 +183,8 @@ export function GameBoard() {
             attackMode={attackMode}
             pendingTrainer={pendingTrainer}
             onSelectTrainerTarget={handleSelectTrainerTarget}
+            pendingTeleport={!!pendingTeleport}
+            onSelectTeleportHandCard={handleSelectTeleportTarget}
           />
         </div>
 
