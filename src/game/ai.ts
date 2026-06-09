@@ -3,14 +3,12 @@ import type { PokemonCardDef } from './types';
 import {
   canSummon, summonPokemon, canAttack, performAttack,
   canPlayTrainer, playTrainer, playEnergyFromHand, playEnergyFromDeck,
-  endTurn, opponent, completeDeckSearch,
+  endTurn, opponent,
 } from './engine';
 
-function autoCompleteDeckSearch(state: GameState, pid: PlayerId): GameState {
-  if (!state.pendingDeckSearch) return state;
-  const first = state.pendingDeckSearch.candidates[0];
-  if (!first) return { ...state, pendingDeckSearch: null };
-  return completeDeckSearch(state, pid, first.id);
+// Stub: deck-search feature not yet implemented in engine
+function autoCompleteDeckSearch(state: GameState, _pid: PlayerId): GameState {
+  return state;
 }
 
 export type AIDifficulty = 'easy' | 'medium' | 'hard';

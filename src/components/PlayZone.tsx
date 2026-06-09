@@ -22,6 +22,9 @@ interface Props {
 
   pendingTrainer?: { cardId: string; targetType: 'friendly' | 'enemy' } | null;
   onSelectTrainerTarget?: (targetInstanceId: string) => void;
+
+  /** 'normal' = 90×120, 'large' = 110×154 */
+  cardSize?: 'normal' | 'large';
 }
 
 export function PlayZone({
@@ -29,12 +32,16 @@ export function PlayZone({
   onAttack, onEvolve,
   attackMode, onSelectAttackTarget,
   pendingTrainer, onSelectTrainerTarget,
+  cardSize = 'normal',
 }: Props) {
   const energy = availableEnergy(playerState);
   const { tooltip, showTooltip, moveTooltip, hideTooltip } = useTooltip();
 
   const isSelectingFriendly = !isOpponent && pendingTrainer?.targetType === 'friendly';
   const isSelectingEnemy = isOpponent && pendingTrainer?.targetType === 'enemy';
+
+  const cardW = cardSize === 'large' ? 110 : 90;
+  const cardH = cardSize === 'large' ? 154 : 120;
 
   function handlePlayAreaClick(instanceId: string) {
     if (attackMode && isOpponent) {
@@ -48,7 +55,7 @@ export function PlayZone({
   }
 
   return (
-    <div className="flex items-center justify-center gap-3 flex-wrap">
+    <div className="flex items-center justify-center gap-4 flex-wrap px-4 py-2">
       {playerState.playArea.map((pokemon) => {
         const isAttackTarget = !!attackMode && isOpponent && pokemon.vulnerability === 'vulnerable';
         const isTrainerTarget = isSelectingFriendly || isSelectingEnemy;
@@ -75,14 +82,20 @@ export function PlayZone({
                 if (!isOpponent) onAttack?.(pokemon.instanceId, attackIndex);
               }}
               onClick={() => handlePlayAreaClick(pokemon.instanceId)}
+              cardWidth={cardW}
+              cardHeight={cardH}
             />
           </div>
         );
       })}
       {playerState.playArea.length === 0 && (
-        <span className="text-slate-600 text-sm italic select-none">
-          {isOpponent ? 'Sem Pokémon em jogo' : 'Arraste cartas da mão para invocar'}
-        </span>
+        <div className="flex flex-col items-center gap-2 opacity-30 select-none pointer-events-none">
+          <div className="w-24 h-32 rounded-xl border-2 border-dashed border-slate-600 flex items-center justify-center">
+            <span className="text-slate-500 text-xs text-center px-2">
+              {isOpponent ? 'Sem Pokémon' : 'Clique na carta para invocar'}
+            </span>
+          </div>
+        </div>
       )}
       {tooltip && <CardTooltip card={tooltip.card} x={tooltip.x} y={tooltip.y} />}
     </div>

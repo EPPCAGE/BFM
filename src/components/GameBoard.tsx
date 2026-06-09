@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { useGameStore } from '../store/gameStore';
 import { GameLog } from './GameLog';
 import { PlayZone } from './PlayZone';
-import { EnergyPool } from './EnergyPool';
 import { CardImage } from './CardImage';
 import { CardTooltip } from './CardTooltip';
 import { canAttack } from '../game/engine';
@@ -11,9 +10,7 @@ import type { PokemonCardDef } from '../game/types';
 
 type PendingTrainer = { cardId: string; targetType: 'friendly' | 'enemy' } | null;
 
-// Trainers that need a friendly target
 const FRIENDLY_TARGET_TRAINERS = new Set(['potion', 'super-potion', 'switch']);
-// Trainers that need an enemy target
 const ENEMY_TARGET_TRAINERS = new Set(['bosss-orders']);
 
 /** Small face-down card backs for opponent hand */
@@ -43,8 +40,8 @@ export function GameBoard() {
   const [attackMode, setAttackMode] = useState<{ attackerInstanceId: string; attackIndex: number } | null>(null);
   const [pendingTrainer, setPendingTrainer] = useState<PendingTrainer>(null);
   const [pendingTeleport, setPendingTeleport] = useState<{ attackerInstanceId: string; attackIndex: number } | null>(null);
+  const [logOpen, setLogOpen] = useState(true);
 
-  // Tooltip for player hand cards
   const { tooltip, showTooltip, moveTooltip, hideTooltip } = useTooltip();
 
   if (!gameState) return null;
@@ -136,23 +133,29 @@ export function GameBoard() {
     <div className="flex flex-col h-screen bg-slate-900 overflow-hidden">
 
       {/* ── TOP BAR ── */}
-      <div className="flex items-center justify-between px-4 py-2 bg-slate-800 border-b border-slate-700 flex-shrink-0">
+      <div className="flex items-center justify-between px-4 py-1.5 bg-slate-800 border-b border-slate-700 flex-shrink-0">
         <div className="flex items-center gap-4">
-          <h1 className="text-lg font-bold text-yellow-400">LORKEMON</h1>
-          <span className="text-sm text-slate-400">Turno {turn}</span>
-          <span className={`text-xs px-2 py-0.5 rounded ${isPlayerTurn ? 'bg-blue-700 text-white' : 'bg-red-700 text-white'}`}>
+          <h1 className="text-base font-bold text-yellow-400 tracking-wide">LORKEMON TCG</h1>
+          <span className="text-xs text-slate-400">Turno {turn}</span>
+          <span className={`text-xs px-2 py-0.5 rounded font-semibold ${isPlayerTurn ? 'bg-blue-700 text-white' : 'bg-red-700 text-white'}`}>
             {aiThinking ? '⏳ IA pensando...' : isPlayerTurn ? '🟦 Sua vez' : '🟥 Vez da IA'}
           </span>
+          {/* Score badges */}
+          <span className="text-xs bg-blue-900/60 text-blue-200 px-2 py-0.5 rounded">Você: <strong className="text-white">{playerState.points}</strong>/10</span>
+          <span className="text-xs bg-red-900/60 text-red-200 px-2 py-0.5 rounded">IA: <strong className="text-white">{aiState.points}</strong>/10</span>
         </div>
-        <div className="flex gap-4 text-sm">
-          <span className="text-blue-300">Você: <strong>{playerState.points}</strong>/10</span>
-          <span className="text-red-300">IA: <strong>{aiState.points}</strong>/10</span>
-        </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 items-center">
+          <button
+            onClick={() => setLogOpen(o => !o)}
+            className="px-2 py-1 bg-slate-700 hover:bg-slate-600 text-white text-xs rounded"
+            title="Mostrar/ocultar log"
+          >
+            {logOpen ? '📋 Log' : '📋'}
+          </button>
           {cancelMode && (
             <button
               onClick={() => { setAttackMode(null); setPendingTrainer(null); setPendingTeleport(null); }}
-              className="px-3 py-1 bg-slate-600 hover:bg-slate-500 text-white text-xs rounded"
+              className="px-3 py-1 bg-slate-600 hover:bg-slate-500 text-white text-xs rounded font-semibold"
             >
               ✕ Cancelar
             </button>
@@ -173,22 +176,22 @@ export function GameBoard() {
 
       {/* ── CONTEXT BANNER ── */}
       {attackMode && (
-        <div className="bg-orange-700 text-white text-sm text-center py-1 flex-shrink-0">
+        <div className="bg-orange-700 text-white text-sm text-center py-1 flex-shrink-0 font-semibold">
           ⚔️ Selecione um Pokémon vulnerável do oponente para atacar
         </div>
       )}
       {pendingTeleport && (
-        <div className="bg-indigo-700 text-white text-sm text-center py-1 flex-shrink-0">
+        <div className="bg-indigo-700 text-white text-sm text-center py-1 flex-shrink-0 font-semibold">
           🌀 Teletransporte: clique em um Pokémon Básico da sua mão para trocar
         </div>
       )}
       {pendingTrainer?.targetType === 'friendly' && (
-        <div className="bg-green-700 text-white text-sm text-center py-1 flex-shrink-0">
+        <div className="bg-green-700 text-white text-sm text-center py-1 flex-shrink-0 font-semibold">
           💊 Selecione um de seus Pokémon como alvo
         </div>
       )}
       {pendingTrainer?.targetType === 'enemy' && (
-        <div className="bg-purple-700 text-white text-sm text-center py-1 flex-shrink-0">
+        <div className="bg-purple-700 text-white text-sm text-center py-1 flex-shrink-0 font-semibold">
           🎯 Selecione um Pokémon do oponente como alvo
         </div>
       )}
@@ -215,168 +218,235 @@ export function GameBoard() {
       )}
 
       {/* ── MAIN AREA ── */}
-      <div className="flex flex-1 overflow-hidden">
+      <div className="flex flex-1 overflow-hidden min-h-0">
 
         {/* ── LEFT SIDEBAR: energy pools ── */}
-        <div className="w-20 flex-shrink-0 flex flex-col bg-slate-800/40 border-r border-slate-700/50">
+        <div className="w-16 flex-shrink-0 flex flex-col bg-slate-800/50 border-r border-slate-700/50">
           {/* AI energy (top half) */}
-          <div className="flex-1 flex flex-col items-center justify-center gap-1 p-1 border-b border-slate-700/50">
-            <span className="text-[9px] text-red-400 font-bold uppercase tracking-wide">IA ⚡</span>
-            <div className="flex flex-col gap-0.5 items-center overflow-y-auto scrollbar-hide" style={{ maxHeight: 160 }}>
+          <div className="flex-1 flex flex-col items-center justify-center gap-1 p-1 border-b border-slate-700/40">
+            <span className="text-[8px] text-red-400 font-bold uppercase tracking-wider">IA ⚡</span>
+            <div className="flex flex-col gap-0.5 items-center overflow-y-auto scrollbar-hide" style={{ maxHeight: 140 }}>
               {aiState.energyPool.map((e) => (
                 <div
                   key={e.instanceId}
                   className={`rounded transition-all duration-200 ${e.used ? 'card-energy-used' : 'card-energy-available'}`}
-                  style={{ width: 28, height: 39 }}
+                  style={{ width: 24, height: 34 }}
                   title={`${e.def.displayName} — ${e.used ? 'usada' : 'disponível'}`}
                 >
-                  <CardBack size={28} />
+                  <CardBack size={24} />
                 </div>
               ))}
               {aiState.energyPool.length === 0 && (
-                <span className="text-slate-600 text-[9px]">–</span>
+                <span className="text-slate-600 text-[8px]">–</span>
               )}
             </div>
-            <span className="text-[9px] text-yellow-400">
+            <span className="text-[8px] text-yellow-400 font-bold">
               {aiState.energyPool.filter(e => !e.used).length}/{aiState.energyPool.length}
             </span>
           </div>
           {/* Player energy (bottom half) */}
           <div className="flex-1 flex flex-col items-center justify-center gap-1 p-1">
-            <span className="text-[9px] text-blue-400 font-bold uppercase tracking-wide">⚡ Você</span>
-            <div className="flex flex-col gap-0.5 items-center overflow-y-auto scrollbar-hide" style={{ maxHeight: 160 }}>
+            <span className="text-[8px] text-blue-400 font-bold uppercase tracking-wider">⚡ Você</span>
+            <div className="flex flex-col gap-0.5 items-center overflow-y-auto scrollbar-hide" style={{ maxHeight: 140 }}>
               {playerState.energyPool.map((e) => (
                 <div
                   key={e.instanceId}
                   className={`rounded transition-all duration-200 ${e.used ? 'card-energy-used' : 'card-energy-available'}`}
-                  style={{ width: 28, height: 39 }}
+                  style={{ width: 24, height: 34 }}
                   title={`${e.def.displayName} — ${e.used ? 'usada' : 'disponível'}`}
                 >
-                  <CardBack size={28} />
+                  <CardBack size={24} />
                 </div>
               ))}
               {playerState.energyPool.length === 0 && (
-                <span className="text-slate-600 text-[9px]">–</span>
+                <span className="text-slate-600 text-[8px]">–</span>
               )}
             </div>
-            <span className="text-[9px] text-yellow-400">
+            <span className="text-[8px] text-yellow-400 font-bold">
               {playerState.energyPool.filter(e => !e.used).length}/{playerState.energyPool.length}
             </span>
           </div>
         </div>
 
-        {/* ── CENTER: opponent hand / field / divider / player field / player hand ── */}
-        <div className="flex-1 flex flex-col overflow-hidden">
+        {/* ── CENTER: full play field ── */}
+        <div className="flex-1 flex flex-col overflow-hidden min-w-0">
 
-          {/* Opponent hand strip (face-down) */}
-          <div className="flex-shrink-0 flex items-center justify-center gap-1 py-2 px-4 bg-red-950/20 border-b border-red-900/20">
-            <span className="text-[10px] text-red-400 mr-2 font-semibold">IA ({aiState.hand.length})</span>
-            <div className="flex gap-[-8px] overflow-x-auto scrollbar-hide">
-              {aiState.hand.map((_, idx) => (
-                <div
-                  key={idx}
-                  className="flex-shrink-0"
-                  style={{ marginLeft: idx === 0 ? 0 : -8 }}
-                >
-                  <CardBack size={42} />
-                </div>
-              ))}
-              {aiState.hand.length === 0 && (
-                <span className="text-slate-600 text-xs italic">Mão vazia</span>
+          {/* ── OPPONENT HAND STRIP (top, face-down, full width) ── */}
+          <div className="flex-shrink-0 bg-red-950/30 border-b border-red-900/30 flex items-center px-3 py-1.5 gap-2"
+            style={{ minHeight: 72 }}>
+            <span className="text-[10px] text-red-400 font-bold uppercase tracking-wider flex-shrink-0">
+              IA ({aiState.hand.length})
+            </span>
+            <div className="flex-1 flex items-center justify-center overflow-x-auto scrollbar-hide">
+              <div className="flex items-center">
+                {aiState.hand.map((_, idx) => (
+                  <div
+                    key={idx}
+                    className="flex-shrink-0 transition-transform hover:translate-y-1"
+                    style={{ marginLeft: idx === 0 ? 0 : -18 }}
+                  >
+                    <CardBack size={46} />
+                  </div>
+                ))}
+                {aiState.hand.length === 0 && (
+                  <span className="text-slate-600 text-xs italic">Mão vazia</span>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* ── OPPONENT PLAY ZONE ── */}
+          <div
+            className={`flex-1 flex flex-col items-center justify-center relative transition-colors ${
+              currentPlayer === 'ai' ? 'bg-red-950/25' : 'bg-slate-900/20'
+            }`}
+            style={{ minHeight: 0 }}
+          >
+            {/* Zone label */}
+            <div className="absolute top-1 left-3 flex items-center gap-2 z-10">
+              <span className="text-[10px] text-red-400 font-bold uppercase tracking-wider">
+                IA — Em Jogo ({aiState.playArea.length}/5)
+              </span>
+              {(attackMode || pendingTrainer?.targetType === 'enemy') && (
+                <span className="text-[10px] text-orange-400 animate-pulse font-bold">⟵ Selecione o alvo</span>
               )}
             </div>
-            <div className="ml-auto flex gap-3 text-[10px] text-slate-400">
-              <span>🃏 {aiState.deckCards.length}</span>
-              <span>🗑️ {aiState.discardPile.length}</span>
+            {/* Deck/Discard overlay — top right corner */}
+            <div className="absolute top-1 right-2 flex gap-2 items-center z-10">
+              <div className="flex flex-col items-center gap-0.5">
+                <CardBack size={28} />
+                <span className="text-[8px] text-slate-500">{aiState.deckCards.length}</span>
+              </div>
+              <div className="flex flex-col items-center gap-0.5">
+                {aiState.discardPile.length > 0 ? (
+                  <div className="rounded border border-slate-600 overflow-hidden" style={{ width: 28 }}>
+                    <CardImage card={aiState.discardPile[aiState.discardPile.length - 1]} className="w-full" style={{ height: 39 }} />
+                  </div>
+                ) : (
+                  <div className="rounded border border-dashed border-slate-700 flex items-center justify-center" style={{ width: 28, height: 39 }}>
+                    <span className="text-slate-700 text-[7px]">–</span>
+                  </div>
+                )}
+                <span className="text-[8px] text-slate-500">{aiState.discardPile.length}</span>
+              </div>
+            </div>
+
+            <PlayZone
+              playerState={aiState}
+              isCurrentPlayer={currentPlayer === 'ai'}
+              isOpponent={true}
+              attackMode={attackMode}
+              onSelectAttackTarget={handleSelectAttackTarget}
+              pendingTrainer={pendingTrainer}
+              onSelectTrainerTarget={handleSelectTrainerTarget}
+              cardSize="large"
+            />
+          </div>
+
+          {/* ── CENTER DIVIDER ── */}
+          <div className="flex-shrink-0 relative flex items-center justify-center py-0.5">
+            <div className="absolute inset-x-0 h-px bg-gradient-to-r from-transparent via-slate-500/60 to-transparent" />
+            <div className="relative bg-slate-900 px-3 py-0.5 rounded-full border border-slate-700/60">
+              <span className="text-[9px] text-slate-500 font-semibold tracking-widest uppercase">Campo de Batalha</span>
             </div>
           </div>
 
-          {/* AI play zone */}
-          <div className={`flex-1 flex items-center justify-center p-3 ${
-            currentPlayer === 'ai' ? 'bg-red-950/20' : 'bg-slate-900/30'
-          }`}>
-            <div className="w-full">
-              <div className="flex items-center justify-center gap-2 mb-2">
-                <span className="text-xs text-red-400 font-bold">IA — Em Jogo ({aiState.playArea.length}/5)</span>
-                {(attackMode) && (
-                  <span className="text-xs text-orange-400 animate-pulse">← Selecione o alvo</span>
-                )}
-                {pendingTrainer?.targetType === 'enemy' && (
-                  <span className="text-xs text-orange-400 animate-pulse">← Selecione o alvo</span>
+          {/* ── PLAYER PLAY ZONE ── */}
+          <div
+            className={`flex-1 flex flex-col items-center justify-center relative transition-colors ${
+              isPlayerTurn ? 'bg-blue-950/25' : 'bg-slate-900/20'
+            }`}
+            style={{ minHeight: 0 }}
+          >
+            {/* Zone label */}
+            <div className="absolute top-1 left-3 flex items-center gap-2 z-10">
+              <span className="text-[10px] text-blue-400 font-bold uppercase tracking-wider">
+                Você — Em Jogo ({playerState.playArea.length}/5)
+              </span>
+              {pendingTrainer?.targetType === 'friendly' && (
+                <span className="text-[10px] text-green-400 animate-pulse font-bold">⟵ Selecione o alvo</span>
+              )}
+            </div>
+            {/* Deck/Discard overlay — bottom right corner */}
+            <div className="absolute bottom-1 right-2 flex gap-2 items-center z-10">
+              <div className="flex flex-col items-center gap-0.5">
+                <div
+                  className={`rounded overflow-hidden ${isPlayerTurn && !playerState.energyPlayedThisTurn ? 'cursor-pointer hover:opacity-80 ring-1 ring-yellow-500' : ''}`}
+                  onClick={() => isPlayerTurn && !playerState.energyPlayedThisTurn && handleEnergyPlay('deck')}
+                  title={isPlayerTurn && !playerState.energyPlayedThisTurn ? 'Comprar energia do deck' : 'Deck'}
+                >
+                  <CardBack size={28} />
+                </div>
+                <span className="text-[8px] text-slate-500">{playerState.deckCards.length}</span>
+                {isPlayerTurn && !playerState.energyPlayedThisTurn && (
+                  <span className="text-[7px] text-yellow-500">⚡deck</span>
                 )}
               </div>
-              <PlayZone
-                playerState={aiState}
-                isCurrentPlayer={currentPlayer === 'ai'}
-                isOpponent={true}
-                attackMode={attackMode}
-                onSelectAttackTarget={handleSelectAttackTarget}
-                pendingTrainer={pendingTrainer}
-                onSelectTrainerTarget={handleSelectTrainerTarget}
-              />
-            </div>
-          </div>
-
-          {/* Divider / field center line */}
-          <div className="flex-shrink-0 h-px bg-gradient-to-r from-transparent via-slate-500 to-transparent mx-8" />
-          <div className="flex-shrink-0 flex items-center justify-center py-1">
-            <div className="h-0.5 w-16 bg-slate-600 rounded-full" />
-          </div>
-
-          {/* Player play zone */}
-          <div className={`flex-1 flex items-center justify-center p-3 ${
-            isPlayerTurn ? 'bg-blue-950/20' : 'bg-slate-900/30'
-          }`}>
-            <div className="w-full">
-              <div className="flex items-center justify-center gap-2 mb-2">
-                <span className="text-xs text-blue-400 font-bold">Você — Em Jogo ({playerState.playArea.length}/5)</span>
-                {pendingTrainer?.targetType === 'friendly' && (
-                  <span className="text-xs text-green-400 animate-pulse">← Selecione o alvo</span>
+              <div className="flex flex-col items-center gap-0.5">
+                {playerState.discardPile.length > 0 ? (
+                  <div
+                    className={`rounded overflow-hidden border ${isPlayerTurn && !playerState.energyPlayedThisTurn ? 'border-yellow-400 cursor-pointer hover:opacity-80' : 'border-slate-600'}`}
+                    style={{ width: 28 }}
+                    onClick={() => isPlayerTurn && !playerState.energyPlayedThisTurn && handleEnergyPlay('discard')}
+                    title={isPlayerTurn && !playerState.energyPlayedThisTurn ? 'Usar energia do descarte' : 'Descarte'}
+                  >
+                    <CardImage card={playerState.discardPile[playerState.discardPile.length - 1]} className="w-full" style={{ height: 39 }} />
+                  </div>
+                ) : (
+                  <div className="rounded border border-dashed border-slate-700 flex items-center justify-center" style={{ width: 28, height: 39 }}>
+                    <span className="text-slate-700 text-[7px]">–</span>
+                  </div>
+                )}
+                <span className="text-[8px] text-slate-500">{playerState.discardPile.length}</span>
+                {isPlayerTurn && !playerState.energyPlayedThisTurn && playerState.discardPile.length > 0 && (
+                  <span className="text-[7px] text-yellow-500">⚡desc</span>
                 )}
               </div>
-              <PlayZone
-                playerState={playerState}
-                isCurrentPlayer={isPlayerTurn}
-                isOpponent={false}
-                onAttack={handleAttack}
-                onEvolve={evolveAction}
-                attackMode={attackMode}
-                pendingTrainer={pendingTrainer}
-                onSelectTrainerTarget={handleSelectTrainerTarget}
-              />
             </div>
+
+            <PlayZone
+              playerState={playerState}
+              isCurrentPlayer={isPlayerTurn}
+              isOpponent={false}
+              onAttack={handleAttack}
+              onEvolve={evolveAction}
+              attackMode={attackMode}
+              pendingTrainer={pendingTrainer}
+              onSelectTrainerTarget={handleSelectTrainerTarget}
+              cardSize="large"
+            />
           </div>
 
-          {/* Player hand strip (full width) */}
-          <div className="flex-shrink-0 bg-blue-950/30 border-t border-blue-900/30 p-2">
-            <div className="flex items-center gap-2 mb-1">
-              <span className="text-xs text-blue-300 font-semibold">Mão ({playerState.hand.length})</span>
+          {/* ── PLAYER HAND STRIP (bottom, full width, fan-style) ── */}
+          <div className="flex-shrink-0 bg-blue-950/35 border-t border-blue-900/30" style={{ minHeight: 156 }}>
+            <div className="flex items-center gap-3 px-3 pt-1.5 pb-0.5">
+              <span className="text-xs text-blue-300 font-bold">Mão ({playerState.hand.length})</span>
               {isPlayerTurn && !playerState.energyPlayedThisTurn && (
-                <span className="text-[10px] text-yellow-500/70">⚡ Passe o mouse → clique ⚡ para usar como energia</span>
+                <span className="text-[10px] text-yellow-500/80">⚡ Passe o mouse → clique ⚡ para usar como energia</span>
               )}
               {!isPlayerTurn && (
                 <span className="text-[10px] text-slate-500 italic">Aguardando turno da IA…</span>
               )}
             </div>
-            <div className="flex gap-1 overflow-x-auto scrollbar-hide pb-1 justify-center">
+            <div className="flex items-end justify-center gap-1.5 px-4 pb-2 overflow-x-auto scrollbar-hide">
               {playerState.hand.map((card, idx) => {
                 const isTeleportTarget = pendingTeleport && card.type === 'pokemon' && (card as PokemonCardDef).stage === 'Basic';
                 return (
                   <div
                     key={`${card.id}-${idx}`}
-                    className={`relative card-in-hand rounded-lg cursor-pointer flex-shrink-0 group ${isTeleportTarget ? 'ring-2 ring-indigo-400 animate-pulse' : ''}`}
-                    style={{ width: 90, height: 126 }}
+                    className={`relative card-in-hand rounded-lg cursor-pointer flex-shrink-0 group shadow-lg ${isTeleportTarget ? 'ring-2 ring-indigo-400 animate-pulse' : ''}`}
+                    style={{ width: 100, height: 140 }}
                     onClick={() => handleHandClick(idx)}
                     onMouseEnter={(e) => showTooltip(card, e)}
                     onMouseMove={moveTooltip}
                     onMouseLeave={hideTooltip}
                   >
-                    <CardImage card={card} className="w-full h-full" />
+                    <CardImage card={card} className="w-full h-full rounded-lg" />
                     {card.type === 'item' && (
-                      <div className="absolute bottom-0 left-0 right-0 bg-amber-700/80 text-[8px] text-center text-white rounded-b">ITEM</div>
+                      <div className="absolute bottom-0 left-0 right-0 bg-amber-700/90 text-[8px] text-center text-white rounded-b font-semibold">ITEM</div>
                     )}
                     {card.type === 'supporter' && (
-                      <div className="absolute bottom-0 left-0 right-0 bg-purple-700/80 text-[8px] text-center text-white rounded-b">APOIADOR</div>
+                      <div className="absolute bottom-0 left-0 right-0 bg-purple-700/90 text-[8px] text-center text-white rounded-b font-semibold">APOIADOR</div>
                     )}
                     {isPlayerTurn && !playerState.energyPlayedThisTurn && (
                       <button
@@ -391,85 +461,29 @@ export function GameBoard() {
                 );
               })}
               {playerState.hand.length === 0 && (
-                <span className="text-slate-500 text-xs italic py-8">Mão vazia</span>
+                <span className="text-slate-500 text-sm italic py-10">Mão vazia</span>
               )}
             </div>
           </div>
 
         </div>{/* end center */}
 
-        {/* ── RIGHT SIDEBAR: deck/discard/log ── */}
-        <div className="w-52 flex-shrink-0 flex flex-col bg-slate-800/40 border-l border-slate-700/50 overflow-hidden">
-
-          {/* AI deck + discard */}
-          <div className="p-2 border-b border-slate-700/50 flex-shrink-0">
-            <div className="text-[10px] text-red-400 font-bold mb-1.5 uppercase tracking-wide">IA — Deck & Descarte</div>
-            <div className="flex gap-2 items-center">
-              <div className="flex flex-col items-center gap-0.5">
-                <CardBack size={36} />
-                <span className="text-[9px] text-slate-400">{aiState.deckCards.length} cartas</span>
-              </div>
-              <div className="flex flex-col items-center gap-0.5">
-                {aiState.discardPile.length > 0 ? (
-                  <div className="rounded border border-slate-600" style={{ width: 36 }}>
-                    <CardImage card={aiState.discardPile[aiState.discardPile.length - 1]} className="w-full" style={{ height: 50 }} />
-                  </div>
-                ) : (
-                  <div className="rounded border border-dashed border-slate-600 flex items-center justify-center" style={{ width: 36, height: 50 }}>
-                    <span className="text-slate-600 text-[8px]">–</span>
-                  </div>
-                )}
-                <span className="text-[9px] text-slate-400">{aiState.discardPile.length} desc.</span>
-              </div>
+        {/* ── RIGHT SIDEBAR: log (collapsible) ── */}
+        {logOpen && (
+          <div className="w-48 flex-shrink-0 flex flex-col bg-slate-800/40 border-l border-slate-700/50 overflow-hidden">
+            <div className="flex items-center justify-between px-2 py-1 border-b border-slate-700/50 flex-shrink-0">
+              <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Log</span>
+              <button
+                onClick={() => setLogOpen(false)}
+                className="text-slate-600 hover:text-slate-400 text-xs leading-none"
+              >✕</button>
+            </div>
+            <div className="flex-1 overflow-hidden">
+              <GameLog entries={gameState.log} />
             </div>
           </div>
+        )}
 
-          {/* Game Log — fills remaining space */}
-          <div className="flex-1 overflow-hidden">
-            <GameLog entries={gameState.log} />
-          </div>
-
-          {/* Player deck + discard */}
-          <div className="p-2 border-t border-slate-700/50 flex-shrink-0">
-            <div className="text-[10px] text-blue-400 font-bold mb-1.5 uppercase tracking-wide">Você — Deck & Descarte</div>
-            <div className="flex gap-2 items-center">
-              <div className="flex flex-col items-center gap-0.5">
-                <div
-                  className="rounded cursor-pointer hover:opacity-80 transition-opacity"
-                  onClick={() => isPlayerTurn && !playerState.energyPlayedThisTurn && handleEnergyPlay('deck')}
-                  title={isPlayerTurn && !playerState.energyPlayedThisTurn ? 'Comprar energia do deck' : 'Deck'}
-                >
-                  <CardBack size={36} />
-                </div>
-                <span className="text-[9px] text-slate-400">{playerState.deckCards.length} cartas</span>
-                {isPlayerTurn && !playerState.energyPlayedThisTurn && (
-                  <span className="text-[8px] text-yellow-500">⚡ deck</span>
-                )}
-              </div>
-              <div className="flex flex-col items-center gap-0.5">
-                {playerState.discardPile.length > 0 ? (
-                  <div
-                    className={`rounded border ${isPlayerTurn && !playerState.energyPlayedThisTurn ? 'border-yellow-400 cursor-pointer hover:opacity-80' : 'border-slate-600'}`}
-                    style={{ width: 36 }}
-                    onClick={() => isPlayerTurn && !playerState.energyPlayedThisTurn && handleEnergyPlay('discard')}
-                    title={isPlayerTurn && !playerState.energyPlayedThisTurn ? 'Usar energia do descarte' : 'Descarte'}
-                  >
-                    <CardImage card={playerState.discardPile[playerState.discardPile.length - 1]} className="w-full" style={{ height: 50 }} />
-                  </div>
-                ) : (
-                  <div className="rounded border border-dashed border-slate-600 flex items-center justify-center" style={{ width: 36, height: 50 }}>
-                    <span className="text-slate-600 text-[8px]">–</span>
-                  </div>
-                )}
-                <span className="text-[9px] text-slate-400">{playerState.discardPile.length} desc.</span>
-                {isPlayerTurn && !playerState.energyPlayedThisTurn && playerState.discardPile.length > 0 && (
-                  <span className="text-[8px] text-yellow-500">⚡ desc.</span>
-                )}
-              </div>
-            </div>
-          </div>
-
-        </div>{/* end right sidebar */}
       </div>{/* end main area */}
 
       {tooltip && <CardTooltip card={tooltip.card} x={tooltip.x} y={tooltip.y} />}
