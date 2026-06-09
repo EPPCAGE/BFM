@@ -212,7 +212,7 @@ export function summonPokemon(state: GameState, pid: PlayerId, cardId: string): 
     },
   };
   s = spendEnergy(s, pid, def.retreatCost);
-  return log(s, pid, `${pid === 'player' ? 'Você' : 'IA'} invocou ${def.displayName} (custo: ${def.retreatCost}).`);
+  return log(s, pid, `${pid === 'player' ? 'Você' : 'IA'} invocou ${def.displayName} (evocar: ${def.retreatCost}).`);
 }
 
 // ─── Evolution ─────────────────────────────────────────────────────────────────

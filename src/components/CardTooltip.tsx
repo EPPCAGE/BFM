@@ -65,7 +65,7 @@ export function CardTooltip({ card, x, y }: Props) {
                   {pk.pointValue} {pk.pointValue === 1 ? 'ponto' : 'pontos'}
                 </span>
                 <span className="bg-slate-700 px-1.5 py-0.5 rounded">
-                  Recuo: {pk.retreatCost}⚡
+                  Evocar: {pk.retreatCost}⚡
                 </span>
               </div>
 
