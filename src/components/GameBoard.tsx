@@ -19,9 +19,8 @@ export function GameBoard() {
 
   const [attackMode, setAttackMode] = useState<{ attackerInstanceId: string; attackIndex: number } | null>(null);
   const [pendingTrainer, setPendingTrainer] = useState<PendingTrainer>(null);
-  const [pendingTeleport, setPendingTeleport, ] = useState<{ attackerInstanceId: string; attackIndex: number } | null>(null);
+  const [pendingTeleport, setPendingTeleport] = useState<{ attackerInstanceId: string; attackIndex: number } | null>(null);
 
-  // Play sounds on game events
   const prevResultRef = useRef<string | null>(null);
   const prevLogLenRef = useRef(0);
   useEffect(() => {
@@ -50,13 +49,9 @@ export function GameBoard() {
     if (!gameState) return;
     const attacker = gameState.players.player.playArea.find(pk => pk.instanceId === attackerInstanceId);
     const attack = attacker?.def.attacks[attackIndex];
-    // 0-damage ability-attacks: no target needed
     if (attack && attack.damage === 0 && attack.effectType) {
-      if (attack.effectType === 'teleport') {
-        setPendingTeleport({ attackerInstanceId, attackIndex });
-      } else {
-        abilityAttackAction(attackerInstanceId, attackIndex);
-      }
+      if (attack.effectType === 'teleport') setPendingTeleport({ attackerInstanceId, attackIndex });
+      else abilityAttackAction(attackerInstanceId, attackIndex);
       return;
     }
     if (!canAttack(gameState, 'player', attackerInstanceId, attackIndex)) return;
@@ -70,13 +65,9 @@ export function GameBoard() {
   }
 
   function handleTrainerPlay(cardId: string, signal?: string) {
-    if (signal === '__SELECT_FRIENDLY__') {
-      setPendingTrainer({ cardId, targetType: 'friendly' });
-    } else if (signal === '__SELECT_ENEMY__') {
-      setPendingTrainer({ cardId, targetType: 'enemy' });
-    } else {
-      playTrainerAction(cardId, signal);
-    }
+    if (signal === '__SELECT_FRIENDLY__') setPendingTrainer({ cardId, targetType: 'friendly' });
+    else if (signal === '__SELECT_ENEMY__') setPendingTrainer({ cardId, targetType: 'enemy' });
+    else playTrainerAction(cardId, signal);
   }
 
   function handleSelectTrainerTarget(targetInstanceId: string) {
@@ -99,26 +90,84 @@ export function GameBoard() {
 
   const cancelMode = attackMode || pendingTrainer || pendingTeleport;
 
+  // Context banner config
+  const banner = attackMode
+    ? { bg: 'from-orange-900 to-orange-800', border: 'border-orange-500/50', text: '⚔️  Selecione um Pokémon VULNERÁVEL do oponente para atacar' }
+    : pendingTeleport
+    ? { bg: 'from-indigo-900 to-indigo-800', border: 'border-indigo-400/50', text: '🌀  Teletransporte: clique em um Pokémon Básico da sua mão' }
+    : pendingTrainer?.targetType === 'friendly'
+    ? { bg: 'from-green-900 to-green-800', border: 'border-green-400/50', text: '💊  Selecione um de seus Pokémon como alvo' }
+    : pendingTrainer?.targetType === 'enemy'
+    ? { bg: 'from-purple-900 to-purple-800', border: 'border-purple-400/50', text: '🎯  Ordens do Chefe: selecione um Pokémon PRONTO do oponente' }
+    : gameState.pendingFreeSummon
+    ? { bg: 'from-teal-900 to-teal-800', border: 'border-teal-400/50', text: '🔄  Switch: clique em um Pokémon Básico da sua mão para invocar' }
+    : null;
+
   return (
-    <div className="flex flex-col h-screen bg-slate-900 overflow-hidden">
-      {/* Top Bar */}
-      <div className="flex items-center justify-between px-4 py-2 bg-slate-800 border-b border-slate-700 flex-shrink-0">
+    <div className="flex flex-col h-screen overflow-hidden tcg-mat">
+
+      {/* ── Top Bar ── */}
+      <div
+        className="flex items-center justify-between px-5 py-2 flex-shrink-0"
+        style={{
+          background: 'linear-gradient(180deg,rgba(2,6,23,0.97) 0%,rgba(10,18,40,0.95) 100%)',
+          borderBottom: '1px solid rgba(251,191,36,0.25)',
+          boxShadow: '0 2px 20px rgba(0,0,0,0.7), 0 1px 0 rgba(251,191,36,0.1)',
+        }}
+      >
+        {/* Logo + turn */}
         <div className="flex items-center gap-4">
-          <h1 className="text-lg font-bold text-yellow-400">LORKEMON</h1>
-          <span className="text-sm text-slate-400">Turno {turn}</span>
-          <span className={`text-xs px-2 py-0.5 rounded ${isPlayerTurn ? 'bg-blue-700 text-white' : 'bg-red-700 text-white'}`}>
-            {aiThinking ? '⏳ IA pensando...' : isPlayerTurn ? '🟦 Sua vez' : '🟥 Vez da IA'}
-          </span>
+          <h1
+            className="text-xl font-black tracking-widest"
+            style={{
+              background: 'linear-gradient(135deg,#fde047 0%,#f59e0b 50%,#fde047 100%)',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+              textShadow: 'none',
+              filter: 'drop-shadow(0 0 8px rgba(251,191,36,0.6))',
+            }}
+          >
+            LORKEMON
+          </h1>
+          <div className="flex items-center gap-2">
+            <span className="text-slate-500 text-xs">TURNO</span>
+            <span className="text-white font-bold text-sm">{turn}</span>
+          </div>
+          <div
+            className="flex items-center gap-1.5 px-3 py-0.5 rounded-full text-xs font-bold"
+            style={isPlayerTurn
+              ? { background: 'linear-gradient(135deg,#1d4ed8,#2563eb)', boxShadow: '0 0 12px rgba(37,99,235,0.5)', color: '#fff' }
+              : { background: 'linear-gradient(135deg,#991b1b,#dc2626)', boxShadow: '0 0 12px rgba(220,38,38,0.5)', color: '#fff' }
+            }
+          >
+            {aiThinking ? '⏳ IA pensando…' : isPlayerTurn ? '● Sua vez' : '● Vez da IA'}
+          </div>
         </div>
-        <div className="flex gap-3 text-sm">
-          <span className="text-blue-300">Você: <strong>{players.player.points}</strong>/10</span>
-          <span className="text-red-300">IA: <strong>{players.ai.points}</strong>/10</span>
+
+        {/* Score */}
+        <div className="flex items-center gap-6">
+          <div className="flex items-center gap-2">
+            <div className="w-2 h-2 rounded-full bg-blue-400 shadow-[0_0_6px_#60a5fa]" />
+            <span className="text-slate-400 text-xs">Você</span>
+            <span className="text-white font-black text-lg leading-none">{players.player.points}</span>
+            <span className="text-slate-600 text-xs">/10</span>
+          </div>
+          <div className="w-px h-6 bg-slate-700" />
+          <div className="flex items-center gap-2">
+            <div className="w-2 h-2 rounded-full bg-red-400 shadow-[0_0_6px_#f87171]" />
+            <span className="text-slate-400 text-xs">IA</span>
+            <span className="text-white font-black text-lg leading-none">{players.ai.points}</span>
+            <span className="text-slate-600 text-xs">/10</span>
+          </div>
         </div>
-        <div className="flex gap-2">
+
+        {/* Actions */}
+        <div className="flex items-center gap-2">
           {cancelMode && (
             <button
               onClick={() => { setAttackMode(null); setPendingTrainer(null); setPendingTeleport(null); }}
-              className="px-3 py-1 bg-slate-600 hover:bg-slate-500 text-white text-xs rounded"
+              className="px-3 py-1.5 text-xs font-semibold rounded-lg text-slate-300 transition-all hover:text-white"
+              style={{ background: 'rgba(71,85,105,0.6)', border: '1px solid rgba(100,116,139,0.4)' }}
             >
               ✕ Cancelar
             </button>
@@ -126,31 +175,63 @@ export function GameBoard() {
           {isPlayerTurn && !cancelMode && !aiThinking && gameState.phase !== 'end' && (
             <button
               onClick={endTurnAction}
-              className="px-4 py-1 bg-green-600 hover:bg-green-500 text-white font-bold text-sm rounded"
+              className="px-5 py-1.5 text-sm font-black rounded-lg text-white transition-all hover:scale-105 active:scale-95"
+              style={{
+                background: 'linear-gradient(135deg,#15803d,#16a34a)',
+                boxShadow: '0 0 16px rgba(22,163,74,0.5), 0 2px 8px rgba(0,0,0,0.4)',
+                border: '1px solid rgba(74,222,128,0.3)',
+              }}
             >
               Encerrar Turno →
             </button>
           )}
-          <button onClick={resetGame} className="px-3 py-1 bg-slate-700 hover:bg-slate-600 text-white text-xs rounded">
+          <button
+            onClick={resetGame}
+            className="px-3 py-1.5 text-xs rounded-lg text-slate-400 hover:text-white transition-all"
+            style={{ background: 'rgba(30,41,59,0.8)', border: '1px solid rgba(71,85,105,0.4)' }}
+          >
             Sair
           </button>
         </div>
       </div>
 
-      {/* Result overlay */}
+      {/* ── Context Banner ── */}
+      {banner && (
+        <div
+          className={`flex items-center justify-center gap-2 py-1.5 text-sm font-semibold text-white flex-shrink-0 bg-gradient-to-r ${banner.bg} border-b ${banner.border}`}
+          style={{ boxShadow: '0 2px 12px rgba(0,0,0,0.4)' }}
+        >
+          {banner.text}
+        </div>
+      )}
+
+      {/* ── Result Overlay ── */}
       {result && (
-        <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/70">
-          <div className="bg-slate-800 border border-slate-600 rounded-2xl p-10 text-center shadow-2xl">
-            <div className="text-5xl mb-4">{result === 'player_wins' ? '🏆' : '💀'}</div>
-            <h2 className="text-3xl font-bold mb-2 text-white">
+        <div className="absolute inset-0 z-50 flex items-center justify-center" style={{ background: 'rgba(2,6,23,0.85)', backdropFilter: 'blur(8px)' }}>
+          <div
+            className="result-pop text-center px-16 py-12 rounded-3xl"
+            style={{
+              background: 'linear-gradient(135deg,rgba(15,23,42,0.98),rgba(30,41,59,0.98))',
+              border: result === 'player_wins' ? '1px solid rgba(251,191,36,0.5)' : '1px solid rgba(239,68,68,0.5)',
+              boxShadow: result === 'player_wins'
+                ? '0 0 60px rgba(251,191,36,0.3), 0 24px 64px rgba(0,0,0,0.8)'
+                : '0 0 60px rgba(239,68,68,0.3), 0 24px 64px rgba(0,0,0,0.8)',
+            }}
+          >
+            <div className="text-7xl mb-4">{result === 'player_wins' ? '🏆' : '💀'}</div>
+            <h2 className="text-4xl font-black mb-2 text-white">
               {result === 'player_wins' ? 'Você Venceu!' : 'IA Venceu!'}
             </h2>
-            <p className="text-slate-400 mb-6">
-              Turno {turn} · Placar — Você: {players.player.points} | IA: {players.ai.points}
+            <p className="text-slate-400 mb-8 text-sm">
+              Turno {turn} · Você: <strong className="text-blue-300">{players.player.points}</strong> pts · IA: <strong className="text-red-300">{players.ai.points}</strong> pts
             </p>
             <button
               onClick={resetGame}
-              className="px-8 py-3 bg-yellow-500 hover:bg-yellow-400 text-black font-bold rounded-xl text-lg"
+              className="px-10 py-3 font-black text-lg rounded-2xl text-black transition-all hover:scale-105 active:scale-95"
+              style={{
+                background: 'linear-gradient(135deg,#fde047,#f59e0b)',
+                boxShadow: '0 0 24px rgba(251,191,36,0.6)',
+              }}
             >
               Jogar Novamente
             </button>
@@ -158,46 +239,15 @@ export function GameBoard() {
         </div>
       )}
 
-      {/* Deck search modal */}
+      {/* ── Deck Search Modal ── */}
       {gameState.pendingDeckSearch && (
-        <DeckSearchModal
-          search={gameState.pendingDeckSearch}
-          onSelect={completeDeckSearchAction}
-        />
+        <DeckSearchModal search={gameState.pendingDeckSearch} onSelect={completeDeckSearchAction} />
       )}
 
-      {/* Context banner */}
-      {attackMode && (
-        <div className="bg-orange-700 text-white text-sm text-center py-1 flex-shrink-0">
-          ⚔️ Selecione um Pokémon vulnerável do oponente para atacar
-        </div>
-      )}
-      {pendingTeleport && (
-        <div className="bg-indigo-700 text-white text-sm text-center py-1 flex-shrink-0">
-          🌀 Teletransporte: clique em um Pokémon Básico da sua mão para trocar
-        </div>
-      )}
-      {pendingTrainer?.targetType === 'friendly' && (
-        <div className="bg-green-700 text-white text-sm text-center py-1 flex-shrink-0">
-          💊 Selecione um de seus Pokémon como alvo
-        </div>
-      )}
-      {pendingTrainer?.targetType === 'enemy' && (
-        <div className="bg-purple-700 text-white text-sm text-center py-1 flex-shrink-0">
-          🎯 Ordens do Chefe: selecione um Pokémon PRONTO do oponente para torná-lo VULNERÁVEL
-        </div>
-      )}
-      {gameState.pendingFreeSummon && (
-        <div className="bg-teal-700 text-white text-sm text-center py-1 flex-shrink-0">
-          🔄 Switch: clique em um Pokémon Básico da sua mão para invocar gratuitamente
-        </div>
-      )}
-
-      {/* Main Game Area */}
+      {/* ── Main Area ── */}
       <div className="flex flex-1 overflow-hidden gap-2 p-2">
-        {/* Left: Boards */}
-        <div className="flex flex-col flex-1 gap-2 overflow-y-auto scrollbar-hide">
-          {/* AI Board */}
+        {/* Boards */}
+        <div className="flex flex-col flex-1 gap-0 overflow-y-auto scrollbar-hide rounded-xl overflow-hidden">
           <PlayerBoard
             playerState={players.ai}
             isCurrentPlayer={currentPlayer === 'ai'}
@@ -208,7 +258,9 @@ export function GameBoard() {
             onSelectTrainerTarget={handleSelectTrainerTarget}
           />
 
-          {/* Player Board */}
+          {/* Divider */}
+          <div className="board-divider" />
+
           <PlayerBoard
             playerState={players.player}
             isCurrentPlayer={isPlayerTurn}
@@ -226,8 +278,8 @@ export function GameBoard() {
           />
         </div>
 
-        {/* Right: Hints + Game Log */}
-        <div className="w-72 flex-shrink-0 flex flex-col gap-2 overflow-hidden">
+        {/* Right panel */}
+        <div className="w-64 flex-shrink-0 flex flex-col gap-2 overflow-hidden">
           <HintPanel gameState={gameState} />
           <GameLog entries={gameState.log} />
         </div>

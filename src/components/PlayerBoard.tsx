@@ -227,8 +227,8 @@ export function PlayerBoard({
               : null;
             return (
               <div
-                className="relative rounded-lg overflow-hidden border border-slate-600/60 shadow-[0_2px_10px_rgba(0,0,0,0.5)]"
-                style={{ width: 56, height: 78 }}
+                className="relative rounded-lg overflow-hidden shadow-[0_4px_16px_rgba(0,0,0,0.6)]"
+                style={{ width: 68, height: 95, border: '1px solid rgba(255,255,255,0.1)' }}
                 data-card-hover
                 onMouseEnter={(e) => { if (top && !cardMenu) showTooltip(top, e); }}
                 onMouseMove={moveTooltip}
@@ -244,7 +244,7 @@ export function PlayerBoard({
                     )}
                   </>
                 ) : (
-                  <div className="w-full h-full bg-slate-800 flex items-center justify-center text-slate-600 text-[10px]">vazio</div>
+                  <div className="w-full h-full flex items-center justify-center text-slate-600 text-[10px]" style={{ background: 'rgba(15,23,42,0.8)' }}>vazio</div>
                 )}
               </div>
             );
@@ -270,7 +270,7 @@ export function PlayerBoard({
                   className={`relative card-in-hand rounded-lg cursor-pointer flex-shrink-0 ${
                     isTeleportTarget ? 'ring-2 ring-indigo-400 animate-pulse' : ''
                   } ${isMenuOpen ? 'ring-2 ring-yellow-400' : ''}`}
-                  style={{ width: 90, height: 126 }}
+                  style={{ width: 108, height: 151 }}
                   data-card-hover
                   onClick={(e) => handleHandClick(idx, e)}
                   onMouseEnter={(e) => { if (!cardMenu) showTooltip(card, e); }}
