@@ -146,7 +146,7 @@ export function PlayerBoard({
               <div
                 key={`${card.id}-${idx}`}
                 className="relative card-in-hand rounded-lg cursor-pointer flex-shrink-0"
-                style={{ width: 56, height: 78 }}
+                style={{ width: 90, height: 126 }}
                 onClick={() => handleHandClick(idx)}
                 onContextMenu={(e) => { e.preventDefault(); onPlayEnergy?.('hand', idx); }}
                 onMouseEnter={(e) => showTooltip(card, e)}
