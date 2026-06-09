@@ -145,10 +145,9 @@ export function PlayerBoard({
             {playerState.hand.map((card, idx) => (
               <div
                 key={`${card.id}-${idx}`}
-                className="relative card-in-hand rounded-lg cursor-pointer flex-shrink-0"
+                className="relative card-in-hand rounded-lg cursor-pointer flex-shrink-0 group"
                 style={{ width: 90, height: 126 }}
                 onClick={() => handleHandClick(idx)}
-                onContextMenu={(e) => { e.preventDefault(); onPlayEnergy?.('hand', idx); }}
                 onMouseEnter={(e) => showTooltip(card, e)}
                 onMouseMove={moveTooltip}
                 onMouseLeave={hideTooltip}
@@ -160,6 +159,16 @@ export function PlayerBoard({
                 {card.type === 'supporter' && (
                   <div className="absolute bottom-0 left-0 right-0 bg-purple-700/80 text-[8px] text-center text-white rounded-b">SUPORTE</div>
                 )}
+                {/* Energy button — only show if energy not yet played this turn */}
+                {isCurrentPlayer && !playerState.energyPlayedThisTurn && (
+                  <button
+                    className="absolute top-1 right-1 bg-yellow-500 hover:bg-yellow-400 text-black text-[10px] font-black rounded px-1 py-0.5 opacity-0 group-hover:opacity-100 transition-opacity shadow-lg"
+                    onClick={(e) => { e.stopPropagation(); onPlayEnergy?.('hand', idx); }}
+                    title="Usar como energia"
+                  >
+                    ⚡
+                  </button>
+                )}
               </div>
             ))}
             {playerState.hand.length === 0 && (
@@ -167,7 +176,7 @@ export function PlayerBoard({
             )}
           </div>
           <p className="text-[10px] text-slate-500 mt-1">
-            Clique: Básico = invocar | Trainer = jogar | Botão direito = energia
+            Clique na carta: invocar Pokémon ou jogar Trainer &nbsp;|&nbsp; Passe o mouse e clique ⚡ para usar como energia
           </p>
         </div>
       )}
