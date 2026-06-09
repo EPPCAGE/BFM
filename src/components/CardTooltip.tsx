@@ -116,7 +116,7 @@ export function CardTooltip({ card, x, y }: Props) {
                 <span className={`px-1.5 py-0.5 rounded font-bold ${
                   tr.type === 'supporter' ? 'bg-purple-700 text-white' : 'bg-amber-700 text-white'
                 }`}>
-                  {tr.type === 'supporter' ? 'Suporte' : 'Item'}
+                  {tr.type === 'supporter' ? 'Apoiador' : 'Item'}
                 </span>
                 <span className="bg-slate-700 px-1.5 py-0.5 rounded text-yellow-300">
                   Custo: {tr.cost}⚡
