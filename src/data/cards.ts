@@ -227,6 +227,7 @@ export const POKEMON_CARDS: PokemonCardDef[] = [
   {
     id: 'luxray', displayName: 'Luxray', type: 'pokemon',
     pokemonType: 'Electric', stage: 'Stage2', hp: 130, retreatCost: 2, pointValue: 3,
+    evolvesFrom: 'Magneton',
     tcgId: 'dp1-6', imageUrl: img('dp1-6'),
     attacks: [
       { name: 'Mordida Elétrica', cost: 2, damage: 60 },
@@ -485,8 +486,8 @@ export const TRAINER_CARDS: TrainerCardDef[] = [
   },
   {
     id: 'switch', displayName: 'Switch', type: 'item', cost: 1,
-    effect: 'Devolva 1 Pokémon seu em jogo à mão. Cure todo o dano. Quebre a pilha de evolução. O substituto entra com o mesmo estado (pronto/vulnerável).',
-    tcgId: 'sv1-194', imageUrl: img('sv1-194'),
+    effect: 'Devolva 1 Pokémon seu em jogo à mão. Forma base retorna à mão; estágios de evolução vão ao descarte.',
+    tcgId: 'swsh1-183', imageUrl: img('swsh1-183'),
   },
   {
     id: 'professors-research', displayName: 'Pesquisa do Professor', type: 'supporter', cost: 3,
