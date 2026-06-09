@@ -1,0 +1,52 @@
+@import "tailwindcss";
+
+:root {
+  --color-ready: #22c55e;
+  --color-vulnerable: #ef4444;
+  --color-energy-available: #facc15;
+  --color-energy-used: #78716c;
+}
+
+body {
+  margin: 0;
+  background-color: #0f172a;
+  color: #f1f5f9;
+  font-family: 'Segoe UI', system-ui, sans-serif;
+}
+
+#root {
+  width: 100%;
+  min-height: 100svh;
+}
+
+.card-ready {
+  box-shadow: 0 0 12px 3px var(--color-ready);
+  border: 2px solid var(--color-ready);
+}
+
+.card-vulnerable {
+  box-shadow: 0 0 12px 3px var(--color-vulnerable);
+  border: 2px solid var(--color-vulnerable);
+}
+
+.card-energy-available {
+  box-shadow: 0 0 8px 2px var(--color-energy-available);
+  border: 2px solid var(--color-energy-available);
+}
+
+.card-energy-used {
+  filter: brightness(0.4);
+  transform: rotate(90deg);
+  border: 2px solid var(--color-energy-used);
+}
+
+.card-in-hand {
+  transition: transform 0.15s ease;
+}
+.card-in-hand:hover {
+  transform: translateY(-12px) scale(1.04);
+  z-index: 10;
+}
+
+.scrollbar-hide::-webkit-scrollbar { display: none; }
+.scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
