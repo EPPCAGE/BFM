@@ -252,6 +252,47 @@ export function PlayerBoard({
         </div>
       </div>
 
+      {/* Opponent hand — face down */}
+      {isOpponent && playerState.hand.length > 0 && (
+        <div>
+          <div className="text-[10px] text-slate-500 mb-1 font-bold tracking-widest uppercase flex items-center gap-2">
+            <span className="inline-block w-1.5 h-1.5 rounded-full bg-red-500" />
+            Mão ({playerState.hand.length})
+          </div>
+          <div className="flex gap-1 overflow-x-auto scrollbar-hide pb-1">
+            {playerState.hand.map((_, idx) => (
+              <div
+                key={idx}
+                className="flex-shrink-0 rounded-lg overflow-hidden"
+                style={{
+                  width: 72, height: 100,
+                  background: 'linear-gradient(135deg,#1e1b4b 0%,#312e81 40%,#1e1b4b 100%)',
+                  border: '2px solid rgba(99,102,241,0.4)',
+                  boxShadow: '0 4px 12px rgba(0,0,0,0.6)',
+                }}
+              >
+                {/* Card back pattern */}
+                <div className="w-full h-full flex items-center justify-center relative overflow-hidden">
+                  <div className="absolute inset-1.5 rounded"
+                    style={{
+                      background: 'linear-gradient(135deg,#4338ca,#6d28d9)',
+                      border: '1px solid rgba(167,139,250,0.3)',
+                    }}
+                  />
+                  <div className="absolute inset-3 rounded-sm"
+                    style={{
+                      background: 'radial-gradient(ellipse at center,rgba(196,181,253,0.15) 0%,transparent 70%)',
+                      border: '1px solid rgba(167,139,250,0.2)',
+                    }}
+                  />
+                  <span className="relative text-2xl opacity-60">🎴</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Hand */}
       {!isOpponent && (
         <div>
