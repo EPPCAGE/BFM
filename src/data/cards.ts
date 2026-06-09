@@ -12,8 +12,8 @@ export const POKEMON_CARDS: PokemonCardDef[] = [
     pokemonType: 'Fire', stage: 'Basic', hp: 60, retreatCost: 1, pointValue: 1,
     tcgId: 'base1-46', imageUrl: img('base1-46'),
     attacks: [
-      { name: 'Arranhão', cost: 0, damage: 10 },
-      { name: 'Brasa', cost: 1, damage: 30 },
+      { name: 'Arranhão', cost: 1, damage: 10 },
+      { name: 'Brasa', cost: 2, damage: 30 },
     ],
   },
   {
@@ -22,8 +22,8 @@ export const POKEMON_CARDS: PokemonCardDef[] = [
     evolvesFrom: 'Charmander',
     tcgId: 'base1-24', imageUrl: img('base1-24'),
     attacks: [
-      { name: 'Corte', cost: 1, damage: 30 },
-      { name: 'Chama', cost: 2, damage: 60 },
+      { name: 'Corte', cost: 2, damage: 30 },
+      { name: 'Chama', cost: 3, damage: 60 },
     ],
   },
   {
@@ -32,8 +32,8 @@ export const POKEMON_CARDS: PokemonCardDef[] = [
     evolvesFrom: 'Charmeleon',
     tcgId: 'sv3pt5-6', imageUrl: img('sv3pt5-6'),
     attacks: [
-      { name: 'Chama Ardente', cost: 1, damage: 60 },
-      { name: 'Inferno', cost: 3, damage: 180, effect: 'Descarte 2 energias deste Pokémon.' },
+      { name: 'Chama Ardente', cost: 2, damage: 60 },
+      { name: 'Inferno', cost: 4, damage: 180, effect: 'Descarte 2 energias deste Pokémon.' },
     ],
   },
   {
@@ -41,8 +41,8 @@ export const POKEMON_CARDS: PokemonCardDef[] = [
     pokemonType: 'Fire', stage: 'Basic', hp: 70, retreatCost: 2, pointValue: 1,
     tcgId: 'base4-42', imageUrl: img('base4-42'),
     attacks: [
-      { name: 'Mordida', cost: 0, damage: 20 },
-      { name: 'Flamethrower', cost: 2, damage: 70, effect: 'Descarte 1 energia deste Pokémon.' },
+      { name: 'Mordida', cost: 1, damage: 20 },
+      { name: 'Flamethrower', cost: 3, damage: 70, effect: 'Descarte 1 energia deste Pokémon.' },
     ],
   },
   {
@@ -51,8 +51,8 @@ export const POKEMON_CARDS: PokemonCardDef[] = [
     evolvesFrom: 'Growlithe',
     tcgId: 'base1-23', imageUrl: img('base1-23'),
     attacks: [
-      { name: 'Tackle', cost: 1, damage: 30 },
-      { name: 'Presas de Fogo', cost: 3, damage: 100 },
+      { name: 'Tackle', cost: 2, damage: 30 },
+      { name: 'Presas de Fogo', cost: 4, damage: 100 },
     ],
   },
   {
@@ -60,8 +60,8 @@ export const POKEMON_CARDS: PokemonCardDef[] = [
     pokemonType: 'Fire', stage: 'Basic', hp: 50, retreatCost: 1, pointValue: 1,
     tcgId: 'base1-68', imageUrl: img('base1-68'),
     attacks: [
-      { name: 'Rabo de Fogo', cost: 0, damage: 10 },
-      { name: 'Confusão', cost: 1, damage: 20 },
+      { name: 'Rabo de Fogo', cost: 1, damage: 10 },
+      { name: 'Confusão', cost: 2, damage: 20 },
     ],
   },
   {
@@ -71,7 +71,7 @@ export const POKEMON_CARDS: PokemonCardDef[] = [
     tcgId: 'base1-12', imageUrl: img('base1-12'),
     attacks: [
       { name: 'Confiar', cost: 0, damage: 0, effect: 'Compre 3 cartas.', effectType: 'draw3' },
-      { name: 'Chama Mítica', cost: 2, damage: 80 },
+      { name: 'Chama Mítica', cost: 3, damage: 80 },
     ],
   },
   {
@@ -79,8 +79,8 @@ export const POKEMON_CARDS: PokemonCardDef[] = [
     pokemonType: 'Fire', stage: 'Basic', hp: 70, retreatCost: 2, pointValue: 1,
     tcgId: 'base1-36', imageUrl: img('base1-36'),
     attacks: [
-      { name: 'Soco Ígneo', cost: 1, damage: 30 },
-      { name: 'Rajada de Fogo', cost: 2, damage: 50, effect: 'Descarte 1 energia deste Pokémon.' },
+      { name: 'Soco Ígneo', cost: 2, damage: 30 },
+      { name: 'Rajada de Fogo', cost: 3, damage: 50, effect: 'Descarte 1 energia deste Pokémon.' },
     ],
   },
   {
@@ -89,8 +89,8 @@ export const POKEMON_CARDS: PokemonCardDef[] = [
     evolvesFrom: 'Magmar',
     tcgId: 'dp3-6', imageUrl: img('dp3-6'),
     attacks: [
-      { name: 'Explosão Magma', cost: 2, damage: 70 },
-      { name: 'Canhão de Magma', cost: 4, damage: 150, effect: 'Descarte 3 energias deste Pokémon.' },
+      { name: 'Explosão Magma', cost: 3, damage: 70 },
+      { name: 'Canhão de Magma', cost: 5, damage: 150, effect: 'Descarte 3 energias deste Pokémon.' },
     ],
   },
 
@@ -100,8 +100,8 @@ export const POKEMON_CARDS: PokemonCardDef[] = [
     pokemonType: 'Water', stage: 'Basic', hp: 60, retreatCost: 1, pointValue: 1,
     tcgId: 'base1-63', imageUrl: img('base1-63'),
     attacks: [
-      { name: 'Bolha', cost: 0, damage: 10 },
-      { name: 'Retirada de Concha', cost: 1, damage: 30 },
+      { name: 'Bolha', cost: 1, damage: 10 },
+      { name: 'Retirada de Concha', cost: 2, damage: 30 },
     ],
   },
   {
@@ -111,7 +111,7 @@ export const POKEMON_CARDS: PokemonCardDef[] = [
     tcgId: 'base1-42', imageUrl: img('base1-42'),
     attacks: [
       { name: 'Jato d\'Água', cost: 1, damage: 30 },
-      { name: 'Hidrocanon', cost: 2, damage: 70 },
+      { name: 'Hidrocanon', cost: 3, damage: 70 },
     ],
   },
   {
@@ -120,8 +120,8 @@ export const POKEMON_CARDS: PokemonCardDef[] = [
     evolvesFrom: 'Wartortle',
     tcgId: 'sv3pt5-17', imageUrl: img('sv3pt5-17'),
     attacks: [
-      { name: 'Aqua Canhão', cost: 2, damage: 80 },
-      { name: 'Hidrocanão Supremo', cost: 4, damage: 200 },
+      { name: 'Aqua Canhão', cost: 3, damage: 80 },
+      { name: 'Hidrocanão Supremo', cost: 5, damage: 200 },
     ],
   },
 
@@ -131,8 +131,8 @@ export const POKEMON_CARDS: PokemonCardDef[] = [
     pokemonType: 'Grass', stage: 'Basic', hp: 60, retreatCost: 1, pointValue: 1,
     tcgId: 'base1-44', imageUrl: img('base1-44'),
     attacks: [
-      { name: 'Chicote de Vinha', cost: 0, damage: 10 },
-      { name: 'Pó de Veneno', cost: 1, damage: 20 },
+      { name: 'Chicote de Vinha', cost: 1, damage: 10 },
+      { name: 'Pó de Veneno', cost: 2, damage: 20 },
     ],
   },
   {
@@ -141,8 +141,8 @@ export const POKEMON_CARDS: PokemonCardDef[] = [
     evolvesFrom: 'Bulbasaur',
     tcgId: 'base1-30', imageUrl: img('base1-30'),
     attacks: [
-      { name: 'Chicote de Vinha', cost: 1, damage: 30 },
-      { name: 'Pétalas Cortantes', cost: 2, damage: 60 },
+      { name: 'Chicote de Vinha', cost: 2, damage: 30 },
+      { name: 'Pétalas Cortantes', cost: 3, damage: 60 },
     ],
   },
   {
@@ -151,8 +151,8 @@ export const POKEMON_CARDS: PokemonCardDef[] = [
     evolvesFrom: 'Ivysaur',
     tcgId: 'sv3pt5-4', imageUrl: img('sv3pt5-4'),
     attacks: [
-      { name: 'Pétala Solar', cost: 2, damage: 70, effect: 'Cure 30 de dano deste Pokémon.' },
-      { name: 'Solarbeam', cost: 4, damage: 220 },
+      { name: 'Pétala Solar', cost: 3, damage: 70, effect: 'Cure 30 de dano deste Pokémon.' },
+      { name: 'Solarbeam', cost: 5, damage: 220 },
     ],
   },
   {
@@ -160,8 +160,8 @@ export const POKEMON_CARDS: PokemonCardDef[] = [
     pokemonType: 'Grass', stage: 'Basic', hp: 50, retreatCost: 1, pointValue: 1,
     tcgId: 'base2-57', imageUrl: img('base2-57'),
     attacks: [
-      { name: 'Pó Adormecedor', cost: 0, damage: 10 },
-      { name: 'Absorver', cost: 1, damage: 20 },
+      { name: 'Pó Adormecedor', cost: 1, damage: 10 },
+      { name: 'Absorver', cost: 2, damage: 20 },
     ],
   },
   {
@@ -171,7 +171,7 @@ export const POKEMON_CARDS: PokemonCardDef[] = [
     tcgId: 'base2-38', imageUrl: img('base2-38'),
     attacks: [
       { name: 'Fedor', cost: 0, damage: 0, effect: 'O Pokémon atacante desta rodada perde 20 de dano.', effectType: 'weaken-attacker' },
-      { name: 'Pétalas Acres', cost: 2, damage: 50 },
+      { name: 'Pétalas Acres', cost: 3, damage: 50 },
     ],
   },
   {
@@ -180,8 +180,8 @@ export const POKEMON_CARDS: PokemonCardDef[] = [
     evolvesFrom: 'Gloom',
     tcgId: 'base2-15', imageUrl: img('base2-15'),
     attacks: [
-      { name: 'Pó de Esporos', cost: 1, damage: 30 },
-      { name: 'Pétala Solar', cost: 3, damage: 100, effect: 'Cure 30 de dano deste Pokémon.' },
+      { name: 'Pó de Esporos', cost: 2, damage: 30 },
+      { name: 'Pétala Solar', cost: 4, damage: 100, effect: 'Cure 30 de dano deste Pokémon.' },
     ],
   },
 
@@ -191,8 +191,8 @@ export const POKEMON_CARDS: PokemonCardDef[] = [
     pokemonType: 'Electric', stage: 'Basic', hp: 60, retreatCost: 1, pointValue: 1,
     tcgId: 'base1-58', imageUrl: img('base1-58'),
     attacks: [
-      { name: 'Thundershock', cost: 0, damage: 10 },
-      { name: 'Raio', cost: 1, damage: 30 },
+      { name: 'Thundershock', cost: 1, damage: 10 },
+      { name: 'Raio', cost: 2, damage: 30 },
     ],
   },
   {
@@ -201,8 +201,8 @@ export const POKEMON_CARDS: PokemonCardDef[] = [
     evolvesFrom: 'Pikachu',
     tcgId: 'base1-14', imageUrl: img('base1-14'),
     attacks: [
-      { name: 'Faísca', cost: 1, damage: 40 },
-      { name: 'Raio Trovão', cost: 3, damage: 120 },
+      { name: 'Faísca', cost: 2, damage: 40 },
+      { name: 'Raio Trovão', cost: 4, damage: 120 },
     ],
   },
   {
@@ -210,8 +210,8 @@ export const POKEMON_CARDS: PokemonCardDef[] = [
     pokemonType: 'Electric', stage: 'Basic', hp: 50, retreatCost: 1, pointValue: 1,
     tcgId: 'base1-53', imageUrl: img('base1-53'),
     attacks: [
-      { name: 'Thundershock', cost: 0, damage: 10 },
-      { name: 'Sônico', cost: 1, damage: 20 },
+      { name: 'Thundershock', cost: 1, damage: 10 },
+      { name: 'Sônico', cost: 2, damage: 20 },
     ],
   },
   {
@@ -220,8 +220,8 @@ export const POKEMON_CARDS: PokemonCardDef[] = [
     evolvesFrom: 'Magnemite',
     tcgId: 'base1-9', imageUrl: img('base1-9'),
     attacks: [
-      { name: 'Sônico', cost: 1, damage: 20 },
-      { name: 'Eletrocanon', cost: 3, damage: 100 },
+      { name: 'Sônico', cost: 2, damage: 20 },
+      { name: 'Eletrocanon', cost: 4, damage: 100 },
     ],
   },
   {
@@ -230,8 +230,8 @@ export const POKEMON_CARDS: PokemonCardDef[] = [
     evolvesFrom: 'Magneton',
     tcgId: 'dp1-6', imageUrl: img('dp1-6'),
     attacks: [
-      { name: 'Mordida Elétrica', cost: 2, damage: 60 },
-      { name: 'Relâmpago', cost: 3, damage: 100 },
+      { name: 'Mordida Elétrica', cost: 3, damage: 60 },
+      { name: 'Relâmpago', cost: 4, damage: 100 },
     ],
   },
 
@@ -241,8 +241,8 @@ export const POKEMON_CARDS: PokemonCardDef[] = [
     pokemonType: 'Psychic', stage: 'Basic', hp: 50, retreatCost: 1, pointValue: 1,
     tcgId: 'ex5-68', imageUrl: img('ex5-68'),
     attacks: [
-      { name: 'Ondas Psíquicas', cost: 0, damage: 10 },
-      { name: 'Confundir', cost: 1, damage: 20 },
+      { name: 'Ondas Psíquicas', cost: 1, damage: 10 },
+      { name: 'Confundir', cost: 2, damage: 20 },
     ],
   },
   {
@@ -251,8 +251,8 @@ export const POKEMON_CARDS: PokemonCardDef[] = [
     evolvesFrom: 'Ralts',
     tcgId: 'ex5-40', imageUrl: img('ex5-40'),
     attacks: [
-      { name: 'Onda Psíquica', cost: 1, damage: 20 },
-      { name: 'Psíquico', cost: 2, damage: 50, effect: 'Causa 10 a mais por energia no alvo.' },
+      { name: 'Onda Psíquica', cost: 2, damage: 20 },
+      { name: 'Psíquico', cost: 3, damage: 50, effect: 'Causa 10 a mais por energia no alvo.' },
     ],
   },
   {
@@ -266,8 +266,8 @@ export const POKEMON_CARDS: PokemonCardDef[] = [
       text: 'Os ataques deste Pokémon causam 30 a mais de dano para cada energia no Energy Pool do oponente.',
     },
     attacks: [
-      { name: 'Psico-abraço', cost: 2, damage: 60 },
-      { name: 'Moonblast', cost: 3, damage: 130 },
+      { name: 'Psico-abraço', cost: 3, damage: 60 },
+      { name: 'Moonblast', cost: 4, damage: 130 },
     ],
   },
   {
@@ -276,7 +276,7 @@ export const POKEMON_CARDS: PokemonCardDef[] = [
     tcgId: 'base1-43', imageUrl: img('base1-43'),
     attacks: [
       { name: 'Teletransporte', cost: 0, damage: 0, effect: 'Troque este Pokémon com um da sua mão (se houver). O novo Pokémon entra pronto.', effectType: 'teleport' },
-      { name: 'Confusão', cost: 1, damage: 20 },
+      { name: 'Confusão', cost: 2, damage: 20 },
     ],
   },
   {
@@ -285,8 +285,8 @@ export const POKEMON_CARDS: PokemonCardDef[] = [
     evolvesFrom: 'Abra',
     tcgId: 'base1-32', imageUrl: img('base1-32'),
     attacks: [
-      { name: 'Psíquico', cost: 1, damage: 30 },
-      { name: 'Super Psíquico', cost: 2, damage: 60 },
+      { name: 'Psíquico', cost: 2, damage: 30 },
+      { name: 'Super Psíquico', cost: 3, damage: 60 },
     ],
   },
   {
@@ -300,8 +300,8 @@ export const POKEMON_CARDS: PokemonCardDef[] = [
       text: 'Uma vez no seu turno, mova 1 dano de qualquer Pokémon seu para qualquer outro Pokémon em jogo.',
     },
     attacks: [
-      { name: 'Psicorrasa', cost: 2, damage: 60 },
-      { name: 'Psíquico Supremo', cost: 3, damage: 100 },
+      { name: 'Psicorrasa', cost: 3, damage: 60 },
+      { name: 'Psíquico Supremo', cost: 4, damage: 100 },
     ],
   },
   {
@@ -314,7 +314,7 @@ export const POKEMON_CARDS: PokemonCardDef[] = [
       text: 'Uma vez no seu turno, você pode usar o ataque de qualquer Pokémon em jogo (pague o custo normalmente).',
     },
     attacks: [
-      { name: 'Telepatia', cost: 1, damage: 30 },
+      { name: 'Telepatia', cost: 2, damage: 30 },
     ],
   },
 
@@ -324,8 +324,8 @@ export const POKEMON_CARDS: PokemonCardDef[] = [
     pokemonType: 'Fighting', stage: 'Basic', hp: 70, retreatCost: 2, pointValue: 1,
     tcgId: 'base1-52', imageUrl: img('base1-52'),
     attacks: [
-      { name: 'Murro Baixo', cost: 0, damage: 20 },
-      { name: 'Karatê', cost: 1, damage: 40 },
+      { name: 'Murro Baixo', cost: 1, damage: 20 },
+      { name: 'Karatê', cost: 2, damage: 40 },
     ],
   },
   {
@@ -334,8 +334,8 @@ export const POKEMON_CARDS: PokemonCardDef[] = [
     evolvesFrom: 'Machop',
     tcgId: 'base1-34', imageUrl: img('base1-34'),
     attacks: [
-      { name: 'Murro', cost: 1, damage: 40 },
-      { name: 'Ataque Brutal', cost: 2, damage: 70 },
+      { name: 'Murro', cost: 2, damage: 40 },
+      { name: 'Ataque Brutal', cost: 3, damage: 70 },
     ],
   },
   {
@@ -344,8 +344,8 @@ export const POKEMON_CARDS: PokemonCardDef[] = [
     evolvesFrom: 'Machoke',
     tcgId: 'base1-8', imageUrl: img('base1-8'),
     attacks: [
-      { name: 'Golpe Duplo', cost: 1, damage: 30, damageText: '30×2', effect: 'Ataque duas vezes.' },
-      { name: 'Soco Supremo', cost: 3, damage: 130 },
+      { name: 'Golpe Duplo', cost: 2, damage: 30, damageText: '30×2', effect: 'Ataque duas vezes.' },
+      { name: 'Soco Supremo', cost: 4, damage: 130 },
     ],
   },
   {
@@ -353,8 +353,8 @@ export const POKEMON_CARDS: PokemonCardDef[] = [
     pokemonType: 'Fighting', stage: 'Basic', hp: 60, retreatCost: 1, pointValue: 1,
     tcgId: 'dp2-68', imageUrl: img('dp2-68'),
     attacks: [
-      { name: 'Murro Rápido', cost: 0, damage: 10 },
-      { name: 'Jab', cost: 1, damage: 30 },
+      { name: 'Murro Rápido', cost: 1, damage: 10 },
+      { name: 'Jab', cost: 2, damage: 30 },
     ],
   },
   {
@@ -363,8 +363,8 @@ export const POKEMON_CARDS: PokemonCardDef[] = [
     evolvesFrom: 'Riolu',
     tcgId: 'dp1-5', imageUrl: img('dp1-5'),
     attacks: [
-      { name: 'Ondas de Aura', cost: 1, damage: 30 },
-      { name: 'Esfera de Aura', cost: 2, damage: 80 },
+      { name: 'Ondas de Aura', cost: 2, damage: 30 },
+      { name: 'Esfera de Aura', cost: 3, damage: 80 },
     ],
   },
 
@@ -374,8 +374,8 @@ export const POKEMON_CARDS: PokemonCardDef[] = [
     pokemonType: 'Normal', stage: 'Basic', hp: 60, retreatCost: 1, pointValue: 1,
     tcgId: 'base2-51', imageUrl: img('base2-51'),
     attacks: [
-      { name: 'Tackle', cost: 0, damage: 10 },
-      { name: 'Areia nos Olhos', cost: 1, damage: 20, effect: 'O próximo ataque do oponente causa 20 a menos de dano.' },
+      { name: 'Tackle', cost: 1, damage: 10 },
+      { name: 'Areia nos Olhos', cost: 2, damage: 20, effect: 'O próximo ataque do oponente causa 20 a menos de dano.' },
     ],
   },
   {
@@ -384,7 +384,7 @@ export const POKEMON_CARDS: PokemonCardDef[] = [
     tcgId: 'base2-11', imageUrl: img('base2-11'),
     attacks: [
       { name: 'Barriga de Aço', cost: 0, damage: 0, effect: 'Previne 30 de dano recebido neste turno.', effectType: 'shield30' },
-      { name: 'Body Slam', cost: 3, damage: 90 },
+      { name: 'Body Slam', cost: 4, damage: 90 },
     ],
   },
   {
@@ -392,8 +392,8 @@ export const POKEMON_CARDS: PokemonCardDef[] = [
     pokemonType: 'Normal', stage: 'Basic', hp: 50, retreatCost: 1, pointValue: 1,
     tcgId: 'base2-46', imageUrl: img('base2-46'),
     attacks: [
-      { name: 'Rajada', cost: 0, damage: 10 },
-      { name: 'Investida', cost: 1, damage: 20 },
+      { name: 'Rajada', cost: 1, damage: 10 },
+      { name: 'Investida', cost: 2, damage: 20 },
     ],
   },
   {
@@ -402,8 +402,8 @@ export const POKEMON_CARDS: PokemonCardDef[] = [
     evolvesFrom: 'Pidgey',
     tcgId: 'base1-22', imageUrl: img('base1-22'),
     attacks: [
-      { name: 'Investida', cost: 1, damage: 30 },
-      { name: 'Ventania', cost: 2, damage: 50 },
+      { name: 'Investida', cost: 2, damage: 30 },
+      { name: 'Ventania', cost: 3, damage: 50 },
     ],
   },
   {
@@ -417,8 +417,8 @@ export const POKEMON_CARDS: PokemonCardDef[] = [
       text: 'Uma vez no seu turno, você pode procurar qualquer carta no seu deck e adicioná-la à sua mão. Embaralhe o deck.',
     },
     attacks: [
-      { name: 'Ventania Suprema', cost: 1, damage: 60 },
-      { name: 'Asa de Aço', cost: 2, damage: 120 },
+      { name: 'Ventania Suprema', cost: 2, damage: 60 },
+      { name: 'Asa de Aço', cost: 3, damage: 120 },
     ],
   },
   {
@@ -431,7 +431,7 @@ export const POKEMON_CARDS: PokemonCardDef[] = [
       text: 'Uma vez no seu turno, você pode comprar cartas até ter 5 na mão.',
     },
     attacks: [
-      { name: 'Mordida Forte', cost: 2, damage: 60 },
+      { name: 'Mordida Forte', cost: 3, damage: 60 },
     ],
   },
 ];
