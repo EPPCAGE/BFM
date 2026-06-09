@@ -32,8 +32,16 @@ export function opponent(id: PlayerId): PlayerId {
 // ─── Initialisation ────────────────────────────────────────────────────────────
 
 export function buildPlayer(id: PlayerId, cardIds: string[]): PlayerState {
-  const deck = shuffle(cardIds.map(cid => getCardById(cid)!).filter(Boolean));
-  const hand = deck.splice(0, 7);
+  // Mulligan: redraw up to 3 times if opening hand has no Basic Pokémon
+  let deck = shuffle(cardIds.map(cid => getCardById(cid)!).filter(Boolean));
+  let hand: typeof deck = [];
+  for (let attempt = 0; attempt < 4; attempt++) {
+    hand = deck.slice(0, 7);
+    const hasBasic = hand.some(c => c.type === 'pokemon' && (c as PokemonCardDef).stage === 'Basic');
+    if (hasBasic) break;
+    deck = shuffle(deck); // reshuffle and retry
+  }
+  deck = deck.slice(7);
   return {
     id,
     deckCards: deck,
