@@ -39,7 +39,7 @@ export const POKEMON_CARDS: PokemonCardDef[] = [
   {
     id: 'growlithe', displayName: 'Growlithe', type: 'pokemon',
     pokemonType: 'Fire', stage: 'Basic', hp: 70, retreatCost: 2, pointValue: 1,
-    tcgId: 'base2-28', imageUrl: img('base2-28'),
+    tcgId: 'base4-42', imageUrl: img('base4-42'),
     attacks: [
       { name: 'Mordida', cost: 0, damage: 20 },
       { name: 'Flamethrower', cost: 2, damage: 70, effect: 'Descarte 1 energia deste Pokémon.' },
@@ -372,7 +372,7 @@ export const POKEMON_CARDS: PokemonCardDef[] = [
   {
     id: 'eevee', displayName: 'Eevee', type: 'pokemon',
     pokemonType: 'Normal', stage: 'Basic', hp: 60, retreatCost: 1, pointValue: 1,
-    tcgId: 'base2-33', imageUrl: img('base2-33'),
+    tcgId: 'base2-51', imageUrl: img('base2-51'),
     attacks: [
       { name: 'Tackle', cost: 0, damage: 10 },
       { name: 'Areia nos Olhos', cost: 1, damage: 20, effect: 'O próximo ataque do oponente causa 20 a menos de dano.' },
@@ -381,7 +381,7 @@ export const POKEMON_CARDS: PokemonCardDef[] = [
   {
     id: 'snorlax', displayName: 'Snorlax', type: 'pokemon',
     pokemonType: 'Normal', stage: 'Basic', hp: 150, retreatCost: 4, pointValue: 1,
-    tcgId: 'base1-11', imageUrl: img('base1-11'),
+    tcgId: 'base2-11', imageUrl: img('base2-11'),
     attacks: [
       { name: 'Barriga de Aço', cost: 0, damage: 0, effect: 'Previne 30 de dano recebido neste turno.' },
       { name: 'Body Slam', cost: 3, damage: 90 },
@@ -390,7 +390,7 @@ export const POKEMON_CARDS: PokemonCardDef[] = [
   {
     id: 'pidgey', displayName: 'Pidgey', type: 'pokemon',
     pokemonType: 'Normal', stage: 'Basic', hp: 50, retreatCost: 1, pointValue: 1,
-    tcgId: 'base2-66', imageUrl: img('base2-66'),
+    tcgId: 'base2-46', imageUrl: img('base2-46'),
     attacks: [
       { name: 'Rajada', cost: 0, damage: 10 },
       { name: 'Investida', cost: 1, damage: 20 },
@@ -400,7 +400,7 @@ export const POKEMON_CARDS: PokemonCardDef[] = [
     id: 'pidgeotto', displayName: 'Pidgeotto', type: 'pokemon',
     pokemonType: 'Normal', stage: 'Stage1', hp: 80, retreatCost: 1, pointValue: 2,
     evolvesFrom: 'Pidgey',
-    tcgId: 'base1-20', imageUrl: img('base1-20'),
+    tcgId: 'base1-22', imageUrl: img('base1-22'),
     attacks: [
       { name: 'Investida', cost: 1, damage: 30 },
       { name: 'Ventania', cost: 2, damage: 50 },
@@ -472,7 +472,7 @@ export const TRAINER_CARDS: TrainerCardDef[] = [
   {
     id: 'super-potion', displayName: 'Super Potion', type: 'item', cost: 1,
     effect: 'Cure 80 de dano de 1 Pokémon seu em jogo. Descarte 1 energia do Energy Pool.',
-    tcgId: 'sv1-194', imageUrl: img('sv1-194'),
+    tcgId: 'xy1-128', imageUrl: img('xy1-128'),
   },
   {
     id: 'ordinary-rod', displayName: 'Ordinary Rod', type: 'item', cost: 1,
