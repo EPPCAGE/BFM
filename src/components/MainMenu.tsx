@@ -112,7 +112,7 @@ export function MainMenu() {
       <div className="max-w-4xl w-full bg-slate-800/50 rounded-xl p-4 border border-slate-700">
         <h3 className="text-sm font-bold text-slate-300 mb-2">Regras Rápidas</h3>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs text-slate-400">
-          <div>🏆 <strong className="text-white">20 pontos</strong> para vencer</div>
+          <div>🏆 <strong className="text-white">10 pontos</strong> para vencer</div>
           <div>⚡ Qualquer carta vira energia (1x/turno)</div>
           <div>🛡️ Pokémon começa <span className="text-green-400">PRONTO</span> no seu turno</div>
           <div>⚔️ Atacar torna o Pokémon <span className="text-red-400">VULNERÁVEL</span></div>
