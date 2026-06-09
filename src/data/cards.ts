@@ -541,7 +541,7 @@ export const TRAINER_CARDS: TrainerCardDef[] = [
   },
   {
     id: 'bosss-orders', displayName: 'Ordens do Chefe', type: 'supporter', cost: 3,
-    effect: 'Devolva 1 Pokémon do oponente em jogo à mão dele. Cure todo o dano e quebre a evolução. O oponente deve colocar imediatamente um substituto.',
+    effect: 'Escolha 1 Pokémon PRONTO do oponente. Ele se torna VULNERÁVEL imediatamente.',
     tcgId: 'sv2-172', imageUrl: img('sv2-172'),
   },
 ];

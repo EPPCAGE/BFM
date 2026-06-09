@@ -213,6 +213,20 @@ function aiHard(state: GameState): GameState {
     }
   }
 
+  // Boss's Orders: force a ready opponent pokemon to become vulnerable
+  const handSnap4b = [...s.players[pid].hand];
+  for (const card of handSnap4b) {
+    if (card.id === 'bosss-orders' && canPlayTrainer(s, pid, card.id)) {
+      const readyTarget = s.players[opponent(pid)].playArea
+        .filter(pk => pk.vulnerability === 'ready')
+        .sort((a, b) => b.def.pointValue - a.def.pointValue)[0];
+      if (readyTarget) {
+        s = playTrainer(s, pid, card.id, readyTarget.instanceId);
+        if (s.phase === 'end') return s;
+      }
+    }
+  }
+
   // Heal wounded pokemon using snapshot
   const handSnap4 = [...s.players[pid].hand];
   for (const card of handSnap4) {

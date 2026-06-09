@@ -184,7 +184,7 @@ export function GameBoard() {
       )}
       {pendingTrainer?.targetType === 'enemy' && (
         <div className="bg-purple-700 text-white text-sm text-center py-1 flex-shrink-0">
-          🎯 Selecione um Pokémon do oponente como alvo
+          🎯 Ordens do Chefe: selecione um Pokémon PRONTO do oponente para torná-lo VULNERÁVEL
         </div>
       )}
       {gameState.pendingFreeSummon && (

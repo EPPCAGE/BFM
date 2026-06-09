@@ -610,35 +610,12 @@ function applyTrainerEffect(
     case 'bosss-orders': {
       if (targetInstanceId) {
         const target = opp().playArea.find(pk => pk.instanceId === targetInstanceId);
-        if (target) {
-          const newOppArea = opp().playArea.filter(pk => pk.instanceId !== targetInstanceId);
-          // Return base form to opponent's hand; discard evolved stages
-          const baseCard = target.evolutionStack[0];
-          const discardedEvoCards = target.evolutionStack.slice(1) as import('./types').CardDef[];
-          const newOppDiscard = [...opp().discardPile, ...discardedEvoCards];
-          const newOppHand = [...opp().hand, baseCard];
-          s = {
-            ...s,
-            players: {
-              ...s.players,
-              [opponent(pid)]: {
-                ...opp(),
-                playArea: newOppArea,
-                hand: newOppHand,
-                discardPile: newOppDiscard,
-              },
-            },
-          };
-          // Check exhaustion after forced return
-          const oppAfter = s.players[opponent(pid)];
-          if (
-            oppAfter.playArea.length === 0 &&
-            oppAfter.hand.filter(c => c.type === 'pokemon').length === 0 &&
-            oppAfter.deckCards.filter(c => c.type === 'pokemon').length === 0
-          ) {
-            s = log(s, opponent(pid), 'Não há Pokémon disponíveis. Derrota por exaustão!');
-            s = { ...s, result: pid === 'player' ? 'player_wins' : 'ai_wins', phase: 'end' };
-          }
+        if (target && target.vulnerability === 'ready') {
+          const newOppArea = opp().playArea.map(pk =>
+            pk.instanceId === targetInstanceId ? { ...pk, vulnerability: 'vulnerable' as const } : pk
+          );
+          s = { ...s, players: { ...s.players, [opponent(pid)]: { ...opp(), playArea: newOppArea } } };
+          s = log(s, pid, `${target.def.displayName} foi forçado a ficar vulnerável!`);
         }
       }
       break;

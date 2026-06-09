@@ -170,7 +170,9 @@ export function PlayerBoard({
         <div className="flex flex-wrap gap-2">
           {playerState.playArea.map((pokemon) => {
             const isAttackTarget = !!attackMode && isOpponent && pokemon.vulnerability === 'vulnerable';
-            const isTrainerTarget = isSelectingFriendly || isSelectingEnemy;
+            // Boss's Orders targets only READY opponent pokemon
+            const isTrainerTarget = isSelectingFriendly ||
+              (isSelectingEnemy && pokemon.vulnerability === 'ready');
             const evolutionCard = !isOpponent && isCurrentPlayer
               ? playerState.hand.find(c => c.type === 'pokemon' && (c as PokemonCardDef).evolvesFrom === pokemon.def.displayName) as PokemonCardDef | undefined
               : undefined;
