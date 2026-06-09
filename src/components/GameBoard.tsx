@@ -111,8 +111,8 @@ export function GameBoard() {
           </span>
         </div>
         <div className="flex gap-3 text-sm">
-          <span className="text-blue-300">Você: <strong>{players.player.points}</strong>/20</span>
-          <span className="text-red-300">IA: <strong>{players.ai.points}</strong>/20</span>
+          <span className="text-blue-300">Você: <strong>{players.player.points}</strong>/10</span>
+          <span className="text-red-300">IA: <strong>{players.ai.points}</strong>/10</span>
         </div>
         <div className="flex gap-2">
           {cancelMode && (
