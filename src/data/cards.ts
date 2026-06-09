@@ -228,7 +228,7 @@ export const POKEMON_CARDS: PokemonCardDef[] = [
     id: 'luxray', displayName: 'Luxray', type: 'pokemon',
     pokemonType: 'Electric', stage: 'Stage2', hp: 130, retreatCost: 2, pointValue: 3,
     evolvesFrom: 'Magneton',
-    tcgId: 'dp1-8', imageUrl: img('dp1-8'),
+    tcgId: 'sf-6', imageUrl: img('sf-6'),
     attacks: [
       { name: 'Mordida Elétrica', cost: 3, damage: 60 },
       { name: 'Relâmpago', cost: 4, damage: 100 },
