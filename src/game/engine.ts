@@ -181,7 +181,8 @@ export function canSummon(state: GameState, pid: PlayerId, cardId: string): bool
   const def = getCardById(cardId) as PokemonCardDef;
   if (!def || def.type !== 'pokemon') return false;
   if (def.stage !== 'Basic') return false;
-  if (!state.pendingFreeSummon && availableEnergy(p) < def.retreatCost) return false;
+  // Energy cost only applies when not a free-summon AND play area already has pokemon (first summon is always free)
+  if (!state.pendingFreeSummon && p.playArea.length > 0 && availableEnergy(p) < def.retreatCost) return false;
   return true;
 }
 
@@ -802,11 +803,13 @@ export function endTurn(state: GameState): GameState {
   const pid = state.currentPlayer;
   const nextPid = opponent(pid);
 
-  // If the active player ends their turn with no Pokémon in play AND has had pokemon knocked out, they lose
-  // (only applies after combat — not during initial setup turns)
+  // Lose only if: no pokemon in play AND no Basic pokemon anywhere (hand or deck) AND had a KO before
   const hadKO = state.players[pid].discardPile.some(c => c.type === 'pokemon');
-  if (state.players[pid].playArea.length === 0 && hadKO) {
-    const s = log(state, pid, `${pid === 'player' ? 'Você' : 'IA'} encerrou o turno sem Pokémon em jogo. Derrota!`);
+  const hasBasicAnywhere = (p: typeof state.players[PlayerId]) =>
+    p.hand.some(c => c.type === 'pokemon' && (c as PokemonCardDef).stage === 'Basic') ||
+    p.deckCards.some(c => c.type === 'pokemon' && (c as PokemonCardDef).stage === 'Basic');
+  if (state.players[pid].playArea.length === 0 && hadKO && !hasBasicAnywhere(state.players[pid])) {
+    const s = log(state, pid, `${pid === 'player' ? 'Você' : 'IA'} não tem mais Pokémon Básico. Derrota por exaustão!`);
     return { ...s, result: pid === 'player' ? 'ai_wins' : 'player_wins', phase: 'end' };
   }
 
