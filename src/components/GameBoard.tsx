@@ -3,6 +3,7 @@ import { useGameStore } from '../store/gameStore';
 import { PlayerBoard } from './PlayerBoard';
 import { GameLog } from './GameLog';
 import { DeckSearchModal } from './DeckSearchModal';
+import { HintPanel } from './HintPanel';
 import { canAttack } from '../game/engine';
 
 type PendingTrainer = { cardId: string; targetType: 'friendly' | 'enemy' } | null;
@@ -209,6 +210,8 @@ export function GameBoard() {
           <GameLog entries={gameState.log} />
         </div>
       </div>
+
+      <HintPanel gameState={gameState} />
     </div>
   );
 }
