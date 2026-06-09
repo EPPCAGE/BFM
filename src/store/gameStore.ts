@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import type { GameState } from '../game/types';
 import {
-  initGame, endTurn, canSummon, summonPokemon, canAttack, performAttack,
+  initGame, endTurn, canSummon, summonPokemon, canAttack, performAttack, performAbilityAttack,
   canPlayTrainer, playTrainer, playEnergyFromHand, playEnergyFromDeck,
   playEnergyFromDiscard,
 } from '../game/engine';
@@ -27,6 +27,7 @@ interface GameStore {
   playEnergyFromDiscardAction: () => void;
   summonAction: (cardId: string) => void;
   attackAction: (attackerInstanceId: string, attackIndex: number, targetInstanceId: string) => void;
+  abilityAttackAction: (attackerInstanceId: string, attackIndex: number, handIndex?: number) => void;
   playTrainerAction: (cardId: string, targetInstanceId?: string) => void;
   endTurnAction: () => void;
 }
@@ -85,6 +86,13 @@ export const useGameStore = create<GameStore>((set, get) => ({
     if (!gameState || gameState.currentPlayer !== 'player') return;
     if (!canAttack(gameState, 'player', attackerInstanceId, attackIndex)) return;
     const ns = performAttack(gameState, 'player', attackerInstanceId, attackIndex, targetInstanceId);
+    set({ gameState: ns });
+  },
+
+  abilityAttackAction: (attackerInstanceId, attackIndex, handIndex?) => {
+    const { gameState } = get();
+    if (!gameState || gameState.currentPlayer !== 'player') return;
+    const ns = performAbilityAttack(gameState, 'player', attackerInstanceId, attackIndex, handIndex);
     set({ gameState: ns });
   },
 

@@ -28,6 +28,10 @@ interface Props {
   // Trainer target mode — passed from GameBoard
   pendingTrainer?: { cardId: string; targetType: 'friendly' | 'enemy' } | null;
   onSelectTrainerTarget?: (targetInstanceId: string) => void;
+
+  // Teleport hand selection mode
+  pendingTeleport?: boolean;
+  onSelectTeleportHandCard?: (handIndex: number) => void;
 }
 
 export function PlayerBoard({
@@ -35,6 +39,7 @@ export function PlayerBoard({
   onPlayEnergy, onSummon, onAttack, onPlayTrainer,
   attackMode, onSelectAttackTarget,
   pendingTrainer, onSelectTrainerTarget,
+  pendingTeleport, onSelectTeleportHandCard,
 }: Props) {
   const energy = availableEnergy(playerState);
   const label = isOpponent ? 'Oponente (IA)' : 'Você';
@@ -48,6 +53,14 @@ export function PlayerBoard({
     if (isOpponent || !isCurrentPlayer) return;
     const card = playerState.hand[idx];
     if (!card) return;
+
+    // Teleport selection mode: pick a Basic Pokémon from hand
+    if (pendingTeleport) {
+      if (card.type === 'pokemon' && (card as PokemonCardDef).stage === 'Basic') {
+        onSelectTeleportHandCard?.(idx);
+      }
+      return;
+    }
 
     if (card.type === 'pokemon') {
       const def = card as PokemonCardDef;
@@ -142,10 +155,12 @@ export function PlayerBoard({
         <div>
           <div className="text-xs text-slate-400 mb-1 font-semibold">Mão</div>
           <div className="flex gap-1 overflow-x-auto scrollbar-hide pb-1">
-            {playerState.hand.map((card, idx) => (
+            {playerState.hand.map((card, idx) => {
+              const isTeleportTarget = pendingTeleport && card.type === 'pokemon' && (card as PokemonCardDef).stage === 'Basic';
+              return (
               <div
                 key={`${card.id}-${idx}`}
-                className="relative card-in-hand rounded-lg cursor-pointer flex-shrink-0 group"
+                className={`relative card-in-hand rounded-lg cursor-pointer flex-shrink-0 group ${isTeleportTarget ? 'ring-2 ring-indigo-400 animate-pulse' : ''}`}
                 style={{ width: 90, height: 126 }}
                 onClick={() => handleHandClick(idx)}
                 onMouseEnter={(e) => showTooltip(card, e)}
@@ -170,7 +185,8 @@ export function PlayerBoard({
                   </button>
                 )}
               </div>
-            ))}
+              );
+            })}
             {playerState.hand.length === 0 && (
               <span className="text-slate-500 text-xs italic">Mão vazia</span>
             )}

@@ -301,6 +301,66 @@ export function getLowestPositiveDamageAttack(def: PokemonCardDef): { attack: At
   return candidates[0] ?? null;
 }
 
+// Perform a 0-damage ability-attack (no target, no counterattack, no vulnerability)
+export function performAbilityAttack(
+  state: GameState, pid: PlayerId,
+  attackerInstanceId: string, attackIndex: number,
+  handIndex?: number  // for teleport
+): GameState {
+  let s = state;
+  const p = s.players[pid];
+  const attacker = p.playArea.find(pk => pk.instanceId === attackerInstanceId);
+  if (!attacker) return s;
+
+  const attack = attacker.def.attacks[attackIndex];
+  if (!attack || attack.damage !== 0 || !attack.effectType) return s;
+  if (availableEnergy(p) < attack.cost) return s;
+
+  s = spendEnergy(s, pid, attack.cost);
+  // Mark as VULNERABLE + hasAttackedThisTurn (like real attacks), but no counterattack
+  const newAttacker = { ...attacker, vulnerability: 'vulnerable' as const, hasAttackedThisTurn: true };
+  s = { ...s, players: { ...s.players, [pid]: { ...s.players[pid], playArea: s.players[pid].playArea.map(pk => pk.instanceId === attackerInstanceId ? newAttacker : pk) } } };
+  s = log(s, pid, `${attacker.def.displayName} usou ${attack.name}!`);
+
+  switch (attack.effectType) {
+    case 'draw3': {
+      s = drawCard(s, pid);
+      s = drawCard(s, pid);
+      s = drawCard(s, pid);
+      break;
+    }
+    case 'shield30': {
+      s = { ...s, players: { ...s.players, [pid]: { ...s.players[pid], playArea: s.players[pid].playArea.map(pk => pk.instanceId === attackerInstanceId ? { ...pk, vulnerability: 'vulnerable' as const, hasAttackedThisTurn: true, damageReduction: 30 } : pk) } } };
+      break;
+    }
+    case 'weaken-attacker': {
+      s = { ...s, players: { ...s.players, [pid]: { ...s.players[pid], playArea: s.players[pid].playArea.map(pk => pk.instanceId === attackerInstanceId ? { ...pk, vulnerability: 'vulnerable' as const, hasAttackedThisTurn: true, weakenAttacker: 20 } : pk) } } };
+      break;
+    }
+    case 'teleport': {
+      if (handIndex === undefined) break;
+      const hand = s.players[pid].hand;
+      const handCard = hand[handIndex];
+      if (!handCard || handCard.type !== 'pokemon') break;
+      const newHandCard = handCard as import('./types').PokemonCardDef;
+      if (newHandCard.stage !== 'Basic') break;
+      // Swap: put Abra back in hand, put hand Pokémon into play (ready)
+      const newHand = hand.map((c, i) => i === handIndex ? attacker.def : c);
+      const newInstanceId = `${newHandCard.id}-${Date.now()}`;
+      const newPokemon: import('./types').PokemonInPlay = {
+        instanceId: newInstanceId, cardId: newHandCard.id, def: newHandCard,
+        currentHp: newHandCard.hp, vulnerability: 'ready', hasAttackedThisTurn: false,
+        hasUsedAbilityThisTurn: false, turnsInPlay: 0, evolutionStack: [newHandCard],
+      };
+      const newArea = s.players[pid].playArea.map(pk => pk.instanceId === attackerInstanceId ? newPokemon : pk);
+      s = { ...s, players: { ...s.players, [pid]: { ...s.players[pid], hand: newHand, playArea: newArea } } };
+      s = log(s, pid, `${attacker.def.displayName} voltou para a mão e ${newHandCard.displayName} entrou em jogo!`);
+      break;
+    }
+  }
+  return s;
+}
+
 export function performAttack(
   state: GameState, pid: PlayerId,
   attackerInstanceId: string, attackIndex: number,
@@ -319,14 +379,19 @@ export function performAttack(
 
   const attack = attacker.def.attacks[attackIndex];
   if (!attack) return s;
+  // 0-damage attacks are ability-attacks, not real attacks — use performAbilityAttack
+  if (attack.damage === 0) return s;
   if (availableEnergy(p) < attack.cost) return s;
 
   // Pay cost
   s = spendEnergy(s, pid, attack.cost);
 
-  // Apply damage
-  const damage = attack.damage;
-  const newTargetHp = Math.max(0, target.currentHp - damage);
+  // Apply damage (reduced by target's weakenAttacker debuff or shield)
+  const rawDamage = attack.damage;
+  const weakenPenalty = target.weakenAttacker ?? 0;
+  const damage = Math.max(0, rawDamage - weakenPenalty);
+  const shieldedTarget = { ...target, weakenAttacker: undefined };
+  const newTargetHp = Math.max(0, shieldedTarget.currentHp - Math.max(0, damage - (shieldedTarget.damageReduction ?? 0)));
 
   // Mark attacker as vulnerable and attacked
   const newAttacker = { ...attacker, vulnerability: 'vulnerable' as const, hasAttackedThisTurn: true };
@@ -368,8 +433,8 @@ export function performAttack(
       return { ...s, result: pid === 'player' ? 'player_wins' : 'ai_wins', phase: 'end' };
     }
   } else {
-    // Update target HP
-    const newTarget = { ...target, currentHp: newTargetHp };
+    // Update target HP — clear consumed debuffs
+    const newTarget = { ...target, currentHp: newTargetHp, damageReduction: undefined, weakenAttacker: undefined };
     const newOppArea = opp.playArea.map(pk =>
       pk.instanceId === targetInstanceId ? newTarget : pk
     );
@@ -710,6 +775,8 @@ export function startTurn(state: GameState, pid: PlayerId): GameState {
     hasAttackedThisTurn: false,
     hasUsedAbilityThisTurn: false,
     turnsInPlay: pk.turnsInPlay + 1,
+    damageReduction: undefined,
+    weakenAttacker: undefined,
   }));
 
   s = {

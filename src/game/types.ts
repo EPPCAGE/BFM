@@ -7,12 +7,15 @@ export type PokemonType =
 
 export type AbilityCategory = 'A' | 'B' | 'C' | 'D' | 'E' | 'F';
 
+export type AttackEffectType = 'draw3' | 'shield30' | 'weaken-attacker' | 'teleport';
+
 export interface Attack {
   name: string;
   cost: number;         // total energy count (generic)
   damage: number;       // numeric damage (0 if effect only)
   damageText?: string;  // e.g. "30+" or "50×"
   effect?: string;
+  effectType?: AttackEffectType; // for 0-damage ability-attacks
 }
 
 export interface Ability {
@@ -64,6 +67,8 @@ export interface PokemonInPlay {
   hasUsedAbilityThisTurn: boolean;
   turnsInPlay: number;          // incremented at end of owner's turn
   evolutionStack: PokemonCardDef[]; // [base, stage1, ...] current = last
+  damageReduction?: number;     // damage shield active this turn (shield30)
+  weakenAttacker?: number;      // next attacker deals this much less (fedor)
 }
 
 export interface EnergyCard {
