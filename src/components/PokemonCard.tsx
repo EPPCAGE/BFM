@@ -93,7 +93,7 @@ export function PokemonCard({
             >
               <span className="font-bold">{atk.name}</span>
               <span className="text-yellow-300"> {atk.cost}⚡</span>
-              {atk.damage > 0 && <span className="text-red-300"> {atk.damageText ?? atk.damage}</span>}
+              {atk.damage > 0 ? <span className="text-red-300"> {atk.damageText ?? atk.damage}</span> : <span className="text-purple-300"> ✨</span>}
             </button>
           ))}
         </div>
