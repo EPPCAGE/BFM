@@ -172,25 +172,8 @@ export function PlayerBoard({
         </div>
       )}
 
-      {/* Energy source buttons */}
       {!isOpponent && isCurrentPlayer && !playerState.energyPlayedThisTurn && (
-        <div className="flex gap-2 flex-wrap">
-          <span className="text-xs text-slate-400 self-center">Adicionar energia:</span>
-          <button
-            onClick={() => onPlayEnergy?.('deck')}
-            className="text-xs px-2 py-1 bg-slate-700 hover:bg-slate-600 rounded text-white"
-            disabled={playerState.deckCards.length === 0}
-          >
-            📦 Do Deck
-          </button>
-          <button
-            onClick={() => onPlayEnergy?.('discard')}
-            className="text-xs px-2 py-1 bg-slate-700 hover:bg-slate-600 rounded text-white"
-            disabled={playerState.discardPile.length === 0}
-          >
-            🗑️ Do Descarte
-          </button>
-        </div>
+        <p className="text-[10px] text-yellow-500/70">⚡ Clique direito em uma carta da mão para usar como energia</p>
       )}
 
       {tooltip && <CardTooltip card={tooltip.card} x={tooltip.x} y={tooltip.y} />}
