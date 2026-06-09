@@ -399,97 +399,87 @@ export function performAttack(
 
   // Mark attacker as vulnerable and attacked
   const newAttacker = { ...attacker, vulnerability: 'vulnerable' as const, hasAttackedThisTurn: true };
-  const newPlayerArea = s.players[pid].playArea.map(pk =>
-    pk.instanceId === attackerInstanceId ? newAttacker : pk
-  );
+
+  // Simultaneous counterattack — calculated before applying any results
+  const counterData = getLowestPositiveDamageAttack(shieldedTarget.def);
+  const counterDmg = counterData ? counterData.attack.damage : 0;
+  const newAttackerHp = Math.max(0, newAttacker.currentHp - counterDmg);
 
   s = log(s, pid,
     `${attacker.def.displayName} usou ${attack.name} em ${target.def.displayName} causando ${damage} de dano!`
   );
-
-  if (newTargetHp <= 0) {
-    // Target fainted — award points
-    const points = target.def.pointValue;
-    const newOppArea = opp.playArea.filter(pk => pk.instanceId !== targetInstanceId);
-    const newDiscard = [...opp.discardPile, target.def];
-    const newPlayerPoints = s.players[pid].points + points;
-
-    s = {
-      ...s,
-      players: {
-        ...s.players,
-        [pid]: { ...s.players[pid], playArea: newPlayerArea, points: newPlayerPoints },
-        [opponent(pid)]: { ...opp, playArea: newOppArea, discardPile: newDiscard },
-      },
-    };
-    s = log(s, pid, `${target.def.displayName} foi derrotado! +${points} ponto(s). Total: ${newPlayerPoints}/10`);
-
-    // Check win condition
-    if (newPlayerPoints >= 10) {
-      s = log(s, pid, `${pid === 'player' ? 'Você ganhou' : 'IA ganhou'}! 10 pontos atingidos.`);
-      return { ...s, result: pid === 'player' ? 'player_wins' : 'ai_wins', phase: 'end' };
-    }
-
-    // Check exhaustion — opponent has no pokemon and empty hand and deck
-    const oppAfter = s.players[opponent(pid)];
-    if (oppAfter.playArea.length === 0 && oppAfter.hand.filter(c => c.type === 'pokemon').length === 0 && oppAfter.deckCards.filter(c => c.type === 'pokemon').length === 0) {
-      s = log(s, opponent(pid), 'Não há Pokémon disponíveis. Derrota por exaustão!');
-      return { ...s, result: pid === 'player' ? 'player_wins' : 'ai_wins', phase: 'end' };
-    }
-  } else {
-    // Update target HP — clear consumed debuffs
-    const newTarget = { ...target, currentHp: newTargetHp, damageReduction: undefined, weakenAttacker: undefined };
-    const newOppArea = opp.playArea.map(pk =>
-      pk.instanceId === targetInstanceId ? newTarget : pk
+  if (counterData) {
+    s = log(s, opponent(pid),
+      `${target.def.displayName} contra-atacou simultaneamente com ${counterData.attack.name} causando ${counterDmg} de dano!`
     );
-    s = {
-      ...s,
-      players: {
-        ...s.players,
-        [pid]: { ...s.players[pid], playArea: newPlayerArea },
-        [opponent(pid)]: { ...opp, playArea: newOppArea },
-      },
-    };
+  }
 
-    // Counterattack — automatic if target survives
-    const counterData = getLowestPositiveDamageAttack(newTarget.def);
-    if (counterData) {
-      const counterDmg = counterData.attack.damage;
-      const newAttackerHp = Math.max(0, newAttacker.currentHp - counterDmg);
-      s = log(s, opponent(pid),
-        `${newTarget.def.displayName} contra-atacou com ${counterData.attack.name} causando ${counterDmg} de dano!`
+  // Apply attacker fate (did counter kill it?)
+  const attackerFainted = newAttackerHp <= 0;
+  const targetFainted = newTargetHp <= 0;
+
+  // Build updated areas
+  let newPlayerArea2 = s.players[pid].playArea.map(pk =>
+    pk.instanceId === attackerInstanceId
+      ? { ...newAttacker, currentHp: newAttackerHp }
+      : pk
+  );
+  let newOppArea = targetFainted
+    ? opp.playArea.filter(pk => pk.instanceId !== targetInstanceId)
+    : opp.playArea.map(pk =>
+        pk.instanceId === targetInstanceId
+          ? { ...target, currentHp: newTargetHp, damageReduction: undefined, weakenAttacker: undefined }
+          : pk
       );
+  if (attackerFainted) {
+    newPlayerArea2 = newPlayerArea2.filter(pk => pk.instanceId !== attackerInstanceId);
+  }
 
-      if (newAttackerHp <= 0) {
-        // Attacker fainted from counterattack
-        const counterPoints = newAttacker.def.pointValue;
-        const newArea = s.players[pid].playArea.filter(pk => pk.instanceId !== attackerInstanceId);
-        const newDiscard = [...s.players[pid].discardPile, newAttacker.def];
-        const newOppPoints = s.players[opponent(pid)].points + counterPoints;
+  let playerPoints = s.players[pid].points;
+  let oppPoints = s.players[opponent(pid)].points;
+  const playerDiscard = [...s.players[pid].discardPile];
+  const oppDiscard = [...opp.discardPile];
 
-        s = {
-          ...s,
-          players: {
-            ...s.players,
-            [pid]: { ...s.players[pid], playArea: newArea, discardPile: newDiscard },
-            [opponent(pid)]: { ...s.players[opponent(pid)], points: newOppPoints },
-          },
-        };
-        s = log(s, opponent(pid),
-          `${newAttacker.def.displayName} foi derrotado pelo contra-ataque! +${counterPoints} ponto(s).`
-        );
-        if (newOppPoints >= 10) {
-          s = log(s, opponent(pid), `${opponent(pid) === 'player' ? 'Você ganhou' : 'IA ganhou'}! 10 pontos atingidos.`);
-          return { ...s, result: opponent(pid) === 'player' ? 'player_wins' : 'ai_wins', phase: 'end' };
-        }
-      } else {
-        const counterAttacker = { ...newAttacker, currentHp: newAttackerHp };
-        const finalArea = s.players[pid].playArea.map(pk =>
-          pk.instanceId === attackerInstanceId ? counterAttacker : pk
-        );
-        s = { ...s, players: { ...s.players, [pid]: { ...s.players[pid], playArea: finalArea } } };
-      }
-    }
+  if (targetFainted) {
+    playerPoints += target.def.pointValue;
+    oppDiscard.push(target.def);
+    s = log(s, pid, `${target.def.displayName} foi derrotado! +${target.def.pointValue} ponto(s). Total: ${playerPoints}/10`);
+  }
+  if (attackerFainted) {
+    oppPoints += attacker.def.pointValue;
+    playerDiscard.push(attacker.def);
+    s = log(s, opponent(pid), `${attacker.def.displayName} foi derrotado pelo contra-ataque! +${attacker.def.pointValue} ponto(s). Total: ${oppPoints}/10`);
+  }
+
+  s = {
+    ...s,
+    players: {
+      ...s.players,
+      [pid]: { ...s.players[pid], playArea: newPlayerArea2, points: playerPoints, discardPile: playerDiscard },
+      [opponent(pid)]: { ...opp, playArea: newOppArea, points: oppPoints, discardPile: oppDiscard },
+    },
+  };
+
+  // Check win conditions (target kill wins first, then counter)
+  if (playerPoints >= 10) {
+    s = log(s, pid, `${pid === 'player' ? 'Você ganhou' : 'IA ganhou'}! 10 pontos atingidos.`);
+    return { ...s, result: pid === 'player' ? 'player_wins' : 'ai_wins', phase: 'end' };
+  }
+  if (oppPoints >= 10) {
+    s = log(s, opponent(pid), `${opponent(pid) === 'player' ? 'Você ganhou' : 'IA ganhou'}! 10 pontos atingidos.`);
+    return { ...s, result: opponent(pid) === 'player' ? 'player_wins' : 'ai_wins', phase: 'end' };
+  }
+
+  // Exhaustion checks
+  const oppAfter = s.players[opponent(pid)];
+  if (oppAfter.playArea.length === 0 && oppAfter.hand.filter(c => c.type === 'pokemon').length === 0 && oppAfter.deckCards.filter(c => c.type === 'pokemon').length === 0) {
+    s = log(s, opponent(pid), 'Não há Pokémon disponíveis. Derrota por exaustão!');
+    return { ...s, result: pid === 'player' ? 'player_wins' : 'ai_wins', phase: 'end' };
+  }
+  const playerAfter = s.players[pid];
+  if (playerAfter.playArea.length === 0 && playerAfter.hand.filter(c => c.type === 'pokemon').length === 0 && playerAfter.deckCards.filter(c => c.type === 'pokemon').length === 0) {
+    s = log(s, pid, 'Não há Pokémon disponíveis. Derrota por exaustão!');
+    return { ...s, result: opponent(pid) === 'player' ? 'player_wins' : 'ai_wins', phase: 'end' };
   }
 
   return s;
