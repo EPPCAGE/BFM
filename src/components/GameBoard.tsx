@@ -226,13 +226,12 @@ export function GameBoard() {
           />
         </div>
 
-        {/* Right: Game Log */}
-        <div className="w-72 flex-shrink-0">
+        {/* Right: Hints + Game Log */}
+        <div className="w-72 flex-shrink-0 flex flex-col gap-2 overflow-hidden">
+          <HintPanel gameState={gameState} />
           <GameLog entries={gameState.log} />
         </div>
       </div>
-
-      <HintPanel gameState={gameState} />
     </div>
   );
 }
