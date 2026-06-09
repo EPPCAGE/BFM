@@ -107,7 +107,8 @@ export const useGameStore = create<GameStore>((set, get) => ({
   playTrainerAction: (cardId, targetInstanceId?) => {
     const { gameState } = get();
     if (!gameState || gameState.currentPlayer !== 'player') return;
-    if (!canPlayTrainer(gameState, 'player', cardId)) return;
+    // Skip canPlayTrainer check when providing a target (second phase of target-selection flow)
+    if (!targetInstanceId && !canPlayTrainer(gameState, 'player', cardId)) return;
     set({ gameState: playTrainer(gameState, 'player', cardId, targetInstanceId) });
   },
 
