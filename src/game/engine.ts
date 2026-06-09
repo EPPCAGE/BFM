@@ -353,11 +353,11 @@ export function performAttack(
         [opponent(pid)]: { ...opp, playArea: newOppArea, discardPile: newDiscard },
       },
     };
-    s = log(s, pid, `${target.def.displayName} foi derrotado! +${points} ponto(s). Total: ${newPlayerPoints}/20`);
+    s = log(s, pid, `${target.def.displayName} foi derrotado! +${points} ponto(s). Total: ${newPlayerPoints}/10`);
 
     // Check win condition
-    if (newPlayerPoints >= 20) {
-      s = log(s, pid, `${pid === 'player' ? 'Você ganhou' : 'IA ganhou'}! 20 pontos atingidos.`);
+    if (newPlayerPoints >= 10) {
+      s = log(s, pid, `${pid === 'player' ? 'Você ganhou' : 'IA ganhou'}! 10 pontos atingidos.`);
       return { ...s, result: pid === 'player' ? 'player_wins' : 'ai_wins', phase: 'end' };
     }
 
@@ -409,8 +409,8 @@ export function performAttack(
         s = log(s, opponent(pid),
           `${newAttacker.def.displayName} foi derrotado pelo contra-ataque! +${counterPoints} ponto(s).`
         );
-        if (newOppPoints >= 20) {
-          s = log(s, opponent(pid), `${opponent(pid) === 'player' ? 'Você ganhou' : 'IA ganhou'}! 20 pontos atingidos.`);
+        if (newOppPoints >= 10) {
+          s = log(s, opponent(pid), `${opponent(pid) === 'player' ? 'Você ganhou' : 'IA ganhou'}! 10 pontos atingidos.`);
           return { ...s, result: opponent(pid) === 'player' ? 'player_wins' : 'ai_wins', phase: 'end' };
         }
       } else {
@@ -730,6 +730,18 @@ export function startTurn(state: GameState, pid: PlayerId): GameState {
 
   // Draw a card
   s = drawCard(s, pid);
+  if (s.phase === 'end') return s; // deck out
+
+  // Check exhaustion: no Pokémon in play AND no Pokémon anywhere to place
+  const pAfterDraw = s.players[pid];
+  if (
+    pAfterDraw.playArea.length === 0 &&
+    pAfterDraw.hand.filter(c => c.type === 'pokemon' && (c as PokemonCardDef).stage === 'Basic').length === 0 &&
+    pAfterDraw.deckCards.filter(c => c.type === 'pokemon' && (c as PokemonCardDef).stage === 'Basic').length === 0
+  ) {
+    s = log(s, pid, `${pid === 'player' ? 'Você' : 'IA'} não tem Pokémon Básico disponível. Derrota por exaustão!`);
+    return { ...s, result: pid === 'player' ? 'ai_wins' : 'player_wins', phase: 'end' };
+  }
 
   return log(s, pid, `Turno ${s.turn} — ${pid === 'player' ? 'Sua vez.' : 'Vez da IA.'}`);
 }
