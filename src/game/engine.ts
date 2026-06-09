@@ -700,9 +700,8 @@ export function startTurn(state: GameState, pid: PlayerId): GameState {
   let s = state;
   const p = s.players[pid];
 
-  // Move spent (used) energy cards to discard pile — they are consumed
-  const spentCards = p.energyPool.filter(e => e.used).map(e => e.def);
-  const activePool = p.energyPool.filter(e => !e.used);
+  // Reset all energy to available (pool is cumulative, energy refreshes each turn)
+  const refreshedPool = p.energyPool.map(e => ({ ...e, used: false }));
 
   // Reset Pokémon states and increment turnsInPlay
   const newArea = p.playArea.map(pk => ({
@@ -720,8 +719,7 @@ export function startTurn(state: GameState, pid: PlayerId): GameState {
       [pid]: {
         ...p,
         playArea: newArea,
-        energyPool: activePool,
-        discardPile: [...p.discardPile, ...spentCards],
+        energyPool: refreshedPool,
         supporterPlayedThisTurn: false,
         energyPlayedThisTurn: false,
       },
