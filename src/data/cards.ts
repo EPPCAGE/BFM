@@ -434,6 +434,36 @@ export const POKEMON_CARDS: PokemonCardDef[] = [
       { name: 'Mordida Forte', cost: 3, damage: 60 },
     ],
   },
+
+  // ── Electric (extra) ──
+  {
+    id: 'electabuzz', displayName: 'Electabuzz', type: 'pokemon',
+    pokemonType: 'Electric', stage: 'Basic', hp: 70, retreatCost: 2, pointValue: 1,
+    tcgId: 'base1-20', imageUrl: img('base1-20'),
+    attacks: [
+      { name: 'Thunderpunch', cost: 2, damage: 30 },
+      { name: 'Raio Duplo', cost: 3, damage: 50 },
+    ],
+  },
+  {
+    id: 'electivire', displayName: 'Electivire', type: 'pokemon',
+    pokemonType: 'Electric', stage: 'Stage1', hp: 140, retreatCost: 3, pointValue: 2,
+    evolvesFrom: 'Electabuzz',
+    tcgId: 'dp3-3', imageUrl: img('dp3-3'),
+    attacks: [
+      { name: 'Choque Motor', cost: 3, damage: 70 },
+      { name: 'Motor Drive', cost: 5, damage: 150, effect: 'Descarte 2 energias deste Pokémon.' },
+    ],
+  },
+  {
+    id: 'zapdos', displayName: 'Zapdos', type: 'pokemon',
+    pokemonType: 'Electric', stage: 'Basic', hp: 90, retreatCost: 1, pointValue: 2,
+    tcgId: 'base1-16', imageUrl: img('base1-16'),
+    attacks: [
+      { name: 'Trovão', cost: 2, damage: 40 },
+      { name: 'Tempestade Elétrica', cost: 4, damage: 100, effect: 'Este Pokémon fica vulnerável depois de atacar.' },
+    ],
+  },
 ];
 
 // ─── Trainers ──────────────────────────────────────────────────────────────────

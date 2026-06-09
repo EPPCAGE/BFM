@@ -81,6 +81,43 @@ if (mentesMisteriosas.length !== 60) {
   console.warn(`Mentes Misteriosas tem ${mentesMisteriosas.length} cartas (esperado 60)`);
 }
 
+// ─── Tempestade Elétrica (Electric) — 60 cartas ──────────────────────────────
+// Pokémon: 20 | Trainers: 40
+const tempestadeEletrica: string[] = [
+  // Pikachu/Raichu line ×3 set
+  'pikachu', 'pikachu', 'pikachu',
+  'raichu', 'raichu', 'raichu',
+  // Magnemite/Magneton/Luxray line
+  'magnemite', 'magnemite', 'magnemite',
+  'magneton', 'magneton',
+  'luxray', 'luxray',
+  // Electabuzz/Electivire line
+  'electabuzz', 'electabuzz', 'electabuzz',
+  'electivire', 'electivire',
+  // Zapdos — powerful standalone
+  'zapdos', 'zapdos',
+  // Items (40)
+  'ultra-ball',    'ultra-ball',    'ultra-ball',    'ultra-ball',
+  'nest-ball',     'nest-ball',     'nest-ball',     'nest-ball',
+  'rare-candy',    'rare-candy',    'rare-candy',    'rare-candy',
+  'great-ball',    'great-ball',
+  'level-ball',    'level-ball',
+  'switch',        'switch',
+  'potion',        'potion',        'potion',
+  'super-potion',  'super-potion',
+  'ordinary-rod',  'ordinary-rod',
+  // Supporters
+  'professors-research', 'professors-research', 'professors-research', 'professors-research',
+  'iono',   'iono',   'iono',   'iono',
+  'cynthia', 'cynthia',
+  'hop',    'hop',
+  'bosss-orders', 'bosss-orders', 'bosss-orders',
+];
+
+if (tempestadeEletrica.length !== 60) {
+  console.warn(`Tempestade Elétrica tem ${tempestadeEletrica.length} cartas (esperado 60)`);
+}
+
 export const STARTER_DECKS: DeckDefinition[] = [
   {
     id: 'chamas-da-coragem',
@@ -93,5 +130,11 @@ export const STARTER_DECKS: DeckDefinition[] = [
     name: 'Mentes Misteriosas',
     description: 'Controle psíquico com Gardevoir ex e Alakazam. Habilidades poderosas e manobras de dano.',
     cards: mentesMisteriosas,
+  },
+  {
+    id: 'tempestade-eletrica',
+    name: 'Tempestade Elétrica',
+    description: 'Velocidade elétrica com Raichu, Luxray e Zapdos. Pressão constante e ataques poderosos.',
+    cards: tempestadeEletrica,
   },
 ];
