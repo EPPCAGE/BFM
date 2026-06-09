@@ -216,7 +216,7 @@ export const POKEMON_CARDS: PokemonCardDef[] = [
   },
   {
     id: 'magneton', displayName: 'Magneton', type: 'pokemon',
-    pokemonType: 'Electric', stage: 'Stage1', hp: 80, retreatCost: 2, pointValue: 2,
+    pokemonType: 'Electric', stage: 'Stage1', hp: 80, retreatCost: 1, pointValue: 2,
     evolvesFrom: 'Magnemite',
     tcgId: 'base1-9', imageUrl: img('base1-9'),
     attacks: [
