@@ -70,7 +70,7 @@ export const POKEMON_CARDS: PokemonCardDef[] = [
     evolvesFrom: 'Vulpix',
     tcgId: 'base1-12', imageUrl: img('base1-12'),
     attacks: [
-      { name: 'Confiar', cost: 0, damage: 0, effect: 'Compre 3 cartas.', effectType: 'draw3' },
+      { name: 'Confiar', cost: 1, damage: 0, effect: 'Compre 3 cartas.', effectType: 'draw3' },
       { name: 'Chama Mítica', cost: 3, damage: 80 },
     ],
   },
@@ -170,7 +170,7 @@ export const POKEMON_CARDS: PokemonCardDef[] = [
     evolvesFrom: 'Oddish',
     tcgId: 'base2-38', imageUrl: img('base2-38'),
     attacks: [
-      { name: 'Fedor', cost: 0, damage: 0, effect: 'O Pokémon atacante desta rodada perde 20 de dano.', effectType: 'weaken-attacker' },
+      { name: 'Fedor', cost: 1, damage: 0, effect: 'O Pokémon atacante desta rodada perde 20 de dano.', effectType: 'weaken-attacker' },
       { name: 'Pétalas Acres', cost: 3, damage: 50 },
     ],
   },
@@ -275,7 +275,7 @@ export const POKEMON_CARDS: PokemonCardDef[] = [
     pokemonType: 'Psychic', stage: 'Basic', hp: 50, retreatCost: 1, pointValue: 1,
     tcgId: 'base1-43', imageUrl: img('base1-43'),
     attacks: [
-      { name: 'Teletransporte', cost: 0, damage: 0, effect: 'Troque este Pokémon com um da sua mão (se houver). O novo Pokémon entra pronto.', effectType: 'teleport' },
+      { name: 'Teletransporte', cost: 1, damage: 0, effect: 'Troque este Pokémon com um da sua mão (se houver). O novo Pokémon entra pronto.', effectType: 'teleport' },
       { name: 'Confusão', cost: 2, damage: 20 },
     ],
   },
@@ -383,7 +383,7 @@ export const POKEMON_CARDS: PokemonCardDef[] = [
     pokemonType: 'Normal', stage: 'Basic', hp: 150, retreatCost: 4, pointValue: 1,
     tcgId: 'base2-11', imageUrl: img('base2-11'),
     attacks: [
-      { name: 'Barriga de Aço', cost: 0, damage: 0, effect: 'Previne 30 de dano recebido neste turno.', effectType: 'shield30' },
+      { name: 'Barriga de Aço', cost: 1, damage: 0, effect: 'Previne 30 de dano recebido neste turno.', effectType: 'shield30' },
       { name: 'Body Slam', cost: 4, damage: 90 },
     ],
   },
