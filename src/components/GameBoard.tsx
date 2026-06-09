@@ -155,6 +155,11 @@ export function GameBoard() {
           🎯 Selecione um Pokémon do oponente como alvo
         </div>
       )}
+      {gameState.pendingFreeSummon && (
+        <div className="bg-teal-700 text-white text-sm text-center py-1 flex-shrink-0">
+          🔄 Switch: clique em um Pokémon Básico da sua mão para invocar gratuitamente
+        </div>
+      )}
 
       {/* Main Game Area */}
       <div className="flex flex-1 overflow-hidden gap-2 p-2">

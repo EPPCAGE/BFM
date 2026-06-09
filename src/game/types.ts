@@ -116,6 +116,7 @@ export interface GameState {
   selectedHandCard: string | null;       // instanceId or cardId
   selectedPlayAreaTarget: string | null; // instanceId to attack
   pendingAction: PendingAction | null;
+  pendingFreeSummon: boolean;
   aiThinking: boolean;
 }
 

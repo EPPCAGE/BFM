@@ -69,6 +69,7 @@ export function initGame(playerDeckIds: string[], aiDeckIds: string[]): GameStat
     selectedHandCard: null,
     selectedPlayAreaTarget: null,
     pendingAction: null,
+    pendingFreeSummon: false,
     aiThinking: false,
   };
   return log(state, 'player', 'Jogo iniciado! Turno 1 — Sua vez.');
@@ -178,7 +179,7 @@ export function canSummon(state: GameState, pid: PlayerId, cardId: string): bool
   const def = getCardById(cardId) as PokemonCardDef;
   if (!def || def.type !== 'pokemon') return false;
   if (def.stage !== 'Basic') return false;
-  if (availableEnergy(p) < def.retreatCost) return false;
+  if (!state.pendingFreeSummon && availableEnergy(p) < def.retreatCost) return false;
   return true;
 }
 
@@ -204,15 +205,17 @@ export function summonPokemon(state: GameState, pid: PlayerId, cardId: string): 
   };
 
   const newHand = p.hand.filter((_, i) => i !== handIdx);
+  const free = s.pendingFreeSummon;
   s = {
     ...s,
+    pendingFreeSummon: false,
     players: {
       ...s.players,
       [pid]: { ...p, hand: newHand, playArea: [...p.playArea, instance] },
     },
   };
-  s = spendEnergy(s, pid, def.retreatCost);
-  return log(s, pid, `${pid === 'player' ? 'Você' : 'IA'} invocou ${def.displayName} (evocar: ${def.retreatCost}).`);
+  if (!free) s = spendEnergy(s, pid, def.retreatCost);
+  return log(s, pid, `${pid === 'player' ? 'Você' : 'IA'} invocou ${def.displayName}${free ? ' (grátis via Switch)' : ` (evocar: ${def.retreatCost})`}.`);
 }
 
 // ─── Evolution ─────────────────────────────────────────────────────────────────
@@ -612,18 +615,17 @@ function applyTrainerEffect(
         const target = p().playArea.find(pk => pk.instanceId === targetInstanceId);
         if (target) {
           const newArea = p().playArea.filter(pk => pk.instanceId !== targetInstanceId);
-          // Return base form to hand; discard all evolution stages beyond base
-          const baseCard = target.evolutionStack[0];
-          const discardedEvoCards = target.evolutionStack.slice(1) as import('./types').CardDef[];
+          // Return entire evolution stack to hand
+          const allCards = target.evolutionStack as import('./types').CardDef[];
           s = {
             ...s,
+            pendingFreeSummon: true,
             players: {
               ...s.players,
               [pid]: {
                 ...p(),
                 playArea: newArea,
-                hand: [...p().hand, baseCard],
-                discardPile: [...p().discardPile, ...discardedEvoCards],
+                hand: [...p().hand, ...allCards],
               },
             },
           };
@@ -821,6 +823,6 @@ export function endTurn(state: GameState): GameState {
   }
 
   s = startTurn(s, nextPid);
-  s = { ...s, selectedHandCard: null, selectedPlayAreaTarget: null, pendingAction: null };
+  s = { ...s, selectedHandCard: null, selectedPlayAreaTarget: null, pendingAction: null, pendingFreeSummon: false };
   return s;
 }

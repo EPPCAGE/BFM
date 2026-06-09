@@ -486,7 +486,7 @@ export const TRAINER_CARDS: TrainerCardDef[] = [
   },
   {
     id: 'switch', displayName: 'Switch', type: 'item', cost: 1,
-    effect: 'Devolva 1 Pokémon seu em jogo à mão. Forma base retorna à mão; estágios de evolução vão ao descarte.',
+    effect: 'Devolva 1 Pokémon seu (e suas evoluções) à mão. Em seguida, coloque 1 Pokémon da sua mão em jogo sem custo.',
     tcgId: 'swsh1-183', imageUrl: img('swsh1-183'),
   },
   {
