@@ -3,7 +3,7 @@ import type { PokemonCardDef } from './types';
 import {
   canSummon, summonPokemon, canAttack, performAttack,
   canPlayTrainer, playTrainer, playEnergyFromHand, playEnergyFromDeck,
-  endTurn, opponent, completeDeckSearch,
+  endTurn as engineEndTurn, opponent, completeDeckSearch,
   canEvolve, evolvePokemon,
 } from './engine';
 
@@ -81,6 +81,13 @@ function ensureHasPokemon(state: GameState, pid: PlayerId): GameState {
   return s;
 }
 
+// Always ensure there's a Pokémon in play before ending the AI's turn
+function aiEndTurn(state: GameState, pid: PlayerId): GameState {
+  const s = ensureHasPokemon(state, pid);
+  if (s.phase === 'end') return s;
+  return engineEndTurn(s);
+}
+
 export type AIDifficulty = 'easy' | 'medium' | 'hard' | 'extra-hard';
 
 // ─── Easy AI ──────────────────────────────────────────────────────────────────
@@ -122,7 +129,7 @@ function aiEasy(state: GameState): GameState {
     }
   }
 
-  return endTurn(s);
+  return aiEndTurn(s, pid);
 }
 
 // ─── Medium AI ────────────────────────────────────────────────────────────────
@@ -176,7 +183,7 @@ function aiMedium(state: GameState): GameState {
     }
   }
 
-  return endTurn(s);
+  return aiEndTurn(s, pid);
 }
 
 // ─── Hard AI ──────────────────────────────────────────────────────────────────
@@ -263,7 +270,7 @@ function aiHard(state: GameState): GameState {
     }
   }
 
-  return endTurn(s);
+  return aiEndTurn(s, pid);
 }
 
 // ─── Extra-Hard AI: active multi-step strategic planning ──────────────────────
@@ -523,7 +530,7 @@ function aiExtraHard(state: GameState): GameState {
     }
   }
 
-  return endTurn(s);
+  return aiEndTurn(s, pid);
 }
 
 // ─── Dispatcher ───────────────────────────────────────────────────────────────
