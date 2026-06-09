@@ -87,7 +87,7 @@ export const POKEMON_CARDS: PokemonCardDef[] = [
     id: 'magmortar', displayName: 'Magmortar', type: 'pokemon',
     pokemonType: 'Fire', stage: 'Stage1', hp: 140, retreatCost: 3, pointValue: 2,
     evolvesFrom: 'Magmar',
-    tcgId: 'dp3-6', imageUrl: img('dp3-6'),
+    tcgId: 'dp3-31', imageUrl: img('dp3-31'),
     attacks: [
       { name: 'Explosão Magma', cost: 3, damage: 70 },
       { name: 'Canhão de Magma', cost: 5, damage: 150, effect: 'Descarte 3 energias deste Pokémon.' },
@@ -249,7 +249,7 @@ export const POKEMON_CARDS: PokemonCardDef[] = [
     id: 'kirlia', displayName: 'Kirlia', type: 'pokemon',
     pokemonType: 'Psychic', stage: 'Stage1', hp: 70, retreatCost: 1, pointValue: 2,
     evolvesFrom: 'Ralts',
-    tcgId: 'ex5-40', imageUrl: img('ex5-40'),
+    tcgId: 'ex1-35', imageUrl: img('ex1-35'),
     attacks: [
       { name: 'Onda Psíquica', cost: 2, damage: 20 },
       { name: 'Psíquico', cost: 3, damage: 50, effect: 'Causa 10 a mais por energia no alvo.' },
