@@ -118,15 +118,19 @@ export const useGameStore = create<GameStore>((set, get) => ({
     let ns = endTurn(gameState);
     if (ns.phase === 'end') { set({ gameState: ns }); return; }
 
-    // AI turn (with small delay handled in UI)
     ns = { ...ns, aiThinking: true };
     set({ gameState: ns });
 
     setTimeout(() => {
       const current = get().gameState;
       if (!current) return;
-      const afterAI = runAITurn(current, aiDifficulty);
-      set({ gameState: { ...afterAI, aiThinking: false } });
-    }, 800);
+      const steps = runAITurn(current, aiDifficulty);
+      const STEP_DELAY = 700;
+      steps.forEach((step, i) => {
+        setTimeout(() => {
+          set({ gameState: { ...step, aiThinking: i < steps.length - 1 } });
+        }, i * STEP_DELAY);
+      });
+    }, 600);
   },
 }));

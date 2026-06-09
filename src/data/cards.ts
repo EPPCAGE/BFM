@@ -434,6 +434,24 @@ export const POKEMON_CARDS: PokemonCardDef[] = [
       { name: 'Mordida Forte', cost: 3, damage: 60 },
     ],
   },
+  {
+    id: 'slowpoke', displayName: 'Slowpoke', type: 'pokemon',
+    pokemonType: 'Psychic', stage: 'Basic', hp: 60, retreatCost: 1, pointValue: 1,
+    tcgId: 'fossil-55', imageUrl: img('fossil-55'),
+    attacks: [
+      { name: 'Confusão', cost: 1, damage: 10, effect: 'O oponente pode não conseguir atacar no próximo turno.' },
+      { name: 'Amnésia', cost: 2, damage: 20, effect: 'Reduza 20 de dano do próximo ataque recebido.' },
+    ],
+  },
+  {
+    id: 'jigglypuff', displayName: 'Jigglypuff', type: 'pokemon',
+    pokemonType: 'Normal', stage: 'Basic', hp: 60, retreatCost: 1, pointValue: 1,
+    tcgId: 'jungle-54', imageUrl: img('jungle-54'),
+    attacks: [
+      { name: 'Canção de Ninar', cost: 1, damage: 0, effect: 'O Pokémon oponente fica vulnerável.' },
+      { name: 'Esticão', cost: 2, damage: 20 },
+    ],
+  },
 ];
 
 // ─── Trainers ──────────────────────────────────────────────────────────────────

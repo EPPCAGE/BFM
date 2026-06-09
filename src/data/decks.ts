@@ -54,6 +54,8 @@ const mentesMisteriosas: string[] = [
   'mew', 'mew',
   // Support Pokémon
   'eevee', 'eevee',
+  'slowpoke', 'slowpoke',
+  'jigglypuff', 'jigglypuff',
   'pidgeot-ex',
   // Items
   'ultra-ball',    'ultra-ball',    'ultra-ball',    'ultra-ball',
@@ -62,12 +64,12 @@ const mentesMisteriosas: string[] = [
   'great-ball',    'great-ball',
   'level-ball',    'level-ball',
   'switch',        'switch',
-  'potion',        'potion',        'potion',
-  'super-potion',  'super-potion',
+  'potion',        'potion',
+  'super-potion',
   'ordinary-rod',  'ordinary-rod',
   // Supporters
-  'professors-research', 'professors-research', 'professors-research', 'professors-research',
-  'iono',   'iono',   'iono',   'iono',
+  'professors-research', 'professors-research', 'professors-research',
+  'iono',   'iono',   'iono',
   'cynthia', 'cynthia',
   'hop',    'hop',
   'bosss-orders', 'bosss-orders',
