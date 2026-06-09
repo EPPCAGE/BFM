@@ -464,6 +464,62 @@ export const POKEMON_CARDS: PokemonCardDef[] = [
       { name: 'Tempestade Elétrica', cost: 4, damage: 100, effect: 'Este Pokémon fica vulnerável depois de atacar.' },
     ],
   },
+
+  // ── Fire (extra) ──
+  {
+    id: 'ponyta', displayName: 'Ponyta', type: 'pokemon',
+    pokemonType: 'Fire', stage: 'Basic', hp: 50, retreatCost: 1, pointValue: 1,
+    tcgId: 'base1-60', imageUrl: img('base1-60'),
+    attacks: [
+      { name: 'Brasa', cost: 1, damage: 30 },
+    ],
+  },
+
+  // ── Psychic (extra) ──
+  {
+    id: 'jigglypuff', displayName: 'Jigglypuff', type: 'pokemon',
+    pokemonType: 'Psychic', stage: 'Basic', hp: 60, retreatCost: 1, pointValue: 1,
+    tcgId: 'base1-54', imageUrl: img('base1-54'),
+    attacks: [
+      { name: 'Soco', cost: 1, damage: 20 },
+    ],
+  },
+  {
+    id: 'slowpoke', displayName: 'Slowpoke', type: 'pokemon',
+    pokemonType: 'Psychic', stage: 'Basic', hp: 50, retreatCost: 1, pointValue: 1,
+    tcgId: 'base1-55', imageUrl: img('base1-55'),
+    attacks: [
+      { name: 'Cabeçada', cost: 1, damage: 20 },
+    ],
+  },
+
+  // ── Electric (extra) ──
+  {
+    id: 'voltorb', displayName: 'Voltorb', type: 'pokemon',
+    pokemonType: 'Electric', stage: 'Basic', hp: 40, retreatCost: 1, pointValue: 1,
+    tcgId: 'base1-67', imageUrl: img('base1-67'),
+    attacks: [
+      { name: 'Encontrão', cost: 1, damage: 20 },
+    ],
+  },
+  {
+    id: 'electrode', displayName: 'Electrode', type: 'pokemon',
+    pokemonType: 'Electric', stage: 'Stage1', hp: 90, retreatCost: 1, pointValue: 2,
+    evolvesFrom: 'Voltorb',
+    tcgId: 'base1-21', imageUrl: img('base1-21'),
+    attacks: [
+      { name: 'Choque', cost: 2, damage: 40 },
+      { name: 'Explosão', cost: 4, damage: 100 },
+    ],
+  },
+  {
+    id: 'mareep', displayName: 'Mareep', type: 'pokemon',
+    pokemonType: 'Electric', stage: 'Basic', hp: 50, retreatCost: 1, pointValue: 1,
+    tcgId: 'neo1-56', imageUrl: img('neo1-56'),
+    attacks: [
+      { name: 'Trovãozinho', cost: 1, damage: 20 },
+    ],
+  },
 ];
 
 // ─── Trainers ──────────────────────────────────────────────────────────────────
