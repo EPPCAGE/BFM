@@ -157,7 +157,7 @@ export function PlayerBoard({
                   <div className="absolute bottom-0 left-0 right-0 bg-amber-700/80 text-[8px] text-center text-white rounded-b">ITEM</div>
                 )}
                 {card.type === 'supporter' && (
-                  <div className="absolute bottom-0 left-0 right-0 bg-purple-700/80 text-[8px] text-center text-white rounded-b">SUPORTE</div>
+                  <div className="absolute bottom-0 left-0 right-0 bg-purple-700/80 text-[8px] text-center text-white rounded-b">APOIADOR</div>
                 )}
                 {/* Energy button — only show if energy not yet played this turn */}
                 {isCurrentPlayer && !playerState.energyPlayedThisTurn && (

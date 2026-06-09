@@ -29,7 +29,7 @@ export function CardImage({ card, className = '', style }: Props) {
       src={card.imageUrl}
       alt={card.displayName}
       className={`rounded-lg object-cover ${className}`}
-      style={style}
+      style={{ imageOrientation: 'none', ...style }}
       onError={() => setErrored(true)}
       loading="lazy"
     />
