@@ -1,4 +1,4 @@
-import type { PokemonInPlay } from '../game/types';
+import type { PokemonInPlay, PokemonCardDef } from '../game/types';
 import { CardImage } from './CardImage';
 
 interface Props {
@@ -9,11 +9,14 @@ interface Props {
   showAttacks?: boolean;
   onAttack?: (attackIndex: number) => void;
   canAffordAttack?: (cost: number) => boolean;
+  evolutionCard?: PokemonCardDef;
+  onEvolve?: () => void;
 }
 
 export function PokemonCard({
   pokemon, isSelected, isTargetable, onClick,
   showAttacks, onAttack, canAffordAttack,
+  evolutionCard, onEvolve,
 }: Props) {
   const { def, currentHp, vulnerability } = pokemon;
   const hpPercent = (currentHp / def.hp) * 100;
@@ -65,6 +68,17 @@ export function PokemonCard({
       }`}>
         {vulnerability === 'ready' ? 'PRONTO' : 'VULN'}
       </div>
+
+      {/* Evolve button */}
+      {evolutionCard && onEvolve && (
+        <button
+          className="absolute bottom-8 left-0 right-0 mx-1 bg-purple-600 hover:bg-purple-500 text-white text-[9px] font-bold rounded py-0.5 text-center shadow-lg z-10"
+          onClick={(e) => { e.stopPropagation(); onEvolve(); }}
+          title={`Evoluir para ${evolutionCard.displayName}`}
+        >
+          ↑ {evolutionCard.displayName}
+        </button>
+      )}
 
       {/* Attacks panel (shown on hover if enabled) */}
       {showAttacks && (

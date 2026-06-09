@@ -20,6 +20,7 @@ interface Props {
   onPlayEnergy?: (source: 'hand' | 'deck' | 'discard', index?: number) => void;
   onSummon?: (cardId: string) => void;
   onAttack?: (attackerInstanceId: string, attackIndex: number) => void;
+  onEvolve?: (targetInstanceId: string, evolvedCardId: string) => void;
   onPlayTrainer?: (cardId: string, targetInstanceId?: string) => void;
 
   attackMode?: { attackerInstanceId: string; attackIndex: number } | null;
@@ -36,7 +37,7 @@ interface Props {
 
 export function PlayerBoard({
   playerState, isCurrentPlayer, isOpponent,
-  onPlayEnergy, onSummon, onAttack, onPlayTrainer,
+  onPlayEnergy, onSummon, onAttack, onEvolve, onPlayTrainer,
   attackMode, onSelectAttackTarget,
   pendingTrainer, onSelectTrainerTarget,
   pendingTeleport, onSelectTeleportHandCard,
@@ -124,6 +125,10 @@ export function PlayerBoard({
           {playerState.playArea.map((pokemon) => {
             const isAttackTarget = !!attackMode && isOpponent && pokemon.vulnerability === 'vulnerable';
             const isTrainerTarget = isSelectingFriendly || isSelectingEnemy;
+            // Find evolution card in hand that can evolve this Pokémon
+            const evolutionCard = !isOpponent && isCurrentPlayer
+              ? playerState.hand.find(c => c.type === 'pokemon' && (c as PokemonCardDef).evolvesFrom === pokemon.def.displayName) as PokemonCardDef | undefined
+              : undefined;
             return (
               <div
                 key={pokemon.instanceId}
@@ -134,6 +139,8 @@ export function PlayerBoard({
                 <PokemonCard
                   pokemon={pokemon}
                   isTargetable={isAttackTarget || isTrainerTarget}
+                  evolutionCard={evolutionCard}
+                  onEvolve={evolutionCard ? () => onEvolve?.(pokemon.instanceId, evolutionCard.id) : undefined}
                   showAttacks={!isOpponent && isCurrentPlayer && !pendingTrainer && !attackMode}
                   canAffordAttack={(cost) => energy >= cost}
                   onAttack={(attackIndex) => {

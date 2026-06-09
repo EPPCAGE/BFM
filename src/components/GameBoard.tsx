@@ -10,7 +10,7 @@ export function GameBoard() {
   const {
     gameState, endTurnAction,
     playEnergyFromHandAction, playEnergyFromDeckAction, playEnergyFromDiscardAction,
-    summonAction, attackAction, abilityAttackAction, playTrainerAction, resetGame,
+    summonAction, attackAction, abilityAttackAction, evolveAction, playTrainerAction, resetGame,
   } = useGameStore();
 
   const [attackMode, setAttackMode] = useState<{ attackerInstanceId: string; attackIndex: number } | null>(null);
@@ -179,6 +179,7 @@ export function GameBoard() {
             onPlayEnergy={handleEnergyPlay}
             onSummon={summonAction}
             onAttack={handleAttack}
+            onEvolve={evolveAction}
             onPlayTrainer={handleTrainerPlay}
             attackMode={attackMode}
             pendingTrainer={pendingTrainer}
