@@ -55,6 +55,32 @@ function evolveAll(state: GameState, pid: PlayerId): GameState {
   return s;
 }
 
+// If field is empty, keep playing energy + summoning until a Basic is on the field or no more options
+function ensureHasPokemon(state: GameState, pid: PlayerId): GameState {
+  let s = state;
+  const maxAttempts = 10;
+  for (let i = 0; i < maxAttempts; i++) {
+    if (s.players[pid].playArea.length > 0) break;
+    const basics = s.players[pid].hand.filter(
+      c => c.type === 'pokemon' && (c as PokemonCardDef).stage === 'Basic'
+    ) as PokemonCardDef[];
+    if (basics.length === 0) break;
+    // Try to play energy first if not yet done and we need it
+    if (!s.players[pid].energyPlayedThisTurn) {
+      const nonPokemonIdx = s.players[pid].hand.findIndex(c => c.type !== 'pokemon');
+      if (nonPokemonIdx >= 0) s = playEnergyFromHand(s, pid, nonPokemonIdx);
+      else s = playEnergyFromDeck(s, pid);
+    }
+    // Try to summon the cheapest Basic we can afford
+    const affordable = basics
+      .filter(c => canSummon(s, pid, c.id))
+      .sort((a, b) => a.retreatCost - b.retreatCost);
+    if (affordable.length === 0) break;
+    s = summonPokemon(s, pid, affordable[0].id);
+  }
+  return s;
+}
+
 export type AIDifficulty = 'easy' | 'medium' | 'hard' | 'extra-hard';
 
 // ─── Easy AI ──────────────────────────────────────────────────────────────────
@@ -62,6 +88,9 @@ export type AIDifficulty = 'easy' | 'medium' | 'hard' | 'extra-hard';
 function aiEasy(state: GameState): GameState {
   let s = state;
   const pid: PlayerId = state.currentPlayer;
+
+  s = ensureHasPokemon(s, pid);
+  if (s.phase === 'end') return s;
 
   if (!s.players[pid].energyPlayedThisTurn) {
     const handIdx = s.players[pid].hand.findIndex(c => c.type !== 'pokemon');
@@ -101,6 +130,9 @@ function aiEasy(state: GameState): GameState {
 function aiMedium(state: GameState): GameState {
   let s = state;
   const pid: PlayerId = state.currentPlayer;
+
+  s = ensureHasPokemon(s, pid);
+  if (s.phase === 'end') return s;
 
   if (!s.players[pid].energyPlayedThisTurn) {
     const handIdx = s.players[pid].hand.findIndex(c => c.type !== 'pokemon');
@@ -152,6 +184,9 @@ function aiMedium(state: GameState): GameState {
 function aiHard(state: GameState): GameState {
   let s = state;
   const pid: PlayerId = state.currentPlayer;
+
+  s = ensureHasPokemon(s, pid);
+  if (s.phase === 'end') return s;
 
   if (!s.players[pid].energyPlayedThisTurn) {
     const trainerIdx = s.players[pid].hand.findIndex(c => c.type !== 'pokemon');
@@ -236,6 +271,10 @@ function aiHard(state: GameState): GameState {
 function aiExtraHard(state: GameState): GameState {
   let s = state;
   const pid: PlayerId = state.currentPlayer;
+
+  s = ensureHasPokemon(s, pid);
+  if (s.phase === 'end') return s;
+
   const me = () => s.players[pid];
   const opp = () => s.players[opponent(pid)];
 
