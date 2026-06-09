@@ -457,7 +457,7 @@ export const TRAINER_CARDS: TrainerCardDef[] = [
   {
     id: 'level-ball', displayName: 'Level Ball', type: 'item', cost: 1,
     effect: 'Procure um Pokémon com 90 HP ou menos no deck e adicione à mão.',
-    tcgId: 'bst-129', imageUrl: img('bst-129'),
+    tcgId: 'swsh5-129', imageUrl: img('swsh5-129'),
   },
   {
     id: 'rare-candy', displayName: 'Rare Candy', type: 'item', cost: 1,
@@ -502,7 +502,7 @@ export const TRAINER_CARDS: TrainerCardDef[] = [
   {
     id: 'cynthia', displayName: 'Cynthia', type: 'supporter', cost: 3,
     effect: 'Embaralhe sua mão no deck e compre 6 cartas.',
-    tcgId: 'up-119', imageUrl: img('up-119'),
+    tcgId: 'sm5-119', imageUrl: img('sm5-119'),
   },
   {
     id: 'hop', displayName: 'Hop', type: 'supporter', cost: 3,
