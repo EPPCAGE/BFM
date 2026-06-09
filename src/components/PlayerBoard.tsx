@@ -219,36 +219,37 @@ export function PlayerBoard({
         </div>
 
         {/* Discard Pile */}
-        <div className="flex-shrink-0 flex flex-col items-center gap-1">
-          <div className="text-[10px] text-slate-500 font-bold tracking-widest uppercase">Descarte</div>
-          {(() => {
-            const top = playerState.discardPile.length > 0
-              ? playerState.discardPile[playerState.discardPile.length - 1]
-              : null;
-            return (
-              <div
-                className="relative rounded-lg overflow-hidden shadow-[0_4px_16px_rgba(0,0,0,0.6)]"
-                style={{ width: 68, height: 95, border: '1px solid rgba(255,255,255,0.1)' }}
-                data-card-hover
-                onMouseEnter={(e) => { if (top && !cardMenu) showTooltip(top, e); }}
-                onMouseMove={moveTooltip}
-                onMouseLeave={hideTooltip}
-              >
-                {top ? (
-                  <>
-                    <CardImage card={top} className="w-full h-full" />
-                    {playerState.discardPile.length > 1 && (
-                      <div className="absolute bottom-0 left-0 right-0 bg-black/70 text-[9px] text-center text-slate-300">
-                        ×{playerState.discardPile.length}
-                      </div>
-                    )}
-                  </>
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center text-slate-600 text-[10px]" style={{ background: 'rgba(15,23,42,0.8)' }}>vazio</div>
-                )}
-              </div>
-            );
-          })()}
+        <div className="flex-shrink-0 flex flex-col gap-1" style={{ width: 160 }}>
+          <div className="text-[10px] text-slate-500 font-bold tracking-widest uppercase flex items-center justify-between">
+            <span>Descarte</span>
+            {playerState.discardPile.length > 0 && (
+              <span className="text-slate-600 font-normal">×{playerState.discardPile.length}</span>
+            )}
+          </div>
+          {playerState.discardPile.length === 0 ? (
+            <div className="flex items-center justify-center text-slate-600 text-[10px] rounded-lg" style={{ height: 95, background: 'rgba(15,23,42,0.6)', border: '1px solid rgba(255,255,255,0.06)' }}>
+              vazio
+            </div>
+          ) : (
+            <div className="flex flex-wrap gap-1">
+              {[...playerState.discardPile].reverse().slice(0, 8).map((card, i) => (
+                <div
+                  key={i}
+                  className="relative rounded overflow-hidden flex-shrink-0"
+                  style={{ width: 54, height: 75, border: '1px solid rgba(255,255,255,0.1)', boxShadow: '0 2px 8px rgba(0,0,0,0.5)', opacity: i === 0 ? 1 : 0.75 - i * 0.05 }}
+                  data-card-hover
+                  onMouseEnter={(e) => { if (!cardMenu) showTooltip(card, e); }}
+                  onMouseMove={moveTooltip}
+                  onMouseLeave={hideTooltip}
+                >
+                  <CardImage card={card} className="w-full h-full" />
+                  {i === 0 && (
+                    <div className="absolute top-0 left-0 right-0 bg-yellow-500/80 text-[7px] text-center text-black font-bold leading-tight py-px">TOPO</div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 
