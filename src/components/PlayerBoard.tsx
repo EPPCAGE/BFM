@@ -3,7 +3,9 @@ import type { PokemonCardDef } from '../game/types';
 import { PokemonCard } from './PokemonCard';
 import { EnergyPool } from './EnergyPool';
 import { CardImage } from './CardImage';
+import { CardTooltip } from './CardTooltip';
 import { availableEnergy } from '../game/engine';
+import { useTooltip } from '../hooks/useTooltip';
 
 // Trainers that need a friendly target
 const FRIENDLY_TARGET_TRAINERS = new Set(['potion', 'super-potion', 'switch']);
@@ -36,6 +38,7 @@ export function PlayerBoard({
 }: Props) {
   const energy = availableEnergy(playerState);
   const label = isOpponent ? 'Oponente (IA)' : 'Você';
+  const { tooltip, showTooltip, moveTooltip, hideTooltip } = useTooltip();
 
   // Determine if play area cards are clickable as targets
   const isSelectingFriendly = !isOpponent && pendingTrainer?.targetType === 'friendly';
@@ -87,7 +90,7 @@ export function PlayerBoard({
           )}
         </div>
         <div className="flex gap-4 text-xs text-slate-300">
-          <span>🏆 <strong className="text-white">{playerState.points}</strong>/20</span>
+          <span>🏆 <strong className="text-white">{playerState.points}</strong>/10</span>
           <span>🃏 Deck: {playerState.deckCards.length}</span>
           <span>✋ Mão: {playerState.hand.length}</span>
           <span>⚡ <strong className="text-yellow-300">{energy}</strong></span>
@@ -109,17 +112,23 @@ export function PlayerBoard({
             const isAttackTarget = !!attackMode && isOpponent && pokemon.vulnerability === 'vulnerable';
             const isTrainerTarget = isSelectingFriendly || isSelectingEnemy;
             return (
-              <PokemonCard
+              <div
                 key={pokemon.instanceId}
-                pokemon={pokemon}
-                isTargetable={isAttackTarget || isTrainerTarget}
-                showAttacks={!isOpponent && isCurrentPlayer && !pendingTrainer && !attackMode}
-                canAffordAttack={(cost) => energy >= cost}
-                onAttack={(attackIndex) => {
-                  if (!isOpponent) onAttack?.(pokemon.instanceId, attackIndex);
-                }}
-                onClick={() => handlePlayAreaClick(pokemon.instanceId)}
-              />
+                onMouseEnter={(e) => showTooltip(pokemon.def, e)}
+                onMouseMove={moveTooltip}
+                onMouseLeave={hideTooltip}
+              >
+                <PokemonCard
+                  pokemon={pokemon}
+                  isTargetable={isAttackTarget || isTrainerTarget}
+                  showAttacks={!isOpponent && isCurrentPlayer && !pendingTrainer && !attackMode}
+                  canAffordAttack={(cost) => energy >= cost}
+                  onAttack={(attackIndex) => {
+                    if (!isOpponent) onAttack?.(pokemon.instanceId, attackIndex);
+                  }}
+                  onClick={() => handlePlayAreaClick(pokemon.instanceId)}
+                />
+              </div>
             );
           })}
           {playerState.playArea.length === 0 && (
@@ -138,9 +147,11 @@ export function PlayerBoard({
                 key={`${card.id}-${idx}`}
                 className="relative card-in-hand rounded-lg cursor-pointer flex-shrink-0"
                 style={{ width: 56, height: 78 }}
-                title={card.displayName}
                 onClick={() => handleHandClick(idx)}
                 onContextMenu={(e) => { e.preventDefault(); onPlayEnergy?.('hand', idx); }}
+                onMouseEnter={(e) => showTooltip(card, e)}
+                onMouseMove={moveTooltip}
+                onMouseLeave={hideTooltip}
               >
                 <CardImage card={card} className="w-full h-full" />
                 {card.type === 'item' && (
@@ -181,6 +192,8 @@ export function PlayerBoard({
           </button>
         </div>
       )}
+
+      {tooltip && <CardTooltip card={tooltip.card} x={tooltip.x} y={tooltip.y} />}
     </div>
   );
 }
