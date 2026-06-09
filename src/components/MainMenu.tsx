@@ -8,7 +8,7 @@ import type { PokemonCardDef } from '../game/types';
 export function MainMenu() {
   const { startGame } = useGameStore();
   const [playerDeck, setPlayerDeck] = useState(STARTER_DECKS[0].id);
-  const [difficulty, setDifficulty] = useState<'easy' | 'medium' | 'hard'>('medium');
+  const [difficulty, setDifficulty] = useState<'easy' | 'medium' | 'hard' | 'extra-hard'>('medium');
 
   const aiDeckId = STARTER_DECKS.find(d => d.id !== playerDeck)?.id ?? STARTER_DECKS[1].id;
 
@@ -16,6 +16,7 @@ export function MainMenu() {
     easy: { label: 'Fácil', desc: 'Ataca sempre que possível', color: 'bg-green-700' },
     medium: { label: 'Médio', desc: 'Prioriza alvos de alto valor', color: 'bg-yellow-600' },
     hard: { label: 'Difícil', desc: 'Avalia pontos, vulnerabilidade e economia de energia', color: 'bg-red-700' },
+    'extra-hard': { label: 'Extra Difícil', desc: 'Estratégia ativa: combos, Boss\'s Orders, cura e recuo inteligente', color: 'bg-purple-700' },
   };
 
   // Preview: get some pokemon from the selected deck

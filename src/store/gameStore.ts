@@ -6,10 +6,8 @@ import {
   canPlayTrainer, playTrainer, playEnergyFromHand, playEnergyFromDeck,
   playEnergyFromDiscard, completeDeckSearch,
 } from '../game/engine';
-import { runAITurn } from '../game/ai';
+import { runAITurn, type AIDifficulty } from '../game/ai';
 import { STARTER_DECKS } from '../data/decks';
-
-type AIDifficulty = 'easy' | 'medium' | 'hard';
 
 interface GameStore {
   gameState: GameState | null;
