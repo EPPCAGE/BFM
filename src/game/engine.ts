@@ -822,8 +822,10 @@ export function endTurn(state: GameState): GameState {
   const pid = state.currentPlayer;
   const nextPid = opponent(pid);
 
-  // If the active player ends their turn with no Pokémon in play, they lose
-  if (state.players[pid].playArea.length === 0) {
+  // If the active player ends their turn with no Pokémon in play AND has had pokemon knocked out, they lose
+  // (only applies after combat — not during initial setup turns)
+  const hadKO = state.players[pid].discardPile.some(c => c.type === 'pokemon');
+  if (state.players[pid].playArea.length === 0 && hadKO) {
     const s = log(state, pid, `${pid === 'player' ? 'Você' : 'IA'} encerrou o turno sem Pokémon em jogo. Derrota!`);
     return { ...s, result: pid === 'player' ? 'ai_wins' : 'player_wins', phase: 'end' };
   }
