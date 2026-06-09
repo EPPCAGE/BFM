@@ -69,6 +69,7 @@ export function initGame(playerDeckIds: string[], aiDeckIds: string[]): GameStat
     selectedHandCard: null,
     selectedPlayAreaTarget: null,
     pendingAction: null,
+    pendingDeckSearch: null,
     pendingFreeSummon: false,
     aiThinking: false,
   };
@@ -544,49 +545,30 @@ function applyTrainerEffect(
 
   switch (def.id) {
     case 'ultra-ball': {
-      // Discard 2 from hand, search Pokémon (handled by UI — here we just draw 1 for simplicity if auto)
-      // Draw first Pokemon from deck as substitute
-      const pkIdx = p().deckCards.findIndex(c => c.type === 'pokemon');
-      if (pkIdx >= 0) {
-        const card = p().deckCards[pkIdx];
-        const newDeck = p().deckCards.filter((_, i) => i !== pkIdx);
-        s = { ...s, players: { ...s.players, [pid]: { ...p(), deckCards: shuffle(newDeck), hand: [...p().hand, card] } } };
+      const candidates = p().deckCards.filter(c => c.type === 'pokemon');
+      if (candidates.length > 0) {
+        s = { ...s, pendingDeckSearch: { trainerCardId: def.id, candidates, action: 'add-to-hand' } };
       }
       break;
     }
     case 'nest-ball': {
-      // Place a basic Pokémon from deck into play area
-      const pkIdx = p().deckCards.findIndex(c => c.type === 'pokemon' && (c as PokemonCardDef).stage === 'Basic');
-      if (pkIdx >= 0 && p().playArea.length < 5) {
-        const def2 = p().deckCards[pkIdx] as PokemonCardDef;
-        const inst: PokemonInPlay = {
-          instanceId: newId(), cardId: def2.id, def: def2,
-          currentHp: def2.hp, vulnerability: 'vulnerable',
-          hasAttackedThisTurn: false, hasUsedAbilityThisTurn: false,
-          turnsInPlay: 0, evolutionStack: [def2],
-        };
-        const newDeck = p().deckCards.filter((_, i) => i !== pkIdx);
-        s = { ...s, players: { ...s.players, [pid]: { ...p(), deckCards: shuffle(newDeck), playArea: [...p().playArea, inst] } } };
+      const candidates = p().deckCards.filter(c => c.type === 'pokemon' && (c as PokemonCardDef).stage === 'Basic');
+      if (candidates.length > 0 && p().playArea.length < 5) {
+        s = { ...s, pendingDeckSearch: { trainerCardId: def.id, candidates, action: 'put-in-play' } };
       }
       break;
     }
     case 'great-ball': {
-      // Look at top 7, take 1 Pokémon
-      const top7 = p().deckCards.slice(0, 7);
-      const pkIdx = top7.findIndex(c => c.type === 'pokemon');
-      if (pkIdx >= 0) {
-        const card = top7[pkIdx];
-        const remaining = [...top7.filter((_, i) => i !== pkIdx), ...p().deckCards.slice(7)];
-        s = { ...s, players: { ...s.players, [pid]: { ...p(), deckCards: shuffle(remaining), hand: [...p().hand, card] } } };
+      const candidates = p().deckCards.slice(0, 7).filter(c => c.type === 'pokemon');
+      if (candidates.length > 0) {
+        s = { ...s, pendingDeckSearch: { trainerCardId: def.id, candidates, action: 'add-to-hand' } };
       }
       break;
     }
     case 'level-ball': {
-      const pkIdx = p().deckCards.findIndex(c => c.type === 'pokemon' && (c as PokemonCardDef).hp <= 90);
-      if (pkIdx >= 0) {
-        const card = p().deckCards[pkIdx];
-        const newDeck = p().deckCards.filter((_, i) => i !== pkIdx);
-        s = { ...s, players: { ...s.players, [pid]: { ...p(), deckCards: shuffle(newDeck), hand: [...p().hand, card] } } };
+      const candidates = p().deckCards.filter(c => c.type === 'pokemon' && (c as PokemonCardDef).hp <= 90);
+      if (candidates.length > 0) {
+        s = { ...s, pendingDeckSearch: { trainerCardId: def.id, candidates, action: 'add-to-hand' } };
       }
       break;
     }
@@ -761,6 +743,44 @@ function applyTrainerEffect(
   return s;
 }
 
+// ─── Deck Search Completion ────────────────────────────────────────────────────
+
+export function completeDeckSearch(state: GameState, pid: PlayerId, selectedCardId: string): GameState {
+  let s = state;
+  const search = s.pendingDeckSearch;
+  if (!search) return s;
+
+  const p = s.players[pid];
+  const cardIdx = p.deckCards.findIndex(c => c.id === selectedCardId);
+  if (cardIdx === -1) return s;
+
+  const chosen = p.deckCards[cardIdx] as PokemonCardDef;
+  const newDeck = shuffle(p.deckCards.filter((_, i) => i !== cardIdx));
+
+  if (search.action === 'add-to-hand') {
+    s = {
+      ...s,
+      pendingDeckSearch: null,
+      players: { ...s.players, [pid]: { ...p, deckCards: newDeck, hand: [...p.hand, chosen] } },
+    };
+    return log(s, pid, `${pid === 'player' ? 'Você' : 'IA'} buscou ${chosen.displayName} do deck.`);
+  } else {
+    // put-in-play (nest-ball)
+    const inst: PokemonInPlay = {
+      instanceId: newId(), cardId: chosen.id, def: chosen,
+      currentHp: chosen.hp, vulnerability: 'vulnerable',
+      hasAttackedThisTurn: false, hasUsedAbilityThisTurn: false,
+      turnsInPlay: 0, evolutionStack: [chosen],
+    };
+    s = {
+      ...s,
+      pendingDeckSearch: null,
+      players: { ...s.players, [pid]: { ...p, deckCards: newDeck, playArea: [...p.playArea, inst] } },
+    };
+    return log(s, pid, `${pid === 'player' ? 'Você' : 'IA'} colocou ${chosen.displayName} em jogo via Nest Ball.`);
+  }
+}
+
 // ─── Turn Management ───────────────────────────────────────────────────────────
 
 export function startTurn(state: GameState, pid: PlayerId): GameState {
@@ -823,6 +843,6 @@ export function endTurn(state: GameState): GameState {
   }
 
   s = startTurn(s, nextPid);
-  s = { ...s, selectedHandCard: null, selectedPlayAreaTarget: null, pendingAction: null, pendingFreeSummon: false };
+  s = { ...s, selectedHandCard: null, selectedPlayAreaTarget: null, pendingAction: null, pendingDeckSearch: null, pendingFreeSummon: false };
   return s;
 }

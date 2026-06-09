@@ -4,7 +4,7 @@ import {
   initGame, endTurn, canSummon, summonPokemon, canAttack, performAttack, performAbilityAttack,
   canEvolve, evolvePokemon,
   canPlayTrainer, playTrainer, playEnergyFromHand, playEnergyFromDeck,
-  playEnergyFromDiscard,
+  playEnergyFromDiscard, completeDeckSearch,
 } from '../game/engine';
 import { runAITurn } from '../game/ai';
 import { STARTER_DECKS } from '../data/decks';
@@ -31,6 +31,7 @@ interface GameStore {
   abilityAttackAction: (attackerInstanceId: string, attackIndex: number, handIndex?: number) => void;
   evolveAction: (targetInstanceId: string, evolvedCardId: string) => void;
   playTrainerAction: (cardId: string, targetInstanceId?: string) => void;
+  completeDeckSearchAction: (cardId: string) => void;
   endTurnAction: () => void;
 }
 
@@ -110,6 +111,12 @@ export const useGameStore = create<GameStore>((set, get) => ({
     if (!gameState || gameState.currentPlayer !== 'player') return;
     if (!canPlayTrainer(gameState, 'player', cardId)) return;
     set({ gameState: playTrainer(gameState, 'player', cardId, targetInstanceId) });
+  },
+
+  completeDeckSearchAction: (cardId) => {
+    const { gameState } = get();
+    if (!gameState) return;
+    set({ gameState: completeDeckSearch(gameState, 'player', cardId) });
   },
 
   endTurnAction: () => {

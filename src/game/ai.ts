@@ -3,8 +3,15 @@ import type { PokemonCardDef } from './types';
 import {
   canSummon, summonPokemon, canAttack, performAttack,
   canPlayTrainer, playTrainer, playEnergyFromHand, playEnergyFromDeck,
-  endTurn, opponent,
+  endTurn, opponent, completeDeckSearch,
 } from './engine';
+
+function autoCompleteDeckSearch(state: GameState, pid: PlayerId): GameState {
+  if (!state.pendingDeckSearch) return state;
+  const first = state.pendingDeckSearch.candidates[0];
+  if (!first) return { ...state, pendingDeckSearch: null };
+  return completeDeckSearch(state, pid, first.id);
+}
 
 type AIDifficulty = 'easy' | 'medium' | 'hard';
 
@@ -67,6 +74,7 @@ function aiMedium(state: GameState): GameState {
     if (card.type === 'item' && canPlayTrainer(s, pid, card.id)) {
       if (['hop', 'great-ball', 'level-ball'].includes(card.id)) {
         s = playTrainer(s, pid, card.id);
+        s = autoCompleteDeckSearch(s, pid);
         if (s.phase === 'end') return s;
       }
     }
@@ -123,6 +131,7 @@ function aiHard(state: GameState): GameState {
     if (card.type === 'item' && canPlayTrainer(s, pid, card.id)) {
       if (['hop', 'great-ball', 'ultra-ball', 'level-ball'].includes(card.id)) {
         s = playTrainer(s, pid, card.id);
+        s = autoCompleteDeckSearch(s, pid);
         if (s.phase === 'end') return s;
       }
     }

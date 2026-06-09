@@ -116,6 +116,7 @@ export interface GameState {
   selectedHandCard: string | null;       // instanceId or cardId
   selectedPlayAreaTarget: string | null; // instanceId to attack
   pendingAction: PendingAction | null;
+  pendingDeckSearch: PendingDeckSearch | null;
   pendingFreeSummon: boolean;
   aiThinking: boolean;
 }
@@ -125,3 +126,9 @@ export type PendingAction =
   | { type: 'choose_attack_target'; attackerInstanceId: string }
   | { type: 'choose_summon_slot'; cardId: string }
   | { type: 'choose_evolution_target'; cardId: string };
+
+export interface PendingDeckSearch {
+  trainerCardId: string;
+  candidates: CardDef[];
+  action: 'add-to-hand' | 'put-in-play';
+}

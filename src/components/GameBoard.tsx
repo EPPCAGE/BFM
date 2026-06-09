@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useGameStore } from '../store/gameStore';
 import { PlayerBoard } from './PlayerBoard';
 import { GameLog } from './GameLog';
+import { DeckSearchModal } from './DeckSearchModal';
 import { canAttack } from '../game/engine';
 
 type PendingTrainer = { cardId: string; targetType: 'friendly' | 'enemy' } | null;
@@ -10,7 +11,8 @@ export function GameBoard() {
   const {
     gameState, endTurnAction,
     playEnergyFromHandAction, playEnergyFromDeckAction, playEnergyFromDiscardAction,
-    summonAction, attackAction, abilityAttackAction, evolveAction, playTrainerAction, resetGame,
+    summonAction, attackAction, abilityAttackAction, evolveAction, playTrainerAction,
+    completeDeckSearchAction, resetGame,
   } = useGameStore();
 
   const [attackMode, setAttackMode] = useState<{ attackerInstanceId: string; attackIndex: number } | null>(null);
@@ -132,6 +134,14 @@ export function GameBoard() {
             </button>
           </div>
         </div>
+      )}
+
+      {/* Deck search modal */}
+      {gameState.pendingDeckSearch && (
+        <DeckSearchModal
+          search={gameState.pendingDeckSearch}
+          onSelect={completeDeckSearchAction}
+        />
       )}
 
       {/* Context banner */}
