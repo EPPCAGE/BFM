@@ -457,7 +457,7 @@ export const POKEMON_CARDS: PokemonCardDef[] = [
   },
   {
     id: 'zapdos', displayName: 'Zapdos', type: 'pokemon',
-    pokemonType: 'Electric', stage: 'Basic', hp: 90, retreatCost: 1, pointValue: 2,
+    pokemonType: 'Electric', stage: 'Basic', hp: 90, retreatCost: 3, pointValue: 2,
     tcgId: 'base1-16', imageUrl: img('base1-16'),
     attacks: [
       { name: 'Trovão', cost: 2, damage: 40 },
