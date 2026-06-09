@@ -4,6 +4,8 @@ import { PlayerBoard } from './PlayerBoard';
 import { GameLog } from './GameLog';
 import { canAttack } from '../game/engine';
 
+type PendingTrainer = { cardId: string; targetType: 'friendly' | 'enemy' } | null;
+
 export function GameBoard() {
   const {
     gameState, endTurnAction,
@@ -12,6 +14,7 @@ export function GameBoard() {
   } = useGameStore();
 
   const [attackMode, setAttackMode] = useState<{ attackerInstanceId: string; attackIndex: number } | null>(null);
+  const [pendingTrainer, setPendingTrainer] = useState<PendingTrainer>(null);
 
   if (!gameState) return null;
 
@@ -24,10 +27,26 @@ export function GameBoard() {
     setAttackMode({ attackerInstanceId, attackIndex });
   }
 
-  function handleSelectTarget(targetInstanceId: string) {
-    if (!attackMode || !gameState) return;
+  function handleSelectAttackTarget(targetInstanceId: string) {
+    if (!attackMode) return;
     attackAction(attackMode.attackerInstanceId, attackMode.attackIndex, targetInstanceId);
     setAttackMode(null);
+  }
+
+  function handleTrainerPlay(cardId: string, signal?: string) {
+    if (signal === '__SELECT_FRIENDLY__') {
+      setPendingTrainer({ cardId, targetType: 'friendly' });
+    } else if (signal === '__SELECT_ENEMY__') {
+      setPendingTrainer({ cardId, targetType: 'enemy' });
+    } else {
+      playTrainerAction(cardId, signal);
+    }
+  }
+
+  function handleSelectTrainerTarget(targetInstanceId: string) {
+    if (!pendingTrainer) return;
+    playTrainerAction(pendingTrainer.cardId, targetInstanceId);
+    setPendingTrainer(null);
   }
 
   function handleEnergyPlay(source: 'hand' | 'deck' | 'discard', index?: number) {
@@ -35,6 +54,8 @@ export function GameBoard() {
     else if (source === 'deck') playEnergyFromDeckAction();
     else if (source === 'discard') playEnergyFromDiscardAction();
   }
+
+  const cancelMode = attackMode || pendingTrainer;
 
   return (
     <div className="flex flex-col h-screen bg-slate-900 overflow-hidden">
@@ -48,19 +69,19 @@ export function GameBoard() {
           </span>
         </div>
         <div className="flex gap-3 text-sm">
-          <span className="text-blue-300">Você: <strong>{players.player.points}</strong>/20 pts</span>
-          <span className="text-red-300">IA: <strong>{players.ai.points}</strong>/20 pts</span>
+          <span className="text-blue-300">Você: <strong>{players.player.points}</strong>/20</span>
+          <span className="text-red-300">IA: <strong>{players.ai.points}</strong>/20</span>
         </div>
         <div className="flex gap-2">
-          {attackMode && (
+          {cancelMode && (
             <button
-              onClick={() => setAttackMode(null)}
+              onClick={() => { setAttackMode(null); setPendingTrainer(null); }}
               className="px-3 py-1 bg-slate-600 hover:bg-slate-500 text-white text-xs rounded"
             >
-              Cancelar Ataque
+              ✕ Cancelar
             </button>
           )}
-          {isPlayerTurn && !attackMode && !aiThinking && gameState.phase !== 'end' && (
+          {isPlayerTurn && !cancelMode && !aiThinking && gameState.phase !== 'end' && (
             <button
               onClick={endTurnAction}
               className="px-4 py-1 bg-green-600 hover:bg-green-500 text-white font-bold text-sm rounded"
@@ -83,7 +104,7 @@ export function GameBoard() {
               {result === 'player_wins' ? 'Você Venceu!' : 'IA Venceu!'}
             </h2>
             <p className="text-slate-400 mb-6">
-              Turno {turn} · Placar final — Você: {players.player.points} | IA: {players.ai.points}
+              Turno {turn} · Placar — Você: {players.player.points} | IA: {players.ai.points}
             </p>
             <button
               onClick={resetGame}
@@ -95,10 +116,20 @@ export function GameBoard() {
         </div>
       )}
 
-      {/* Attack mode banner */}
+      {/* Context banner */}
       {attackMode && (
         <div className="bg-orange-700 text-white text-sm text-center py-1 flex-shrink-0">
           ⚔️ Selecione um Pokémon vulnerável do oponente para atacar
+        </div>
+      )}
+      {pendingTrainer?.targetType === 'friendly' && (
+        <div className="bg-green-700 text-white text-sm text-center py-1 flex-shrink-0">
+          💊 Selecione um de seus Pokémon como alvo
+        </div>
+      )}
+      {pendingTrainer?.targetType === 'enemy' && (
+        <div className="bg-purple-700 text-white text-sm text-center py-1 flex-shrink-0">
+          🎯 Selecione um Pokémon do oponente como alvo
         </div>
       )}
 
@@ -112,7 +143,9 @@ export function GameBoard() {
             isCurrentPlayer={currentPlayer === 'ai'}
             isOpponent={true}
             attackMode={attackMode}
-            onSelectAttackTarget={handleSelectTarget}
+            onSelectAttackTarget={handleSelectAttackTarget}
+            pendingTrainer={pendingTrainer}
+            onSelectTrainerTarget={handleSelectTrainerTarget}
           />
 
           {/* Player Board */}
@@ -123,8 +156,10 @@ export function GameBoard() {
             onPlayEnergy={handleEnergyPlay}
             onSummon={summonAction}
             onAttack={handleAttack}
-            onPlayTrainer={playTrainerAction}
+            onPlayTrainer={handleTrainerPlay}
             attackMode={attackMode}
+            pendingTrainer={pendingTrainer}
+            onSelectTrainerTarget={handleSelectTrainerTarget}
           />
         </div>
 

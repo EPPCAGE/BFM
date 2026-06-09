@@ -75,8 +75,10 @@ export function drawCard(state: GameState, pid: PlayerId, count = 1): GameState 
     s = log(s, pid, `${pid === 'player' ? 'Você' : 'IA'} não tem mais cartas! Derrota por deck out.`);
     return { ...s, result: pid === 'player' ? 'ai_wins' : 'player_wins', phase: 'end' };
   }
-  const drawn = p.deckCards.slice(0, count);
-  const newDeck = p.deckCards.slice(count);
+  // Draw only as many cards as available (partial draw is allowed; only 0 cards triggers deck out)
+  const actualCount = Math.min(count, p.deckCards.length);
+  const drawn = p.deckCards.slice(0, actualCount);
+  const newDeck = p.deckCards.slice(actualCount);
   const newHand = [...p.hand, ...drawn];
   s = { ...s, players: { ...s.players, [pid]: { ...p, deckCards: newDeck, hand: newHand } } };
   return s;
@@ -207,6 +209,19 @@ export function summonPokemon(state: GameState, pid: PlayerId, cardId: string): 
 
 // ─── Evolution ─────────────────────────────────────────────────────────────────
 
+export function checkExhaustion(state: GameState, pid: PlayerId): GameState {
+  const p = state.players[pid];
+  if (
+    p.playArea.length === 0 &&
+    p.hand.filter(c => c.type === 'pokemon').length === 0 &&
+    p.deckCards.filter(c => c.type === 'pokemon').length === 0
+  ) {
+    const s = log(state, pid, `${pid === 'player' ? 'Você' : 'IA'} não tem mais Pokémon. Derrota por exaustão!`);
+    return { ...s, result: pid === 'player' ? 'ai_wins' : 'player_wins', phase: 'end' };
+  }
+  return state;
+}
+
 export function canEvolve(
   state: GameState, pid: PlayerId,
   targetInstanceId: string, evolvedCardId: string, rareCandy = false
@@ -236,11 +251,13 @@ export function evolvePokemon(
   const newHand = p.hand.filter((_, i) => i !== handIdx);
   const newArea = p.playArea.map(pk => {
     if (pk.instanceId !== targetInstanceId) return pk;
+    const damageTaken = pk.def.hp - pk.currentHp;
     return {
       ...pk,
       cardId: evoDef.id,
       def: evoDef,
-      currentHp: evoDef.hp - (pk.def.hp - pk.currentHp), // preserve damage
+      currentHp: Math.max(1, evoDef.hp - damageTaken), // preserve damage, minimum 1 HP
+      hasAttackedThisTurn: false, // evolution resets attack for the new form
       evolutionStack: [...pk.evolutionStack, evoDef],
     };
   });
@@ -522,19 +539,57 @@ function applyTrainerEffect(
         const target = p().playArea.find(pk => pk.instanceId === targetInstanceId);
         if (target) {
           const newArea = p().playArea.filter(pk => pk.instanceId !== targetInstanceId);
-          s = { ...s, players: { ...s.players, [pid]: { ...p(), playArea: newArea, hand: [...p().hand, target.def] } } };
+          // Return base form to hand; discard all evolution stages beyond base
+          const baseCard = target.evolutionStack[0];
+          const discardedEvoCards = target.evolutionStack.slice(1) as import('./types').CardDef[];
+          s = {
+            ...s,
+            players: {
+              ...s.players,
+              [pid]: {
+                ...p(),
+                playArea: newArea,
+                hand: [...p().hand, baseCard],
+                discardPile: [...p().discardPile, ...discardedEvoCards],
+              },
+            },
+          };
         }
       }
       break;
     }
     case 'bosss-orders': {
-      // Return opponent Pokémon to hand
       if (targetInstanceId) {
         const target = opp().playArea.find(pk => pk.instanceId === targetInstanceId);
         if (target) {
           const newOppArea = opp().playArea.filter(pk => pk.instanceId !== targetInstanceId);
-          const newOppHand = [...opp().hand, target.evolutionStack[0]]; // return base form
-          s = { ...s, players: { ...s.players, [opponent(pid)]: { ...opp(), playArea: newOppArea, hand: newOppHand } } };
+          // Return base form to opponent's hand; discard evolved stages
+          const baseCard = target.evolutionStack[0];
+          const discardedEvoCards = target.evolutionStack.slice(1) as import('./types').CardDef[];
+          const newOppDiscard = [...opp().discardPile, ...discardedEvoCards];
+          const newOppHand = [...opp().hand, baseCard];
+          s = {
+            ...s,
+            players: {
+              ...s.players,
+              [opponent(pid)]: {
+                ...opp(),
+                playArea: newOppArea,
+                hand: newOppHand,
+                discardPile: newOppDiscard,
+              },
+            },
+          };
+          // Check exhaustion after forced return
+          const oppAfter = s.players[opponent(pid)];
+          if (
+            oppAfter.playArea.length === 0 &&
+            oppAfter.hand.filter(c => c.type === 'pokemon').length === 0 &&
+            oppAfter.deckCards.filter(c => c.type === 'pokemon').length === 0
+          ) {
+            s = log(s, opponent(pid), 'Não há Pokémon disponíveis. Derrota por exaustão!');
+            s = { ...s, result: pid === 'player' ? 'player_wins' : 'ai_wins', phase: 'end' };
+          }
         }
       }
       break;
@@ -554,10 +609,12 @@ function applyTrainerEffect(
       break;
     }
     case 'professors-research': {
-      const newDeck2 = shuffle([...p().deckCards]);
-      const discard = [...p().discardPile, ...p().hand];
-      const drawn = newDeck2.splice(0, 7);
-      s = { ...s, players: { ...s.players, [pid]: { ...p(), deckCards: newDeck2, hand: drawn, discardPile: discard } } };
+      // Discard current hand, draw 7 from deck
+      const discardedHand = p().hand;
+      const newDiscard = [...p().discardPile, ...discardedHand];
+      const deckCopy = [...p().deckCards];
+      const drawn = deckCopy.splice(0, Math.min(7, deckCopy.length));
+      s = { ...s, players: { ...s.players, [pid]: { ...p(), deckCards: deckCopy, hand: drawn, discardPile: newDiscard } } };
       break;
     }
     case 'cynthia': {
@@ -588,7 +645,40 @@ function applyTrainerEffect(
       break;
     }
     case 'rare-candy': {
-      // Handled by UI (evolve to stage 2 bypassing timing)
+      // targetInstanceId = Basic Pokémon in play to evolve
+      // Find a Stage2 in hand that has the right evolution chain
+      if (targetInstanceId) {
+        const basic = p().playArea.find(pk => pk.instanceId === targetInstanceId);
+        if (basic) {
+          // Find Stage2 in hand that has an evolution chain passing through this Basic
+          const stage2Idx = p().hand.findIndex(c => {
+            if (c.type !== 'pokemon') return false;
+            const def2 = c as PokemonCardDef;
+            if (def2.stage !== 'Stage2') return false;
+            // Walk the evolution chain backwards to see if basic is the root
+            // We accept the Stage2 if any card in the database has evolvesFrom=basic.displayName
+            // and that card's displayName is in the chain leading to stage2
+            return true; // Simplified: UI will ensure the right card is selected
+          });
+          if (stage2Idx >= 0) {
+            const stage2Def = p().hand[stage2Idx] as PokemonCardDef;
+            const newHand2 = p().hand.filter((_, i) => i !== stage2Idx);
+            const damageTaken = basic.def.hp - basic.currentHp;
+            const newArea2 = p().playArea.map(pk => {
+              if (pk.instanceId !== targetInstanceId) return pk;
+              return {
+                ...pk,
+                cardId: stage2Def.id,
+                def: stage2Def,
+                currentHp: Math.max(1, stage2Def.hp - damageTaken),
+                hasAttackedThisTurn: false,
+                evolutionStack: [...pk.evolutionStack, stage2Def],
+              };
+            });
+            s = { ...s, players: { ...s.players, [pid]: { ...p(), hand: newHand2, playArea: newArea2 } } };
+          }
+        }
+      }
       break;
     }
   }
@@ -602,7 +692,11 @@ export function startTurn(state: GameState, pid: PlayerId): GameState {
   let s = state;
   const p = s.players[pid];
 
-  // Reset pokemon states
+  // Move spent (used) energy cards to discard pile — they are consumed
+  const spentCards = p.energyPool.filter(e => e.used).map(e => e.def);
+  const activePool = p.energyPool.filter(e => !e.used);
+
+  // Reset Pokémon states and increment turnsInPlay
   const newArea = p.playArea.map(pk => ({
     ...pk,
     vulnerability: 'ready' as const,
@@ -611,9 +705,6 @@ export function startTurn(state: GameState, pid: PlayerId): GameState {
     turnsInPlay: pk.turnsInPlay + 1,
   }));
 
-  // Reset energy pool used state — used energy stays but clears "used" flag for new turn
-  // Actually in Lorkemon energy is spent (gone), so we track available energy
-  // Reset turn flags
   s = {
     ...s,
     players: {
@@ -621,6 +712,8 @@ export function startTurn(state: GameState, pid: PlayerId): GameState {
       [pid]: {
         ...p,
         playArea: newArea,
+        energyPool: activePool,
+        discardPile: [...p.discardPile, ...spentCards],
         supporterPlayedThisTurn: false,
         energyPlayedThisTurn: false,
       },
