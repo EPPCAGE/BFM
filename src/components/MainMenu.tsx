@@ -116,7 +116,7 @@ export function MainMenu() {
           <div>⚡ Qualquer carta vira energia (1x/turno)</div>
           <div>🛡️ Pokémon começa <span className="text-green-400">PRONTO</span> no seu turno</div>
           <div>⚔️ Atacar torna o Pokémon <span className="text-red-400">VULNERÁVEL</span></div>
-          <div>🔄 Contra-ataque automático se sobreviver</div>
+          <div>🔄 Contra-ataque simultâneo ao ataque</div>
           <div>📦 Deck out = derrota</div>
           <div>🃏 60 cartas, max 4 cópias</div>
           <div>🦊 Máx 5 Pokémon em jogo</div>

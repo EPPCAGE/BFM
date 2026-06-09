@@ -131,4 +131,5 @@ export interface PendingDeckSearch {
   trainerCardId: string;
   candidates: CardDef[];
   action: 'add-to-hand' | 'put-in-play';
+  rareCandyTargetInstanceId?: string; // set when Rare Candy triggers an evolution search
 }

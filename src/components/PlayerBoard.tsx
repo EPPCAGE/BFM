@@ -1,3 +1,4 @@
+import { useState, useRef, useEffect } from 'react';
 import type { PlayerState } from '../game/types';
 import type { PokemonCardDef } from '../game/types';
 import { PokemonCard } from './PokemonCard';
@@ -6,11 +7,18 @@ import { CardImage } from './CardImage';
 import { CardTooltip } from './CardTooltip';
 import { availableEnergy } from '../game/engine';
 import { useTooltip } from '../hooks/useTooltip';
+import { playSound } from '../utils/sounds';
 
 // Trainers that need a friendly target
-const FRIENDLY_TARGET_TRAINERS = new Set(['potion', 'super-potion', 'switch']);
+const FRIENDLY_TARGET_TRAINERS = new Set(['potion', 'super-potion', 'switch', 'rare-candy']);
 // Trainers that need an enemy target
 const ENEMY_TARGET_TRAINERS = new Set(['bosss-orders']);
+
+interface CardMenu {
+  idx: number;
+  x: number;
+  y: number;
+}
 
 interface Props {
   playerState: PlayerState;
@@ -26,11 +34,9 @@ interface Props {
   attackMode?: { attackerInstanceId: string; attackIndex: number } | null;
   onSelectAttackTarget?: (targetInstanceId: string) => void;
 
-  // Trainer target mode — passed from GameBoard
   pendingTrainer?: { cardId: string; targetType: 'friendly' | 'enemy' } | null;
   onSelectTrainerTarget?: (targetInstanceId: string) => void;
 
-  // Teleport hand selection mode
   pendingTeleport?: boolean;
   onSelectTeleportHandCard?: (handIndex: number) => void;
 }
@@ -45,32 +51,59 @@ export function PlayerBoard({
   const energy = availableEnergy(playerState);
   const label = isOpponent ? 'Oponente (IA)' : 'Você';
   const { tooltip, showTooltip, moveTooltip, hideTooltip } = useTooltip();
+  const [cardMenu, setCardMenu] = useState<CardMenu | null>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
 
-  // Determine if play area cards are clickable as targets
+  // Close menu on outside click
+  useEffect(() => {
+    if (!cardMenu) return;
+    function onDown(e: MouseEvent) {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setCardMenu(null);
+      }
+    }
+    document.addEventListener('mousedown', onDown);
+    return () => document.removeEventListener('mousedown', onDown);
+  }, [cardMenu]);
+
   const isSelectingFriendly = !isOpponent && pendingTrainer?.targetType === 'friendly';
   const isSelectingEnemy = isOpponent && pendingTrainer?.targetType === 'enemy';
 
-  function handleHandClick(idx: number) {
+  function handleHandClick(idx: number, e: React.MouseEvent) {
     if (isOpponent || !isCurrentPlayer) return;
     const card = playerState.hand[idx];
     if (!card) return;
 
-    // Teleport selection mode: pick a Basic Pokémon from hand
+    // In teleport mode just pick directly
     if (pendingTeleport) {
       if (card.type === 'pokemon' && (card as PokemonCardDef).stage === 'Basic') {
+        playSound('card');
         onSelectTeleportHandCard?.(idx);
       }
       return;
     }
 
-    if (card.type === 'pokemon') {
-      const def = card as PokemonCardDef;
-      if (def.stage === 'Basic') {
-        onSummon?.(card.id);
-      }
-    } else if (card.type === 'item' || card.type === 'supporter') {
+    hideTooltip();
+    // Open action menu relative to card
+    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    setCardMenu({ idx, x: rect.left, y: rect.top });
+  }
+
+  function commitAction(action: 'energy' | 'summon' | 'trainer') {
+    if (!cardMenu) return;
+    const idx = cardMenu.idx;
+    const card = playerState.hand[idx];
+    setCardMenu(null);
+
+    if (action === 'energy') {
+      playSound('energy');
+      onPlayEnergy?.('hand', idx);
+    } else if (action === 'summon') {
+      playSound('summon');
+      onSummon?.(card.id);
+    } else if (action === 'trainer') {
+      playSound('trainer');
       if (FRIENDLY_TARGET_TRAINERS.has(card.id)) {
-        // Signal GameBoard to enter friendly-target selection mode
         onPlayTrainer?.(card.id, '__SELECT_FRIENDLY__');
       } else if (ENEMY_TARGET_TRAINERS.has(card.id)) {
         onPlayTrainer?.(card.id, '__SELECT_ENEMY__');
@@ -82,13 +115,26 @@ export function PlayerBoard({
 
   function handlePlayAreaClick(instanceId: string) {
     if (attackMode && isOpponent) {
+      playSound('attack');
       onSelectAttackTarget?.(instanceId);
       return;
     }
     if (isSelectingFriendly || isSelectingEnemy) {
+      playSound('card');
       onSelectTrainerTarget?.(instanceId);
       return;
     }
+  }
+
+  // Build action menu options for the selected card
+  const menuCard = cardMenu !== null ? playerState.hand[cardMenu.idx] : null;
+  const menuOptions: { label: string; action: 'energy' | 'summon' | 'trainer' }[] = [];
+  if (menuCard) {
+    const isBasic = menuCard.type === 'pokemon' && (menuCard as PokemonCardDef).stage === 'Basic';
+    const isTrainer = menuCard.type === 'item' || menuCard.type === 'supporter';
+    if (isBasic) menuOptions.push({ label: '🐾 Invocar Pokémon', action: 'summon' });
+    if (isTrainer) menuOptions.push({ label: '🃏 Jogar Treinador', action: 'trainer' });
+    if (!playerState.energyPlayedThisTurn) menuOptions.push({ label: '⚡ Usar como Energia', action: 'energy' });
   }
 
   return (
@@ -125,14 +171,14 @@ export function PlayerBoard({
           {playerState.playArea.map((pokemon) => {
             const isAttackTarget = !!attackMode && isOpponent && pokemon.vulnerability === 'vulnerable';
             const isTrainerTarget = isSelectingFriendly || isSelectingEnemy;
-            // Find evolution card in hand that can evolve this Pokémon
             const evolutionCard = !isOpponent && isCurrentPlayer
               ? playerState.hand.find(c => c.type === 'pokemon' && (c as PokemonCardDef).evolvesFrom === pokemon.def.displayName) as PokemonCardDef | undefined
               : undefined;
             return (
               <div
                 key={pokemon.instanceId}
-                onMouseEnter={(e) => showTooltip(pokemon.def, e)}
+                data-card-hover
+                onMouseEnter={(e) => { if (!cardMenu) showTooltip(pokemon.def, e); }}
                 onMouseMove={moveTooltip}
                 onMouseLeave={hideTooltip}
               >
@@ -140,7 +186,7 @@ export function PlayerBoard({
                   pokemon={pokemon}
                   isTargetable={isAttackTarget || isTrainerTarget}
                   evolutionCard={evolutionCard}
-                  onEvolve={evolutionCard ? () => onEvolve?.(pokemon.instanceId, evolutionCard.id) : undefined}
+                  onEvolve={evolutionCard ? () => { playSound('evolve'); onEvolve?.(pokemon.instanceId, evolutionCard.id); } : undefined}
                   showAttacks={!isOpponent && isCurrentPlayer && !pendingTrainer && !attackMode}
                   canAffordAttack={(cost) => energy >= cost}
                   onAttack={(attackIndex) => {
@@ -160,55 +206,67 @@ export function PlayerBoard({
       {/* Hand */}
       {!isOpponent && (
         <div>
-          <div className="text-xs text-slate-400 mb-1 font-semibold">Mão</div>
+          <div className="text-xs text-slate-400 mb-1 font-semibold">Mão — clique em uma carta para ver as opções</div>
           <div className="flex gap-1 overflow-x-auto scrollbar-hide pb-1">
             {playerState.hand.map((card, idx) => {
               const isTeleportTarget = pendingTeleport && card.type === 'pokemon' && (card as PokemonCardDef).stage === 'Basic';
+              const isMenuOpen = cardMenu?.idx === idx;
               return (
-              <div
-                key={`${card.id}-${idx}`}
-                className={`relative card-in-hand rounded-lg cursor-pointer flex-shrink-0 group ${isTeleportTarget ? 'ring-2 ring-indigo-400 animate-pulse' : ''}`}
-                style={{ width: 90, height: 126 }}
-                onClick={() => handleHandClick(idx)}
-                onMouseEnter={(e) => showTooltip(card, e)}
-                onMouseMove={moveTooltip}
-                onMouseLeave={hideTooltip}
-              >
-                <CardImage card={card} className="w-full h-full" />
-                {card.type === 'item' && (
-                  <div className="absolute bottom-0 left-0 right-0 bg-amber-700/80 text-[8px] text-center text-white rounded-b">ITEM</div>
-                )}
-                {card.type === 'supporter' && (
-                  <div className="absolute bottom-0 left-0 right-0 bg-purple-700/80 text-[8px] text-center text-white rounded-b">APOIADOR</div>
-                )}
-                {/* Energy button — only show if energy not yet played this turn */}
-                {isCurrentPlayer && !playerState.energyPlayedThisTurn && (
-                  <button
-                    className="absolute top-1 right-1 bg-yellow-500 hover:bg-yellow-400 text-black text-[10px] font-black rounded px-1 py-0.5 opacity-0 group-hover:opacity-100 transition-opacity shadow-lg"
-                    onClick={(e) => { e.stopPropagation(); onPlayEnergy?.('hand', idx); }}
-                    title="Usar como energia"
-                  >
-                    ⚡
-                  </button>
-                )}
-              </div>
+                <div
+                  key={`${card.id}-${idx}`}
+                  className={`relative card-in-hand rounded-lg cursor-pointer flex-shrink-0 ${
+                    isTeleportTarget ? 'ring-2 ring-indigo-400 animate-pulse' : ''
+                  } ${isMenuOpen ? 'ring-2 ring-yellow-400' : ''}`}
+                  style={{ width: 90, height: 126 }}
+                  data-card-hover
+                  onClick={(e) => handleHandClick(idx, e)}
+                  onMouseEnter={(e) => { if (!cardMenu) showTooltip(card, e); }}
+                  onMouseMove={moveTooltip}
+                  onMouseLeave={hideTooltip}
+                >
+                  <CardImage card={card} className="w-full h-full" />
+                  {card.type === 'item' && (
+                    <div className="absolute bottom-0 left-0 right-0 bg-amber-700/80 text-[8px] text-center text-white rounded-b">ITEM</div>
+                  )}
+                  {card.type === 'supporter' && (
+                    <div className="absolute bottom-0 left-0 right-0 bg-purple-700/80 text-[8px] text-center text-white rounded-b">APOIADOR</div>
+                  )}
+                </div>
               );
             })}
             {playerState.hand.length === 0 && (
               <span className="text-slate-500 text-xs italic">Mão vazia</span>
             )}
           </div>
-          <p className="text-[10px] text-slate-500 mt-1">
-            Clique na carta: invocar Pokémon ou jogar Trainer &nbsp;|&nbsp; Passe o mouse e clique ⚡ para usar como energia
-          </p>
         </div>
       )}
 
-      {!isOpponent && isCurrentPlayer && !playerState.energyPlayedThisTurn && (
-        <p className="text-[10px] text-yellow-500/70">⚡ Clique direito em uma carta da mão para usar como energia</p>
+      {/* Card action menu */}
+      {cardMenu && menuOptions.length > 0 && (
+        <div
+          ref={menuRef}
+          className="fixed z-50 bg-slate-800 border border-slate-500 rounded-lg shadow-2xl p-1 flex flex-col gap-0.5"
+          style={{ left: cardMenu.x, top: Math.max(8, cardMenu.y - menuOptions.length * 36 - 8) }}
+        >
+          {menuOptions.map(opt => (
+            <button
+              key={opt.action}
+              onClick={() => commitAction(opt.action)}
+              className="text-left text-sm text-white px-3 py-2 rounded hover:bg-slate-600 whitespace-nowrap"
+            >
+              {opt.label}
+            </button>
+          ))}
+          <button
+            onClick={() => setCardMenu(null)}
+            className="text-left text-xs text-slate-400 px-3 py-1 rounded hover:bg-slate-700"
+          >
+            ✕ Cancelar
+          </button>
+        </div>
       )}
 
-      {tooltip && <CardTooltip card={tooltip.card} x={tooltip.x} y={tooltip.y} />}
+      {tooltip && !cardMenu && <CardTooltip card={tooltip.card} x={tooltip.x} y={tooltip.y} />}
     </div>
   );
 }

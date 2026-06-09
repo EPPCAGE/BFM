@@ -1,10 +1,11 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useGameStore } from '../store/gameStore';
 import { PlayerBoard } from './PlayerBoard';
 import { GameLog } from './GameLog';
 import { DeckSearchModal } from './DeckSearchModal';
 import { HintPanel } from './HintPanel';
 import { canAttack } from '../game/engine';
+import { playSound } from '../utils/sounds';
 
 type PendingTrainer = { cardId: string; targetType: 'friendly' | 'enemy' } | null;
 
@@ -18,7 +19,27 @@ export function GameBoard() {
 
   const [attackMode, setAttackMode] = useState<{ attackerInstanceId: string; attackIndex: number } | null>(null);
   const [pendingTrainer, setPendingTrainer] = useState<PendingTrainer>(null);
-  const [pendingTeleport, setPendingTeleport] = useState<{ attackerInstanceId: string; attackIndex: number } | null>(null);
+  const [pendingTeleport, setPendingTeleport, ] = useState<{ attackerInstanceId: string; attackIndex: number } | null>(null);
+
+  // Play sounds on game events
+  const prevResultRef = useRef<string | null>(null);
+  const prevLogLenRef = useRef(0);
+  useEffect(() => {
+    if (!gameState) return;
+    if (gameState.result && gameState.result !== prevResultRef.current) {
+      prevResultRef.current = gameState.result;
+      playSound(gameState.result === 'player_wins' ? 'win' : 'ko');
+    }
+    const newEntries = gameState.log.slice(prevLogLenRef.current);
+    prevLogLenRef.current = gameState.log.length;
+    for (const e of newEntries) {
+      const m = e.message;
+      if (m.includes('derrotado')) playSound('ko');
+      else if (m.includes('usou') && m.includes('dano')) playSound('attack');
+      else if (m.includes('invocou')) playSound('summon');
+      else if (m.includes('evoluiu') || m.includes('Evo')) playSound('evolve');
+    }
+  });
 
   if (!gameState) return null;
 

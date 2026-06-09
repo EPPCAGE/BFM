@@ -118,7 +118,7 @@ export function playEnergyFromHand(state: GameState, pid: PlayerId, cardIndex: n
       [pid]: { ...p, hand: newHand, energyPool: newPool, energyPlayedThisTurn: true },
     },
   };
-  return log(s, pid, `${pid === 'player' ? 'Você' : 'IA'} adicionou "${card.displayName}" ao Energy Pool.`);
+  return log(s, pid, `${pid === 'player' ? 'Você' : 'IA'} adicionou${pid === 'player' ? ` "${card.displayName}"` : ' uma carta'} ao Energy Pool.`);
 }
 
 export function playEnergyFromDeck(state: GameState, pid: PlayerId): GameState {
@@ -692,37 +692,19 @@ function applyTrainerEffect(
       break;
     }
     case 'rare-candy': {
-      // targetInstanceId = Basic Pokémon in play to evolve
-      // Find a Stage2 in hand that has the right evolution chain
+      // targetInstanceId = Basic Pokémon in play; search deck for its Stage1 or Stage2
       if (targetInstanceId) {
         const basic = p().playArea.find(pk => pk.instanceId === targetInstanceId);
         if (basic) {
-          // Find Stage2 in hand that has an evolution chain passing through this Basic
-          const stage2Idx = p().hand.findIndex(c => {
+          const basicName = basic.def.displayName;
+          // Collect Stage1 (evolvesFrom === basicName) and any Stage2/higher from deck
+          const candidates = p().deckCards.filter(c => {
             if (c.type !== 'pokemon') return false;
-            const def2 = c as PokemonCardDef;
-            if (def2.stage !== 'Stage2') return false;
-            // Walk the evolution chain backwards to see if basic is the root
-            // We accept the Stage2 if any card in the database has evolvesFrom=basic.displayName
-            // and that card's displayName is in the chain leading to stage2
-            return true; // Simplified: UI will ensure the right card is selected
+            const pk = c as PokemonCardDef;
+            return pk.evolvesFrom === basicName;
           });
-          if (stage2Idx >= 0) {
-            const stage2Def = p().hand[stage2Idx] as PokemonCardDef;
-            const newHand2 = p().hand.filter((_, i) => i !== stage2Idx);
-            const damageTaken = basic.def.hp - basic.currentHp;
-            const newArea2 = p().playArea.map(pk => {
-              if (pk.instanceId !== targetInstanceId) return pk;
-              return {
-                ...pk,
-                cardId: stage2Def.id,
-                def: stage2Def,
-                currentHp: Math.max(1, stage2Def.hp - damageTaken),
-                hasAttackedThisTurn: false,
-                evolutionStack: [...pk.evolutionStack, stage2Def],
-              };
-            });
-            s = { ...s, players: { ...s.players, [pid]: { ...p(), hand: newHand2, playArea: newArea2 } } };
+          if (candidates.length > 0) {
+            s = { ...s, pendingDeckSearch: { trainerCardId: def.id, candidates, action: 'add-to-hand', rareCandyTargetInstanceId: targetInstanceId } };
           }
         }
       }
@@ -747,13 +729,26 @@ export function completeDeckSearch(state: GameState, pid: PlayerId, selectedCard
   const chosen = p.deckCards[cardIdx] as PokemonCardDef;
   const newDeck = shuffle(p.deckCards.filter((_, i) => i !== cardIdx));
 
+  if (search.rareCandyTargetInstanceId) {
+    // Rare Candy: apply chosen evolution directly to the target Basic in play
+    const targetId = search.rareCandyTargetInstanceId;
+    const evoDef = chosen;
+    const newArea = p.playArea.map(pk => {
+      if (pk.instanceId !== targetId) return pk;
+      const damageTaken = pk.def.hp - pk.currentHp;
+      return { ...pk, cardId: evoDef.id, def: evoDef, currentHp: Math.max(1, evoDef.hp - damageTaken), hasAttackedThisTurn: false, evolutionStack: [...pk.evolutionStack, evoDef] };
+    });
+    s = { ...s, pendingDeckSearch: null, players: { ...s.players, [pid]: { ...p, deckCards: newDeck, playArea: newArea } } };
+    return log(s, pid, `${pid === 'player' ? 'Você' : 'IA'} usou Rare Candy e evoluiu para ${pid === 'player' ? evoDef.displayName : 'uma evolução'}.`);
+  }
+
   if (search.action === 'add-to-hand') {
     s = {
       ...s,
       pendingDeckSearch: null,
       players: { ...s.players, [pid]: { ...p, deckCards: newDeck, hand: [...p.hand, chosen] } },
     };
-    return log(s, pid, `${pid === 'player' ? 'Você' : 'IA'} buscou ${chosen.displayName} do deck.`);
+    return log(s, pid, `${pid === 'player' ? 'Você' : 'IA'} buscou ${pid === 'player' ? chosen.displayName : 'um Pokémon'} do deck.`);
   } else {
     // put-in-play (nest-ball)
     const inst: PokemonInPlay = {
@@ -826,6 +821,13 @@ export function startTurn(state: GameState, pid: PlayerId): GameState {
 export function endTurn(state: GameState): GameState {
   const pid = state.currentPlayer;
   const nextPid = opponent(pid);
+
+  // If the active player ends their turn with no Pokémon in play, they lose
+  if (state.players[pid].playArea.length === 0) {
+    const s = log(state, pid, `${pid === 'player' ? 'Você' : 'IA'} encerrou o turno sem Pokémon em jogo. Derrota!`);
+    return { ...s, result: pid === 'player' ? 'ai_wins' : 'player_wins', phase: 'end' };
+  }
+
   let s: GameState = { ...state, currentPlayer: nextPid };
 
   if (nextPid === 'player') {

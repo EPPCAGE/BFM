@@ -20,23 +20,28 @@ const STAGE_LABEL: Record<string, string> = {
 };
 
 export function CardTooltip({ card, x, y }: Props) {
-  // Position: prefer right of cursor, flip left if near right edge
+  const tooltipW = 260;
+  const maxH = window.innerHeight - 16;
+  // Flip left if near right edge
+  const left = x + tooltipW + 20 > window.innerWidth ? x - tooltipW - 8 : x + 16;
+  // Clamp top so tooltip doesn't go off screen bottom
+  const top = Math.min(y - 10, window.innerHeight - maxH + 8);
+
   const style: React.CSSProperties = {
     position: 'fixed',
-    top: Math.min(y - 10, window.innerHeight - 340),
-    left: x + 16,
+    top: Math.max(8, top),
+    left,
     zIndex: 9999,
-    width: 240,
+    width: tooltipW,
+    maxHeight: maxH,
+    overflowY: 'auto',
     pointerEvents: 'none',
   };
-  if (x + 260 > window.innerWidth) {
-    style.left = x - 256;
-  }
 
   return (
-    <div style={style} className="bg-slate-900 border border-slate-600 rounded-xl shadow-2xl overflow-hidden text-xs">
-      {/* Card image */}
-      <CardImage card={card} className="w-full" style={{ height: 120, objectFit: 'cover' }} />
+    <div style={style} className="bg-slate-900 border border-slate-600 rounded-xl shadow-2xl text-xs">
+      {/* Full card image */}
+      <CardImage card={card} className="w-full rounded-t-xl" style={{ height: Math.round(tooltipW * 88 / 63) }} />
 
       <div className="p-3 flex flex-col gap-2">
         {/* Name + type */}

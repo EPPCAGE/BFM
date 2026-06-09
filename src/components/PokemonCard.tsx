@@ -80,10 +80,10 @@ export function PokemonCard({
         </button>
       )}
 
-      {/* Attacks panel (shown on hover if enabled) */}
+      {/* Attacks panel — leaves bottom 28px for the HP bar */}
       {showAttacks && (
-        <div className="absolute inset-0 bg-black/85 flex flex-col justify-center p-1 gap-1 rounded-lg">
-          <p className="text-white text-[9px] font-bold text-center mb-1">{def.displayName}</p>
+        <div className="absolute inset-0 bg-black/85 flex flex-col p-1 gap-1 rounded-lg" style={{ bottom: 28 }}>
+          <p className="text-white text-[9px] font-bold text-center">{def.displayName}</p>
           {def.attacks.map((atk, i) => (
             <button
               key={i}
