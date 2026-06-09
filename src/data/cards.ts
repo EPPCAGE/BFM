@@ -449,7 +449,7 @@ export const POKEMON_CARDS: PokemonCardDef[] = [
     id: 'electivire', displayName: 'Electivire', type: 'pokemon',
     pokemonType: 'Electric', stage: 'Stage1', hp: 140, retreatCost: 3, pointValue: 2,
     evolvesFrom: 'Electabuzz',
-    tcgId: 'dp3-3', imageUrl: img('dp3-3'),
+    tcgId: 'dp3-4', imageUrl: img('dp3-4'),
     attacks: [
       { name: 'Choque Motor', cost: 3, damage: 70 },
       { name: 'Motor Drive', cost: 5, damage: 150, effect: 'Descarte 2 energias deste Pokémon.' },
