@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import type { GameState } from '../game/types';
 import {
   initGame, endTurn, canSummon, summonPokemon, canAttack, performAttack, performAbilityAttack,
+  canEvolve, evolvePokemon,
   canPlayTrainer, playTrainer, playEnergyFromHand, playEnergyFromDeck,
   playEnergyFromDiscard,
 } from '../game/engine';
@@ -28,6 +29,7 @@ interface GameStore {
   summonAction: (cardId: string) => void;
   attackAction: (attackerInstanceId: string, attackIndex: number, targetInstanceId: string) => void;
   abilityAttackAction: (attackerInstanceId: string, attackIndex: number, handIndex?: number) => void;
+  evolveAction: (targetInstanceId: string, evolvedCardId: string) => void;
   playTrainerAction: (cardId: string, targetInstanceId?: string) => void;
   endTurnAction: () => void;
 }
@@ -94,6 +96,13 @@ export const useGameStore = create<GameStore>((set, get) => ({
     if (!gameState || gameState.currentPlayer !== 'player') return;
     const ns = performAbilityAttack(gameState, 'player', attackerInstanceId, attackIndex, handIndex);
     set({ gameState: ns });
+  },
+
+  evolveAction: (targetInstanceId, evolvedCardId) => {
+    const { gameState } = get();
+    if (!gameState || gameState.currentPlayer !== 'player') return;
+    if (!canEvolve(gameState, 'player', targetInstanceId, evolvedCardId)) return;
+    set({ gameState: evolvePokemon(gameState, 'player', targetInstanceId, evolvedCardId) });
   },
 
   playTrainerAction: (cardId, targetInstanceId?) => {
