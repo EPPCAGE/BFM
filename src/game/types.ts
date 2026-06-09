@@ -92,6 +92,7 @@ export interface PlayerState {
   points: number;
   supporterPlayedThisTurn: boolean;
   energyPlayedThisTurn: boolean;
+  evolutionPlayedThisTurn: boolean;
 }
 
 // ─── Game State ────────────────────────────────────────────────────────────────

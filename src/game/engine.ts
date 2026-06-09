@@ -52,6 +52,7 @@ export function buildPlayer(id: PlayerId, cardIds: string[]): PlayerState {
     points: 0,
     supporterPlayedThisTurn: false,
     energyPlayedThisTurn: false,
+    evolutionPlayedThisTurn: false,
   };
 }
 
@@ -245,6 +246,7 @@ export function canEvolve(
   if (evoDef.evolvesFrom !== target.def.displayName) return false;
   if (!rareCandy && target.turnsInPlay < 1) return false;
   if (availableEnergy(p) < evoDef.retreatCost) return false;
+  if (p.evolutionPlayedThisTurn) return false;
   return true;
 }
 
@@ -274,7 +276,7 @@ export function evolvePokemon(
     };
   });
 
-  s = { ...s, players: { ...s.players, [pid]: { ...p, hand: newHand, playArea: newArea } } };
+  s = { ...s, players: { ...s.players, [pid]: { ...p, hand: newHand, playArea: newArea, evolutionPlayedThisTurn: true } } };
   s = spendEnergy(s, pid, evoDef.retreatCost);
   return log(s, pid, `${pid === 'player' ? 'Você' : 'IA'} evoluiu para ${evoDef.displayName}.`);
 }
@@ -796,6 +798,7 @@ export function startTurn(state: GameState, pid: PlayerId): GameState {
         energyPool: refreshedPool,
         supporterPlayedThisTurn: false,
         energyPlayedThisTurn: false,
+        evolutionPlayedThisTurn: false,
       },
     },
   };
