@@ -1,10 +1,44 @@
-import type { GameState, PlayerId } from './types';
+import type { GameState, PlayerId, PokemonInPlay } from './types';
 import type { PokemonCardDef } from './types';
 import {
   canSummon, summonPokemon, canAttack, performAttack,
   canPlayTrainer, playTrainer, playEnergyFromHand, playEnergyFromDeck,
   endTurn, opponent, completeDeckSearch,
 } from './engine';
+
+function counterDamage(target: PokemonInPlay): number {
+  const dmgAttacks = target.def.attacks.filter(a => a.damage > 0);
+  if (dmgAttacks.length === 0) return 0;
+  return Math.min(...dmgAttacks.map(a => a.damage));
+}
+
+function hasBasicInHand(state: GameState, pid: PlayerId): boolean {
+  return state.players[pid].hand.some(
+    c => c.type === 'pokemon' && (c as PokemonCardDef).stage === 'Basic'
+  );
+}
+
+/**
+ * Returns true if this attack would be suicidal and should be skipped.
+ * Suicidal = attacker dies from counter AND (target survives OR attacker is last pokemon with no replacement).
+ */
+function isSuicidal(state: GameState, pid: PlayerId, attacker: PokemonInPlay, attackDmg: number, target: PokemonInPlay): boolean {
+  const counter = counterDamage(target);
+  if (counter < attacker.currentHp) return false; // attacker survives counter
+
+  const targetDies = attackDmg >= target.currentHp;
+  const p = state.players[pid];
+  const otherPokemon = p.playArea.filter(pk => pk.instanceId !== attacker.instanceId);
+
+  // If attacker is last pokemon and has no replacement → always suicidal
+  if (otherPokemon.length === 0 && !hasBasicInHand(state, pid)) return true;
+
+  // If attacker dies but doesn't kill the target → bad trade, skip
+  if (!targetDies) return true;
+
+  // Mutual kill — only proceed if we have other pokemon or a replacement
+  return false;
+}
 
 function autoCompleteDeckSearch(state: GameState, pid: PlayerId): GameState {
   if (!state.pendingDeckSearch) return state;
@@ -45,6 +79,8 @@ function aiEasy(state: GameState): GameState {
     const target = targets[0];
     for (let i = 0; i < attacker.def.attacks.length; i++) {
       if (canAttack(s, pid, attacker.instanceId, i)) {
+        const dmg = attacker.def.attacks[i].damage;
+        if (isSuicidal(s, pid, attacker, dmg, target)) break;
         s = performAttack(s, pid, attacker.instanceId, i, target.instanceId);
         if (s.phase === 'end') return s;
         break;
@@ -101,7 +137,7 @@ function aiMedium(state: GameState): GameState {
     const target = targets[0];
     const bestAttack = attacker.def.attacks
       .map((a, i) => ({ a, i }))
-      .filter(x => canAttack(s, pid, attacker.instanceId, x.i))
+      .filter(x => canAttack(s, pid, attacker.instanceId, x.i) && !isSuicidal(s, pid, attacker, x.a.damage, target))
       .sort((x, y) => y.a.damage - x.a.damage)[0];
     if (bestAttack) {
       s = performAttack(s, pid, attacker.instanceId, bestAttack.i, target.instanceId);
@@ -167,7 +203,7 @@ function aiHard(state: GameState): GameState {
     for (const target of targets) {
       const bestAttack = attacker.def.attacks
         .map((a, i) => ({ a, i }))
-        .filter(x => canAttack(s, pid, attacker.instanceId, x.i))
+        .filter(x => canAttack(s, pid, attacker.instanceId, x.i) && !isSuicidal(s, pid, attacker, x.a.damage, target))
         .sort((x, y) => y.a.damage - x.a.damage)[0];
       if (bestAttack) {
         s = performAttack(s, pid, attacker.instanceId, bestAttack.i, target.instanceId);
