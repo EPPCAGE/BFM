@@ -24,14 +24,26 @@ export function CardImage({ card, className = '', style }: Props) {
     );
   }
 
+  // Use background-image so browser EXIF auto-rotation is ignored
   return (
-    <img
-      src={card.imageUrl}
-      alt={card.displayName}
-      className={`rounded-lg object-cover ${className}`}
-      style={{ imageOrientation: 'none', ...style }}
-      onError={() => setErrored(true)}
-      loading="lazy"
-    />
+    <div
+      className={`rounded-lg bg-cover bg-center bg-no-repeat ${className}`}
+      style={{
+        backgroundImage: `url(${JSON.stringify(card.imageUrl)})`,
+        ...style,
+      }}
+      role="img"
+      aria-label={card.displayName}
+      onError={undefined}
+    >
+      {/* Hidden img to detect load errors */}
+      <img
+        src={card.imageUrl}
+        alt=""
+        className="hidden"
+        onError={() => setErrored(true)}
+        loading="lazy"
+      />
+    </div>
   );
 }
