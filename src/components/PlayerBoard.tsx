@@ -272,22 +272,12 @@ export function PlayerBoard({
                   boxShadow: '0 4px 12px rgba(0,0,0,0.6)',
                 }}
               >
-                {/* Card back pattern */}
-                <div className="w-full h-full flex items-center justify-center relative overflow-hidden">
-                  <div className="absolute inset-1.5 rounded"
-                    style={{
-                      background: 'linear-gradient(135deg,#4338ca,#6d28d9)',
-                      border: '1px solid rgba(167,139,250,0.3)',
-                    }}
-                  />
-                  <div className="absolute inset-3 rounded-sm"
-                    style={{
-                      background: 'radial-gradient(ellipse at center,rgba(196,181,253,0.15) 0%,transparent 70%)',
-                      border: '1px solid rgba(167,139,250,0.2)',
-                    }}
-                  />
-                  <span className="relative text-2xl opacity-60">🎴</span>
-                </div>
+                <img
+                  src="https://images.pokemontcg.io/back.png"
+                  alt="carta virada"
+                  className="w-full h-full object-cover"
+                  onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                />
               </div>
             ))}
           </div>
