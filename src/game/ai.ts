@@ -12,7 +12,7 @@ type AIDifficulty = 'easy' | 'medium' | 'hard';
 
 function aiEasy(state: GameState): GameState {
   let s = state;
-  const pid: PlayerId = 'ai';
+  const pid: PlayerId = state.currentPlayer;
 
   // Play energy from hand (prefer non-pokemon) if possible
   if (!s.players[pid].energyPlayedThisTurn) {
@@ -52,7 +52,7 @@ function aiEasy(state: GameState): GameState {
 
 function aiMedium(state: GameState): GameState {
   let s = state;
-  const pid: PlayerId = 'ai';
+  const pid: PlayerId = state.currentPlayer;
 
   // Play energy
   if (!s.players[pid].energyPlayedThisTurn) {
@@ -108,7 +108,7 @@ function aiMedium(state: GameState): GameState {
 
 function aiHard(state: GameState): GameState {
   let s = state;
-  const pid: PlayerId = 'ai';
+  const pid: PlayerId = state.currentPlayer;
 
   // Energy: prioritise non-pokemon from hand to pool
   if (!s.players[pid].energyPlayedThisTurn) {
