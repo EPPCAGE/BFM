@@ -3,7 +3,9 @@ import type { PokemonCardDef } from '../game/types';
 import { PokemonCard } from './PokemonCard';
 import { EnergyPool } from './EnergyPool';
 import { CardImage } from './CardImage';
+import { CardTooltip } from './CardTooltip';
 import { availableEnergy } from '../game/engine';
+import { useTooltip } from '../hooks/useTooltip';
 
 // Trainers that need a friendly target
 const FRIENDLY_TARGET_TRAINERS = new Set(['potion', 'super-potion', 'switch']);
@@ -36,6 +38,7 @@ export function PlayerBoard({
 }: Props) {
   const energy = availableEnergy(playerState);
   const label = isOpponent ? 'Oponente (IA)' : 'Você';
+  const { tooltip, showTooltip, moveTooltip, hideTooltip } = useTooltip();
 
   // Determine if play area cards are clickable as targets
   const isSelectingFriendly = !isOpponent && pendingTrainer?.targetType === 'friendly';
@@ -87,7 +90,7 @@ export function PlayerBoard({
           )}
         </div>
         <div className="flex gap-4 text-xs text-slate-300">
-          <span>🏆 <strong className="text-white">{playerState.points}</strong>/20</span>
+          <span>🏆 <strong className="text-white">{playerState.points}</strong>/10</span>
           <span>🃏 Deck: {playerState.deckCards.length}</span>
           <span>✋ Mão: {playerState.hand.length}</span>
           <span>⚡ <strong className="text-yellow-300">{energy}</strong></span>
@@ -109,17 +112,23 @@ export function PlayerBoard({
             const isAttackTarget = !!attackMode && isOpponent && pokemon.vulnerability === 'vulnerable';
             const isTrainerTarget = isSelectingFriendly || isSelectingEnemy;
             return (
-              <PokemonCard
+              <div
                 key={pokemon.instanceId}
-                pokemon={pokemon}
-                isTargetable={isAttackTarget || isTrainerTarget}
-                showAttacks={!isOpponent && isCurrentPlayer && !pendingTrainer && !attackMode}
-                canAffordAttack={(cost) => energy >= cost}
-                onAttack={(attackIndex) => {
-                  if (!isOpponent) onAttack?.(pokemon.instanceId, attackIndex);
-                }}
-                onClick={() => handlePlayAreaClick(pokemon.instanceId)}
-              />
+                onMouseEnter={(e) => showTooltip(pokemon.def, e)}
+                onMouseMove={moveTooltip}
+                onMouseLeave={hideTooltip}
+              >
+                <PokemonCard
+                  pokemon={pokemon}
+                  isTargetable={isAttackTarget || isTrainerTarget}
+                  showAttacks={!isOpponent && isCurrentPlayer && !pendingTrainer && !attackMode}
+                  canAffordAttack={(cost) => energy >= cost}
+                  onAttack={(attackIndex) => {
+                    if (!isOpponent) onAttack?.(pokemon.instanceId, attackIndex);
+                  }}
+                  onClick={() => handlePlayAreaClick(pokemon.instanceId)}
+                />
+              </div>
             );
           })}
           {playerState.playArea.length === 0 && (
@@ -136,11 +145,12 @@ export function PlayerBoard({
             {playerState.hand.map((card, idx) => (
               <div
                 key={`${card.id}-${idx}`}
-                className="relative card-in-hand rounded-lg cursor-pointer flex-shrink-0"
-                style={{ width: 56, height: 78 }}
-                title={card.displayName}
+                className="relative card-in-hand rounded-lg cursor-pointer flex-shrink-0 group"
+                style={{ width: 90, height: 126 }}
                 onClick={() => handleHandClick(idx)}
-                onContextMenu={(e) => { e.preventDefault(); onPlayEnergy?.('hand', idx); }}
+                onMouseEnter={(e) => showTooltip(card, e)}
+                onMouseMove={moveTooltip}
+                onMouseLeave={hideTooltip}
               >
                 <CardImage card={card} className="w-full h-full" />
                 {card.type === 'item' && (
@@ -149,6 +159,16 @@ export function PlayerBoard({
                 {card.type === 'supporter' && (
                   <div className="absolute bottom-0 left-0 right-0 bg-purple-700/80 text-[8px] text-center text-white rounded-b">SUPORTE</div>
                 )}
+                {/* Energy button — only show if energy not yet played this turn */}
+                {isCurrentPlayer && !playerState.energyPlayedThisTurn && (
+                  <button
+                    className="absolute top-1 right-1 bg-yellow-500 hover:bg-yellow-400 text-black text-[10px] font-black rounded px-1 py-0.5 opacity-0 group-hover:opacity-100 transition-opacity shadow-lg"
+                    onClick={(e) => { e.stopPropagation(); onPlayEnergy?.('hand', idx); }}
+                    title="Usar como energia"
+                  >
+                    ⚡
+                  </button>
+                )}
               </div>
             ))}
             {playerState.hand.length === 0 && (
@@ -156,31 +176,16 @@ export function PlayerBoard({
             )}
           </div>
           <p className="text-[10px] text-slate-500 mt-1">
-            Clique: Básico = invocar | Trainer = jogar | Botão direito = energia
+            Clique na carta: invocar Pokémon ou jogar Trainer &nbsp;|&nbsp; Passe o mouse e clique ⚡ para usar como energia
           </p>
         </div>
       )}
 
-      {/* Energy source buttons */}
       {!isOpponent && isCurrentPlayer && !playerState.energyPlayedThisTurn && (
-        <div className="flex gap-2 flex-wrap">
-          <span className="text-xs text-slate-400 self-center">Adicionar energia:</span>
-          <button
-            onClick={() => onPlayEnergy?.('deck')}
-            className="text-xs px-2 py-1 bg-slate-700 hover:bg-slate-600 rounded text-white"
-            disabled={playerState.deckCards.length === 0}
-          >
-            📦 Do Deck
-          </button>
-          <button
-            onClick={() => onPlayEnergy?.('discard')}
-            className="text-xs px-2 py-1 bg-slate-700 hover:bg-slate-600 rounded text-white"
-            disabled={playerState.discardPile.length === 0}
-          >
-            🗑️ Do Descarte
-          </button>
-        </div>
+        <p className="text-[10px] text-yellow-500/70">⚡ Clique direito em uma carta da mão para usar como energia</p>
       )}
+
+      {tooltip && <CardTooltip card={tooltip.card} x={tooltip.x} y={tooltip.y} />}
     </div>
   );
 }

@@ -19,16 +19,22 @@ export function PokemonCard({
   const hpPercent = (currentHp / def.hp) * 100;
   const hpColor = hpPercent > 60 ? '#22c55e' : hpPercent > 30 ? '#f59e0b' : '#ef4444';
 
-  let borderClass = vulnerability === 'ready' ? 'card-ready' : 'card-vulnerable';
+  const isVulnerable = vulnerability === 'vulnerable';
+  let borderClass = isVulnerable ? 'card-vulnerable' : 'card-ready';
   if (isSelected) borderClass = 'border-2 border-blue-400 shadow-[0_0_12px_3px_#60a5fa]';
   if (isTargetable) borderClass = 'border-2 border-orange-400 shadow-[0_0_12px_3px_#fb923c] cursor-pointer animate-pulse';
 
+  // When vulnerable, rotate 90° — use a wrapper that reserves the rotated footprint
+  const W = 90, H = 120;
+  const outerStyle = isVulnerable
+    ? { width: H, height: W, minWidth: H, display: 'flex', alignItems: 'center', justifyContent: 'center' }
+    : { width: W, minWidth: W };
+
   return (
+    <div style={outerStyle} onClick={onClick} title={def.displayName}>
     <div
-      className={`relative rounded-lg overflow-hidden select-none ${borderClass} ${onClick ? 'cursor-pointer' : ''}`}
-      style={{ width: 90, minWidth: 90 }}
-      onClick={onClick}
-      title={def.displayName}
+      className={`relative rounded-lg overflow-hidden select-none ${borderClass} ${onClick ? 'cursor-pointer' : ''} transition-transform duration-300`}
+      style={isVulnerable ? { width: W, minWidth: W, transform: 'rotate(90deg)' } : { width: W, minWidth: W }}
     >
       <CardImage card={def} className="w-full" style={{ height: 120 }} />
 
@@ -78,6 +84,7 @@ export function PokemonCard({
           ))}
         </div>
       )}
+    </div>
     </div>
   );
 }
