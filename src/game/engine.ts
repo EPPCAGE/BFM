@@ -291,6 +291,7 @@ export function canAttack(
   const attacker = p.playArea.find(pk => pk.instanceId === attackerInstanceId);
   if (!attacker) return false;
   if (attacker.hasAttackedThisTurn) return false;
+  if (attacker.vulnerability === 'vulnerable') return false;
   const attack = attacker.def.attacks[attackIndex];
   if (!attack) return false;
   if (availableEnergy(p) < attack.cost) return false;
