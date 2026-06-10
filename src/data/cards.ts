@@ -479,7 +479,7 @@ export const POKEMON_CARDS: PokemonCardDef[] = [
   {
     id: 'jigglypuff', displayName: 'Jigglypuff', type: 'pokemon',
     pokemonType: 'Psychic', stage: 'Basic', hp: 60, retreatCost: 1, pointValue: 1,
-    tcgId: 'jungle-54', imageUrl: img('jungle-54'),
+    tcgId: 'base2-54', imageUrl: img('base2-54'),
     attacks: [
       { name: 'Soco', cost: 1, damage: 20 },
     ],
