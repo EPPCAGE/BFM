@@ -246,7 +246,6 @@ export function canEvolve(
   if (evoDef.evolvesFrom !== target.def.displayName) return false;
   if (!rareCandy && target.turnsInPlay < 1) return false;
   if (availableEnergy(p) < evoDef.retreatCost) return false;
-  if (p.evolutionPlayedThisTurn) return false;
   return true;
 }
 
