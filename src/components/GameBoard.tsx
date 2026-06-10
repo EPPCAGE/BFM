@@ -255,7 +255,7 @@ export function GameBoard() {
         </div>
 
         {/* ── CENTER ── */}
-        <div className="flex-1 flex flex-col overflow-hidden min-w-0">
+        <div className="flex-1 flex flex-col overflow-y-auto min-w-0">
 
           {/* Opponent hand + discard */}
           <div className="flex-shrink-0 flex items-center gap-2 px-3 py-1.5"
@@ -299,8 +299,8 @@ export function GameBoard() {
           </div>
 
           {/* AI play zone */}
-          <div className="flex-1 flex flex-col items-center justify-center relative min-h-0"
-            style={{ background: 'linear-gradient(180deg,rgba(10,18,40,0.5) 0%,rgba(60,10,10,0.25) 100%)' }}>
+          <div className="flex-1 flex flex-col items-center justify-center relative"
+            style={{ minHeight: 180, background: 'linear-gradient(180deg,rgba(10,18,40,0.5) 0%,rgba(60,10,10,0.25) 100%)' }}>
             <div className="absolute top-1 left-3 text-[10px] text-red-400 font-bold z-10">IA — Em Jogo ({aiState.playArea.length}/5)</div>
             <PlayZone
               playerState={aiState} isCurrentPlayer={currentPlayer === 'ai'} isOpponent={true}
@@ -314,8 +314,8 @@ export function GameBoard() {
           <div className="board-divider flex-shrink-0" />
 
           {/* Player play zone */}
-          <div className="flex-1 flex flex-col items-center justify-center relative min-h-0"
-            style={{ background: 'linear-gradient(180deg,rgba(23,37,84,0.3) 0%,rgba(10,18,40,0.5) 100%)' }}>
+          <div className="flex-1 flex flex-col items-center justify-center relative"
+            style={{ minHeight: 180, background: 'linear-gradient(180deg,rgba(23,37,84,0.3) 0%,rgba(10,18,40,0.5) 100%)' }}>
             <div className="absolute top-1 left-3 text-[10px] text-blue-400 font-bold z-10">Você — Em Jogo ({playerState.playArea.length}/5)</div>
             <PlayZone
               playerState={playerState} isCurrentPlayer={isPlayerTurn} isOpponent={false}
