@@ -21,7 +21,7 @@ const CARD_BACK_URL = 'https://images.pokemontcg.io/back.png';
 export function GameBoard() {
   const {
     gameState, endTurnAction,
-    playEnergyFromHandAction, playEnergyFromDeckAction, playEnergyFromDiscardAction,
+    playEnergyFromHandAction,
     summonAction, attackAction, abilityAttackAction, evolveAction, playTrainerAction,
     completeDeckSearchAction, resetGame,
   } = useGameStore();
@@ -334,24 +334,18 @@ export function GameBoard() {
               <div className="flex gap-1.5 items-end">
                 {/* Deck */}
                 <div className="flex flex-col items-center">
-                  <div
-                    className={`rounded overflow-hidden ${canPlayEnergy ? 'ring-2 ring-yellow-400 cursor-pointer hover:brightness-110' : ''}`}
-                    style={{ width: 36, height: 50 }}
-                    onClick={() => canPlayEnergy && playEnergyFromDeckAction()}
-                    title={canPlayEnergy ? 'Comprar energia do deck' : 'Deck'}>
+                  <div className="rounded overflow-hidden" style={{ width: 36, height: 50 }} title="Deck">
                     <img src={CARD_BACK_URL} alt="deck" className="w-full h-full object-cover" />
                   </div>
                   <span className="text-[7px] text-slate-500">{playerState.deckCards.length}</span>
-                  {canPlayEnergy && <span className="text-[7px] text-yellow-400">⚡deck</span>}
                 </div>
                 {/* Discard */}
                 <div className="flex flex-col items-center">
                   {playerState.discardPile.length > 0 ? (
                     <div data-card-hover
-                      className={`rounded overflow-hidden ${canPlayEnergy ? 'ring-2 ring-yellow-400 cursor-pointer hover:brightness-110' : ''}`}
+                      className="rounded overflow-hidden"
                       style={{ width: 36, height: 50 }}
-                      onClick={() => canPlayEnergy && playEnergyFromDiscardAction()}
-                      title={canPlayEnergy ? 'Usar energia do descarte' : 'Topo do descarte'}
+                      title="Topo do descarte"
                       onMouseEnter={(e) => showTooltip(playerState.discardPile[playerState.discardPile.length - 1], e)}
                       onMouseMove={moveTooltip} onMouseLeave={hideTooltip}>
                       <CardImage card={playerState.discardPile[playerState.discardPile.length - 1]} className="w-full h-full" />
@@ -362,7 +356,6 @@ export function GameBoard() {
                     </div>
                   )}
                   <span className="text-[7px] text-slate-500">{playerState.discardPile.length}</span>
-                  {canPlayEnergy && playerState.discardPile.length > 0 && <span className="text-[7px] text-yellow-400">⚡desc</span>}
                 </div>
               </div>
               {/* Discard pile thumbnails */}
