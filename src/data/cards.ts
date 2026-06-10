@@ -475,6 +475,167 @@ export const POKEMON_CARDS: PokemonCardDef[] = [
     ],
   },
 
+  // ── Ghost / Psychic (for Sombras deck) ──
+  {
+    id: 'gastly', displayName: 'Gastly', type: 'pokemon',
+    pokemonType: 'Psychic', stage: 'Basic', hp: 30, retreatCost: 1, pointValue: 1,
+    tcgId: 'sv3pt5-92', imageUrl: img('sv3pt5-92'),
+    attacks: [
+      { name: 'Hipnose', cost: 1, damage: 10 },
+    ],
+  },
+  {
+    id: 'haunter', displayName: 'Haunter', type: 'pokemon',
+    pokemonType: 'Psychic', stage: 'Stage1', hp: 60, retreatCost: 1, pointValue: 2,
+    evolvesFrom: 'Gastly',
+    tcgId: 'sv3pt5-93', imageUrl: img('sv3pt5-93'),
+    attacks: [
+      { name: 'Sonho Mau', cost: 1, damage: 20 },
+      { name: 'Assombrar', cost: 2, damage: 40 },
+    ],
+  },
+  {
+    id: 'gengar', displayName: 'Gengar', type: 'pokemon',
+    pokemonType: 'Psychic', stage: 'Stage2', hp: 130, retreatCost: 2, pointValue: 3,
+    evolvesFrom: 'Haunter',
+    tcgId: 'sv3pt5-94', imageUrl: img('sv3pt5-94'),
+    attacks: [
+      { name: 'Maldição', cost: 2, damage: 60 },
+      { name: 'Pesadelo', cost: 3, damage: 100 },
+    ],
+  },
+  {
+    id: 'drowzee', displayName: 'Drowzee', type: 'pokemon',
+    pokemonType: 'Psychic', stage: 'Basic', hp: 60, retreatCost: 2, pointValue: 1,
+    tcgId: 'sv3pt5-96', imageUrl: img('sv3pt5-96'),
+    attacks: [
+      { name: 'Psíquico', cost: 1, damage: 10 },
+    ],
+  },
+  {
+    id: 'hypno', displayName: 'Hypno', type: 'pokemon',
+    pokemonType: 'Psychic', stage: 'Stage1', hp: 90, retreatCost: 2, pointValue: 2,
+    evolvesFrom: 'Drowzee',
+    tcgId: 'sv3pt5-97', imageUrl: img('sv3pt5-97'),
+    attacks: [
+      { name: 'Hipnose', cost: 2, damage: 30 },
+      { name: 'Pesadelo Profundo', cost: 3, damage: 70 },
+    ],
+  },
+  {
+    id: 'mewtwo', displayName: 'Mewtwo', type: 'pokemon',
+    pokemonType: 'Psychic', stage: 'Basic', hp: 130, retreatCost: 3, pointValue: 3,
+    tcgId: 'base1-10', imageUrl: img('base1-10'),
+    attacks: [
+      { name: 'Psicoataque', cost: 2, damage: 50 },
+      { name: 'Psíquico Supremo', cost: 4, damage: 130 },
+    ],
+  },
+  {
+    id: 'mr-mime', displayName: 'Mr. Mime', type: 'pokemon',
+    pokemonType: 'Psychic', stage: 'Basic', hp: 70, retreatCost: 1, pointValue: 1,
+    tcgId: 'base2-6', imageUrl: img('base2-6'),
+    attacks: [
+      { name: 'Confusão', cost: 1, damage: 20 },
+      { name: 'Psíquico', cost: 2, damage: 40 },
+    ],
+  },
+  {
+    id: 'jynx', displayName: 'Jynx', type: 'pokemon',
+    pokemonType: 'Psychic', stage: 'Basic', hp: 70, retreatCost: 2, pointValue: 1,
+    tcgId: 'sv3pt5-124', imageUrl: img('sv3pt5-124'),
+    attacks: [
+      { name: 'Abraço Gelado', cost: 2, damage: 30 },
+      { name: 'Cantiga de Ninar', cost: 3, damage: 50 },
+    ],
+  },
+
+  // ── Water (for Abismo deck) ──
+  {
+    id: 'psyduck', displayName: 'Psyduck', type: 'pokemon',
+    pokemonType: 'Water', stage: 'Basic', hp: 60, retreatCost: 1, pointValue: 1,
+    tcgId: 'sv3pt5-54', imageUrl: img('sv3pt5-54'),
+    attacks: [
+      { name: 'Dor de Cabeça', cost: 1, damage: 10 },
+      { name: 'Confusão', cost: 2, damage: 30 },
+    ],
+  },
+  {
+    id: 'golduck', displayName: 'Golduck', type: 'pokemon',
+    pokemonType: 'Water', stage: 'Stage1', hp: 100, retreatCost: 2, pointValue: 2,
+    evolvesFrom: 'Psyduck',
+    tcgId: 'sv3pt5-55', imageUrl: img('sv3pt5-55'),
+    attacks: [
+      { name: 'Hidrocanão', cost: 2, damage: 50 },
+      { name: 'Telecinese Aquática', cost: 3, damage: 80 },
+    ],
+  },
+  {
+    id: 'horsea', displayName: 'Horsea', type: 'pokemon',
+    pokemonType: 'Water', stage: 'Basic', hp: 50, retreatCost: 1, pointValue: 1,
+    tcgId: 'sv3pt5-116', imageUrl: img('sv3pt5-116'),
+    attacks: [
+      { name: 'Bolha', cost: 1, damage: 10 },
+    ],
+  },
+  {
+    id: 'seadra', displayName: 'Seadra', type: 'pokemon',
+    pokemonType: 'Water', stage: 'Stage1', hp: 90, retreatCost: 2, pointValue: 2,
+    evolvesFrom: 'Horsea',
+    tcgId: 'sv3pt5-117', imageUrl: img('sv3pt5-117'),
+    attacks: [
+      { name: "Jato d'Água", cost: 2, damage: 40 },
+      { name: 'Hidrocanão', cost: 3, damage: 70 },
+    ],
+  },
+  {
+    id: 'seel', displayName: 'Seel', type: 'pokemon',
+    pokemonType: 'Water', stage: 'Basic', hp: 60, retreatCost: 2, pointValue: 1,
+    tcgId: 'sv3pt5-86', imageUrl: img('sv3pt5-86'),
+    attacks: [
+      { name: 'Lança-Gelo', cost: 1, damage: 10 },
+    ],
+  },
+  {
+    id: 'dewgong', displayName: 'Dewgong', type: 'pokemon',
+    pokemonType: 'Water', stage: 'Stage1', hp: 90, retreatCost: 3, pointValue: 2,
+    evolvesFrom: 'Seel',
+    tcgId: 'sv3pt5-87', imageUrl: img('sv3pt5-87'),
+    attacks: [
+      { name: 'Cauda Gelada', cost: 2, damage: 40 },
+      { name: 'Aurora Gelada', cost: 3, damage: 70 },
+    ],
+  },
+  {
+    id: 'lapras', displayName: 'Lapras', type: 'pokemon',
+    pokemonType: 'Water', stage: 'Basic', hp: 100, retreatCost: 3, pointValue: 2,
+    tcgId: 'sv3pt5-131', imageUrl: img('sv3pt5-131'),
+    attacks: [
+      { name: 'Remoinho de Água', cost: 2, damage: 40 },
+      { name: 'Frio Glacial', cost: 4, damage: 100 },
+    ],
+  },
+  {
+    id: 'slowbro', displayName: 'Slowbro', type: 'pokemon',
+    pokemonType: 'Psychic', stage: 'Stage1', hp: 110, retreatCost: 3, pointValue: 2,
+    evolvesFrom: 'Slowpoke',
+    tcgId: 'sv3pt5-80', imageUrl: img('sv3pt5-80'),
+    attacks: [
+      { name: 'Psíquico', cost: 2, damage: 50 },
+      { name: 'Confusão Total', cost: 3, damage: 80 },
+    ],
+  },
+  {
+    id: 'vaporeon', displayName: 'Vaporeon', type: 'pokemon',
+    pokemonType: 'Water', stage: 'Stage1', hp: 110, retreatCost: 2, pointValue: 2,
+    evolvesFrom: 'Eevee',
+    tcgId: 'base2-12', imageUrl: img('base2-12'),
+    attacks: [
+      { name: 'Bolha de Água', cost: 2, damage: 40 },
+      { name: 'Hidrocanão', cost: 3, damage: 80 },
+    ],
+  },
+
   // ── Psychic (extra) ──
   {
     id: 'jigglypuff', displayName: 'Jigglypuff', type: 'pokemon',
