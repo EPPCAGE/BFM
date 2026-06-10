@@ -143,8 +143,7 @@ export function GameBoard() {
     setPendingTrainer(null);
   }
 
-  const canPlayEnergy = isPlayerTurn && !playerState.energyPlayedThisTurn;
-  const cancelMode = attackMode || pendingTrainer || pendingTeleport;
+const cancelMode = attackMode || pendingTrainer || pendingTeleport;
   const aiDiscard = [...aiState.discardPile].reverse().slice(0, 8);
   const playerDiscard = [...playerState.discardPile].reverse().slice(0, 8);
 
