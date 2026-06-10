@@ -346,6 +346,58 @@ export function GameBoard() {
           <div className="flex-1 flex flex-col items-center justify-center relative"
             style={{ minHeight: 180, background: 'linear-gradient(180deg,rgba(23,37,84,0.3) 0%,rgba(10,18,40,0.5) 100%)' }}>
             <div className="absolute top-1 left-3 text-[10px] text-blue-400 font-bold z-10">Você — Em Jogo ({playerState.playArea.length}/5)</div>
+
+            {/* ── Synergy energy art overlay ── */}
+            {synergyGroup.length >= 4 && (synergyMode || synergyAvailable) && (
+              <div className="absolute inset-0 pointer-events-none z-20 overflow-hidden rounded">
+                <div className="absolute inset-0" style={{ background: `radial-gradient(ellipse at 50% 60%, rgba(168,85,247,${synergyMode ? 0.22 : 0.07}) 0%, transparent 70%)` }} />
+                <svg className="absolute inset-0 w-full h-full">
+                  <defs>
+                    <linearGradient id="sg1" x1="0%" y1="0%" x2="100%" y2="0%">
+                      <stop offset="0%" stopColor="#a855f7"/><stop offset="50%" stopColor="#ec4899"/><stop offset="100%" stopColor="#6366f1"/>
+                    </linearGradient>
+                    <filter id="sglow"><feGaussianBlur stdDeviation="2.5" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+                  </defs>
+                  {synergyGroup.map((pk, i) => {
+                    if (i === synergyGroup.length - 1) return null;
+                    const total = Math.max(playerState.playArea.length, 1);
+                    const step = 100 / (total + 1);
+                    const idx1 = playerState.playArea.findIndex(p => p.instanceId === synergyGroup[i].instanceId);
+                    const idx2 = playerState.playArea.findIndex(p => p.instanceId === synergyGroup[i + 1].instanceId);
+                    const x1 = (idx1 + 1) * step;
+                    const x2 = (idx2 + 1) * step;
+                    const mx = (x1 + x2) / 2;
+                    return (
+                      <g key={pk.instanceId} filter="url(#sglow)">
+                        <path d={`M ${x1}% 55% Q ${mx}% 15%, ${x2}% 55%`}
+                          stroke="url(#sg1)" strokeWidth={synergyMode ? '3' : '1.5'} fill="none" strokeDasharray="8 4">
+                          <animate attributeName="stroke-dashoffset" from="0" to="-24" dur="0.7s" repeatCount="indefinite"/>
+                        </path>
+                        <circle cx={`${mx}%`} cy="25%" r={synergyMode ? '5' : '3'} fill="#ec4899">
+                          <animate attributeName="r" values={synergyMode ? '4;7;4' : '2;4;2'} dur="1s" repeatCount="indefinite"/>
+                          <animate attributeName="fill" values="#ec4899;#a855f7;#ec4899" dur="1.4s" repeatCount="indefinite"/>
+                        </circle>
+                      </g>
+                    );
+                  })}
+                  {synergyMode && (
+                    <circle cx="50%" cy="50%" r="20" fill="none" stroke="#a855f7" strokeWidth="2">
+                      <animate attributeName="r" values="10;40;10" dur="1.5s" repeatCount="indefinite"/>
+                      <animate attributeName="opacity" values="0.7;0;0.7" dur="1.5s" repeatCount="indefinite"/>
+                    </circle>
+                  )}
+                </svg>
+                {synergyMode && (
+                  <div className="absolute bottom-2 inset-x-0 flex justify-center">
+                    <span className="text-[11px] font-black px-3 py-1 rounded-full"
+                      style={{ background: 'rgba(88,28,135,0.9)', color: '#f0abfc', boxShadow: '0 0 16px rgba(168,85,247,0.8)', border: '1px solid rgba(216,180,254,0.4)' }}>
+                      ✦ {synergyGroup.length}× {synergyGroup[0]?.def.pokemonType} · {synergyDmg} dano · Selecione o alvo ↑
+                    </span>
+                  </div>
+                )}
+              </div>
+            )}
+
             <PlayZone
               playerState={playerState} isCurrentPlayer={isPlayerTurn} isOpponent={false}
               onAttack={handleAttack} onEvolve={evolveAction}
