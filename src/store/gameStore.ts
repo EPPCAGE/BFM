@@ -131,8 +131,12 @@ export const useGameStore = create<GameStore>((set, get) => ({
     setTimeout(() => {
       const current = get().gameState;
       if (!current) return;
-      const afterAI = runAITurn(current, aiDifficulty);
-      set({ gameState: { ...afterAI, aiThinking: false } });
-    }, 800);
+      const steps = runAITurn(current, aiDifficulty);
+      steps.forEach((step, i) => {
+        setTimeout(() => {
+          set({ gameState: { ...step, aiThinking: i < steps.length - 1 } });
+        }, i * 700);
+      });
+    }, 600);
   },
 }));

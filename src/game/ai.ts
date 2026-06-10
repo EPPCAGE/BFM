@@ -37,6 +37,10 @@ function autoCompleteDeckSearch(state: GameState, pid: PlayerId): GameState {
   return completeDeckSearch(state, pid, first.id);
 }
 
+// Module-level step collector — populated during runAITurn, empty otherwise
+let _steps: GameState[] = [];
+function snap(s: GameState): GameState { _steps.push(s); return s; }
+
 // Evolve all eligible Pokémon in play (used by hard/extra-hard)
 function evolveAll(state: GameState, pid: PlayerId): GameState {
   let s = state;
@@ -68,15 +72,15 @@ function ensureHasPokemon(state: GameState, pid: PlayerId): GameState {
     // Try to play energy first if not yet done and we need it
     if (!s.players[pid].energyPlayedThisTurn) {
       const nonPokemonIdx = s.players[pid].hand.findIndex(c => c.type !== 'pokemon');
-      if (nonPokemonIdx >= 0) s = playEnergyFromHand(s, pid, nonPokemonIdx);
-      else s = playEnergyFromDeck(s, pid);
+      if (nonPokemonIdx >= 0) s = snap(playEnergyFromHand(s, pid, nonPokemonIdx));
+      else s = snap(playEnergyFromDeck(s, pid));
     }
     // Try to summon the cheapest Basic we can afford
     const affordable = basics
       .filter(c => canSummon(s, pid, c.id))
       .sort((a, b) => a.retreatCost - b.retreatCost);
     if (affordable.length === 0) break;
-    s = summonPokemon(s, pid, affordable[0].id);
+    s = snap(summonPokemon(s, pid, affordable[0].id));
   }
   return s;
 }
@@ -101,14 +105,14 @@ function aiEasy(state: GameState): GameState {
 
   if (!s.players[pid].energyPlayedThisTurn) {
     const handIdx = s.players[pid].hand.findIndex(c => c.type !== 'pokemon');
-    if (handIdx >= 0) s = playEnergyFromHand(s, pid, handIdx);
-    else s = playEnergyFromDeck(s, pid);
+    if (handIdx >= 0) s = snap(playEnergyFromHand(s, pid, handIdx));
+    else s = snap(playEnergyFromDeck(s, pid));
   }
 
   const handSnapshot = [...s.players[pid].hand];
   for (const card of handSnapshot) {
     if (card.type === 'pokemon' && canSummon(s, pid, card.id)) {
-      s = summonPokemon(s, pid, card.id);
+      s = snap(summonPokemon(s, pid, card.id));
     }
   }
 
@@ -122,7 +126,7 @@ function aiEasy(state: GameState): GameState {
       if (canAttack(s, pid, attacker.instanceId, i)) {
         const dmg = attacker.def.attacks[i].damage;
         if (isSuicidal(s, pid, attacker, dmg, target)) break;
-        s = performAttack(s, pid, attacker.instanceId, i, target.instanceId);
+        s = snap(performAttack(s, pid, attacker.instanceId, i, target.instanceId));
         if (s.phase === 'end') return s;
         break;
       }
@@ -143,8 +147,8 @@ function aiMedium(state: GameState): GameState {
 
   if (!s.players[pid].energyPlayedThisTurn) {
     const handIdx = s.players[pid].hand.findIndex(c => c.type !== 'pokemon');
-    if (handIdx >= 0) s = playEnergyFromHand(s, pid, handIdx);
-    else s = playEnergyFromDeck(s, pid);
+    if (handIdx >= 0) s = snap(playEnergyFromHand(s, pid, handIdx));
+    else s = snap(playEnergyFromDeck(s, pid));
   }
 
   const handSnap1 = [...s.players[pid].hand];
@@ -162,7 +166,7 @@ function aiMedium(state: GameState): GameState {
     .filter(c => c.type === 'pokemon')
     .sort((a, b) => (b as PokemonCardDef).hp - (a as PokemonCardDef).hp);
   for (const card of handSnap2) {
-    if (canSummon(s, pid, card.id)) s = summonPokemon(s, pid, card.id);
+    if (canSummon(s, pid, card.id)) s = snap(summonPokemon(s, pid, card.id));
   }
 
   const targets = s.players[opponent(pid)].playArea
@@ -178,7 +182,7 @@ function aiMedium(state: GameState): GameState {
       .filter(x => canAttack(s, pid, attacker.instanceId, x.i) && !isSuicidal(s, pid, attacker, x.a.damage, target))
       .sort((x, y) => y.a.damage - x.a.damage)[0];
     if (bestAttack) {
-      s = performAttack(s, pid, attacker.instanceId, bestAttack.i, target.instanceId);
+      s = snap(performAttack(s, pid, attacker.instanceId, bestAttack.i, target.instanceId));
       if (s.phase === 'end') return s;
     }
   }
@@ -197,8 +201,8 @@ function aiHard(state: GameState): GameState {
 
   if (!s.players[pid].energyPlayedThisTurn) {
     const trainerIdx = s.players[pid].hand.findIndex(c => c.type !== 'pokemon');
-    if (trainerIdx >= 0) s = playEnergyFromHand(s, pid, trainerIdx);
-    else s = playEnergyFromDeck(s, pid);
+    if (trainerIdx >= 0) s = snap(playEnergyFromHand(s, pid, trainerIdx));
+    else s = snap(playEnergyFromDeck(s, pid));
   }
 
   const handSnap1 = [...s.players[pid].hand];
@@ -219,11 +223,11 @@ function aiHard(state: GameState): GameState {
   for (const card of [...pokemonInHand]) {
     if (card.stage === 'Basic' && canSummon(s, pid, card.id)) {
       const hasEvolution = pokemonInHand.some(c => c.evolvesFrom === card.displayName);
-      if (hasEvolution) s = summonPokemon(s, pid, card.id);
+      if (hasEvolution) s = snap(summonPokemon(s, pid, card.id));
     }
   }
   for (const card of [...(s.players[pid].hand.filter(c => c.type === 'pokemon') as PokemonCardDef[])]) {
-    if (card.stage === 'Basic' && canSummon(s, pid, card.id)) s = summonPokemon(s, pid, card.id);
+    if (card.stage === 'Basic' && canSummon(s, pid, card.id)) s = snap(summonPokemon(s, pid, card.id));
   }
 
   const targets = s.players[opponent(pid)].playArea
@@ -238,7 +242,7 @@ function aiHard(state: GameState): GameState {
         .filter(x => canAttack(s, pid, attacker.instanceId, x.i) && !isSuicidal(s, pid, attacker, x.a.damage, target))
         .sort((x, y) => y.a.damage - x.a.damage)[0];
       if (best) {
-        s = performAttack(s, pid, attacker.instanceId, best.i, target.instanceId);
+        s = snap(performAttack(s, pid, attacker.instanceId, best.i, target.instanceId));
         if (s.phase === 'end') return s;
         break;
       }
@@ -353,8 +357,8 @@ function aiExtraHard(state: GameState): GameState {
   if (!me().energyPlayedThisTurn) {
     // Prefer non-pokemon from hand; fall back to deck
     const idx = me().hand.findIndex(c => c.type !== 'pokemon');
-    if (idx >= 0) s = playEnergyFromHand(s, pid, idx);
-    else s = playEnergyFromDeck(s, pid);
+    if (idx >= 0) s = snap(playEnergyFromHand(s, pid, idx));
+    else s = snap(playEnergyFromDeck(s, pid));
   }
 
   // ── PHASE 4: Evolve ──────────────────────────────────────────────────────────
@@ -386,11 +390,11 @@ function aiExtraHard(state: GameState): GameState {
     if (card.stage !== 'Basic' || !canSummon(s, pid, card.id)) continue;
     const hasEvo = pokInHand.some(c => c.evolvesFrom === card.displayName)
       || me().deckCards.some(c => c.type === 'pokemon' && (c as PokemonCardDef).evolvesFrom === card.displayName);
-    if (hasEvo) s = summonPokemon(s, pid, card.id);
+    if (hasEvo) s = snap(summonPokemon(s, pid, card.id));
   }
   // Then fill remaining slots
   for (const card of [...(me().hand.filter(c => c.type === 'pokemon') as PokemonCardDef[])]) {
-    if (card.stage === 'Basic' && canSummon(s, pid, card.id)) s = summonPokemon(s, pid, card.id);
+    if (card.stage === 'Basic' && canSummon(s, pid, card.id)) s = snap(summonPokemon(s, pid, card.id));
   }
 
   // ── PHASE 6: Game-winning attacks — override suicidal check ─────────────────
@@ -399,7 +403,7 @@ function aiExtraHard(state: GameState): GameState {
     for (const target of opp().playArea.filter(pk => pk.vulnerability === 'vulnerable')) {
       const best = bestAttack(attacker, target);
       if (best && kills(best.a.damage, target) && winsGame(target)) {
-        s = performAttack(s, pid, attacker.instanceId, best.i, target.instanceId);
+        s = snap(performAttack(s, pid, attacker.instanceId, best.i, target.instanceId));
         return s;
       }
     }
@@ -446,7 +450,7 @@ function aiExtraHard(state: GameState): GameState {
       const attackerDies = counter >= attacker.currentHp;
       const others = me().playArea.filter(pk => pk.instanceId !== attacker.instanceId);
       if (!attackerDies || others.length > 0 || hasBasicInHand(s, pid)) {
-        s = performAttack(s, pid, attacker.instanceId, best.i, target.instanceId);
+        s = snap(performAttack(s, pid, attacker.instanceId, best.i, target.instanceId));
         if (s.phase === 'end') return s;
       }
     }
@@ -466,7 +470,7 @@ function aiExtraHard(state: GameState): GameState {
     for (const target of vulnTargets) {
       const best = bestSafeAttack(attacker, target);
       if (best) {
-        s = performAttack(s, pid, attacker.instanceId, best.i, target.instanceId);
+        s = snap(performAttack(s, pid, attacker.instanceId, best.i, target.instanceId));
         if (s.phase === 'end') return s;
         break;
       }
@@ -523,7 +527,7 @@ function aiExtraHard(state: GameState): GameState {
         s = playTrainer(s, pid, card.id, doomed.instanceId);
         if (s.phase === 'end') return s;
         if (s.pendingFreeSummon) {
-          s = summonPokemon(s, pid, replacement.id);
+          s = snap(summonPokemon(s, pid, replacement.id));
         }
         break;
       }
@@ -535,11 +539,17 @@ function aiExtraHard(state: GameState): GameState {
 
 // ─── Dispatcher ───────────────────────────────────────────────────────────────
 
-export function runAITurn(state: GameState, difficulty: AIDifficulty): GameState {
+export function runAITurn(state: GameState, difficulty: AIDifficulty): GameState[] {
+  _steps = [];
+  let final: GameState;
   switch (difficulty) {
-    case 'easy':       return aiEasy(state);
-    case 'medium':     return aiMedium(state);
-    case 'hard':       return aiHard(state);
-    case 'extra-hard': return aiExtraHard(state);
+    case 'easy':       final = aiEasy(state);       break;
+    case 'medium':     final = aiMedium(state);     break;
+    case 'hard':       final = aiHard(state);       break;
+    case 'extra-hard': final = aiExtraHard(state);  break;
   }
+  _steps.push(final!);
+  const result = _steps;
+  _steps = [];
+  return result;
 }
