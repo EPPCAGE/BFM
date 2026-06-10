@@ -239,7 +239,7 @@ export const POKEMON_CARDS: PokemonCardDef[] = [
   {
     id: 'ralts', displayName: 'Ralts', type: 'pokemon',
     pokemonType: 'Psychic', stage: 'Basic', hp: 50, retreatCost: 1, pointValue: 1,
-    tcgId: 'ex5-68', imageUrl: img('ex5-68'),
+    tcgId: 'sv1-84', imageUrl: img('sv1-84'),
     attacks: [
       { name: 'Ondas Psíquicas', cost: 1, damage: 10 },
       { name: 'Confundir', cost: 2, damage: 20 },
@@ -249,7 +249,7 @@ export const POKEMON_CARDS: PokemonCardDef[] = [
     id: 'kirlia', displayName: 'Kirlia', type: 'pokemon',
     pokemonType: 'Psychic', stage: 'Stage1', hp: 70, retreatCost: 1, pointValue: 2,
     evolvesFrom: 'Ralts',
-    tcgId: 'ex1-35', imageUrl: img('ex1-35'),
+    tcgId: 'sv1-85', imageUrl: img('sv1-85'),
     attacks: [
       { name: 'Onda Psíquica', cost: 2, damage: 20 },
       { name: 'Psíquico', cost: 3, damage: 50, effect: 'Causa 10 a mais por energia no alvo.' },
