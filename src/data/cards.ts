@@ -524,7 +524,7 @@ export const POKEMON_CARDS: PokemonCardDef[] = [
   },
   {
     id: 'mewtwo', displayName: 'Mewtwo', type: 'pokemon',
-    pokemonType: 'Psychic', stage: 'Basic', hp: 130, retreatCost: 3, pointValue: 3,
+    pokemonType: 'Psychic', stage: 'Basic', hp: 130, retreatCost: 3, pointValue: 1,
     tcgId: 'base1-10', imageUrl: img('base1-10'),
     attacks: [
       { name: 'Psicoataque', cost: 2, damage: 50 },
