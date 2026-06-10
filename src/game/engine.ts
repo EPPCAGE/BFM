@@ -655,8 +655,18 @@ export function performSynergyAttack(
   if (group.length < 4) return s;
   if (availableEnergy(p) < 1) return s;
 
-  // Spend 1 energy
-  s = spendEnergy(s, pid, 1);
+  // Discard 1 energy (remove from pool entirely)
+  const energyToDiscard = s.players[pid].energyPool.find(e => !e.used);
+  if (!energyToDiscard) return s;
+  const newPool = s.players[pid].energyPool.filter(e => e.instanceId !== energyToDiscard.instanceId);
+  const newDiscardP = [...s.players[pid].discardPile, energyToDiscard.def];
+  s = {
+    ...s,
+    players: {
+      ...s.players,
+      [pid]: { ...s.players[pid], energyPool: newPool, discardPile: newDiscardP },
+    },
+  };
 
   const damage = getSynergyDamage(group);
   const newTargetHp = Math.max(0, target.currentHp - damage);
