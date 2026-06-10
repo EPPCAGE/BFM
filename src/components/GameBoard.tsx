@@ -1,11 +1,14 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useGameStore } from '../store/gameStore';
 import { GameLog } from './GameLog';
 import { PlayZone } from './PlayZone';
 import { CardImage } from './CardImage';
 import { CardTooltip } from './CardTooltip';
+import { DeckSearchModal } from './DeckSearchModal';
+import { HintPanel } from './HintPanel';
 import { canAttack } from '../game/engine';
 import { useTooltip } from '../hooks/useTooltip';
+import { playSound } from '../utils/sounds';
 import type { PokemonCardDef } from '../game/types';
 
 type PendingTrainer = { cardId: string; targetType: 'friendly' | 'enemy' } | null;
@@ -34,7 +37,8 @@ export function GameBoard() {
   const {
     gameState, endTurnAction,
     playEnergyFromHandAction, playEnergyFromDeckAction, playEnergyFromDiscardAction,
-    summonAction, attackAction, abilityAttackAction, evolveAction, playTrainerAction, resetGame,
+    summonAction, attackAction, abilityAttackAction, evolveAction, playTrainerAction,
+    completeDeckSearchAction, resetGame,
   } = useGameStore();
 
   const [attackMode, setAttackMode] = useState<{ attackerInstanceId: string; attackIndex: number } | null>(null);
@@ -43,6 +47,25 @@ export function GameBoard() {
   const [logOpen, setLogOpen] = useState(true);
 
   const { tooltip, showTooltip, moveTooltip, hideTooltip } = useTooltip();
+
+  const prevResultRef = useRef<string | null>(null);
+  const prevLogLenRef = useRef(0);
+  useEffect(() => {
+    if (!gameState) return;
+    if (gameState.result && gameState.result !== prevResultRef.current) {
+      prevResultRef.current = gameState.result;
+      playSound(gameState.result === 'player_wins' ? 'win' : 'ko');
+    }
+    const newEntries = gameState.log.slice(prevLogLenRef.current);
+    prevLogLenRef.current = gameState.log.length;
+    for (const e of newEntries) {
+      const m = e.message;
+      if (m.includes('derrotado')) playSound('ko');
+      else if (m.includes('usou') && m.includes('dano')) playSound('attack');
+      else if (m.includes('invocou')) playSound('summon');
+      else if (m.includes('evoluiu') || m.includes('Evo')) playSound('evolve');
+    }
+  });
 
   if (!gameState) return null;
 
@@ -194,6 +217,16 @@ export function GameBoard() {
         <div className="bg-purple-700 text-white text-sm text-center py-1 flex-shrink-0 font-semibold">
           🎯 Selecione um Pokémon do oponente como alvo
         </div>
+      )}
+      {gameState.pendingFreeSummon && (
+        <div className="bg-teal-700 text-white text-sm text-center py-1 flex-shrink-0 font-semibold">
+          🔄 Switch: clique em um Pokémon Básico da sua mão para invocar gratuitamente
+        </div>
+      )}
+
+      {/* ── DECK SEARCH MODAL ── */}
+      {gameState.pendingDeckSearch && (
+        <DeckSearchModal search={gameState.pendingDeckSearch} onSelect={completeDeckSearchAction} />
       )}
 
       {/* ── RESULT OVERLAY ── */}
@@ -468,15 +501,18 @@ export function GameBoard() {
 
         </div>{/* end center */}
 
-        {/* ── RIGHT SIDEBAR: log (collapsible) ── */}
+        {/* ── RIGHT SIDEBAR: hints + log (collapsible) ── */}
         {logOpen && (
-          <div className="w-48 flex-shrink-0 flex flex-col bg-slate-800/40 border-l border-slate-700/50 overflow-hidden">
+          <div className="w-56 flex-shrink-0 flex flex-col bg-slate-800/40 border-l border-slate-700/50 overflow-hidden">
             <div className="flex items-center justify-between px-2 py-1 border-b border-slate-700/50 flex-shrink-0">
-              <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Log</span>
+              <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Painel</span>
               <button
                 onClick={() => setLogOpen(false)}
                 className="text-slate-600 hover:text-slate-400 text-xs leading-none"
               >✕</button>
+            </div>
+            <div className="flex-shrink-0">
+              <HintPanel gameState={gameState} />
             </div>
             <div className="flex-1 overflow-hidden">
               <GameLog entries={gameState.log} />
