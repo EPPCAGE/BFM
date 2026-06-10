@@ -47,20 +47,6 @@ export function PokemonCard({
       >
         <CardImage card={def} className="w-full" style={{ height: H }} />
 
-        {/* HP Bar */}
-        <div className="absolute bottom-0 left-0 right-0 bg-black/75 px-1 py-0.5">
-          <div className="flex justify-between items-center mb-0.5">
-            <span className="text-[9px] text-white font-bold truncate" style={{ maxWidth: W * 0.6 }}>{def.displayName}</span>
-            <span className="text-[9px] text-white">{currentHp}/{def.hp}</span>
-          </div>
-          <div className="h-1.5 bg-slate-700 rounded-full overflow-hidden">
-            <div
-              className="h-full rounded-full transition-all"
-              style={{ width: `${hpPercent}%`, backgroundColor: hpColor }}
-            />
-          </div>
-        </div>
-
         {/* Evolution indicator */}
         {pokemon.evolutionStack.length > 1 && (
           <div className="absolute top-0.5 right-0.5 bg-purple-600 text-white text-[8px] rounded px-0.5 font-bold">
@@ -86,9 +72,23 @@ export function PokemonCard({
           </button>
         )}
 
+        {/* HP Bar — always on top */}
+        <div className="absolute bottom-0 left-0 right-0 bg-black/75 px-1 py-0.5 z-10">
+          <div className="flex justify-between items-center mb-0.5">
+            <span className="text-[9px] text-white font-bold truncate" style={{ maxWidth: W * 0.6 }}>{def.displayName}</span>
+            <span className="text-[9px] text-white">{currentHp}/{def.hp}</span>
+          </div>
+          <div className="h-1.5 bg-slate-700 rounded-full overflow-hidden">
+            <div
+              className="h-full rounded-full transition-all"
+              style={{ width: `${hpPercent}%`, backgroundColor: hpColor }}
+            />
+          </div>
+        </div>
+
         {/* Attacks panel (shown on hover if enabled) */}
         {showAttacks && (
-          <div className="absolute inset-0 bg-black/85 flex flex-col justify-center p-1.5 gap-1 rounded-lg">
+          <div className="absolute inset-0 bg-black/85 flex flex-col justify-center p-1.5 gap-1 rounded-lg" style={{ paddingBottom: 28 }}>
             <p className="text-white text-[9px] font-bold text-center mb-0.5">{def.displayName}</p>
             {def.attacks.map((atk, i) => (
               <button
