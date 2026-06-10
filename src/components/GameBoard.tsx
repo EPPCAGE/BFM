@@ -6,10 +6,10 @@ import { CardImage } from './CardImage';
 import { CardTooltip } from './CardTooltip';
 import { DeckSearchModal } from './DeckSearchModal';
 import { HintPanel } from './HintPanel';
-import { canAttack } from '../game/engine';
+import { canAttack, canSynergyAttack, getSynergyGroup, getSynergyDamage } from '../game/engine';
 import { useTooltip } from '../hooks/useTooltip';
 import { playSound } from '../utils/sounds';
-import type { PokemonCardDef } from '../game/types';
+import type { PokemonCardDef, Attack } from '../game/types';
 
 type PendingTrainer = { cardId: string; targetType: 'friendly' | 'enemy' } | null;
 type CardMenu = { idx: number; x: number; y: number } | null;
@@ -23,7 +23,7 @@ export function GameBoard() {
     gameState, endTurnAction,
     playEnergyFromHandAction,
     summonAction, attackAction, abilityAttackAction, evolveAction, playTrainerAction,
-    completeDeckSearchAction, resetGame,
+    completeDeckSearchAction, copiedAttackAction, synergyAttackAction, resetGame,
   } = useGameStore();
 
   const [attackMode, setAttackMode] = useState<{ attackerInstanceId: string; attackIndex: number } | null>(null);
@@ -31,6 +31,9 @@ export function GameBoard() {
   const [pendingTeleport, setPendingTeleport] = useState<{ attackerInstanceId: string; attackIndex: number } | null>(null);
   const [cardMenu, setCardMenu] = useState<CardMenu>(null);
   const [logOpen, setLogOpen] = useState(true);
+  const [mewCopyMode, setMewCopyMode] = useState<string | null>(null);
+  const [mewCopiedAttack, setMewCopiedAttack] = useState<Attack | null>(null);
+  const [synergyMode, setSynergyMode] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
   const { tooltip, showTooltip, moveTooltip, hideTooltip } = useTooltip();
@@ -132,6 +135,18 @@ export function GameBoard() {
   }
 
   function handleSelectAttackTarget(targetInstanceId: string) {
+    if (synergyMode) {
+      synergyAttackAction(targetInstanceId);
+      setSynergyMode(false);
+      return;
+    }
+    if (mewCopyMode && mewCopiedAttack) {
+      copiedAttackAction(mewCopyMode, mewCopiedAttack, targetInstanceId);
+      setMewCopyMode(null);
+      setMewCopiedAttack(null);
+      setAttackMode(null);
+      return;
+    }
     if (!attackMode) return;
     attackAction(attackMode.attackerInstanceId, attackMode.attackIndex, targetInstanceId);
     setAttackMode(null);
@@ -143,7 +158,10 @@ export function GameBoard() {
     setPendingTrainer(null);
   }
 
-const cancelMode = attackMode || pendingTrainer || pendingTeleport;
+  const cancelMode = attackMode || pendingTrainer || pendingTeleport || mewCopyMode || synergyMode;
+  const synergyGroup = isPlayerTurn ? getSynergyGroup(gameState, 'player') : [];
+  const synergyAvailable = isPlayerTurn && !synergyMode && canSynergyAttack(gameState, 'player');
+  const synergyDmg = synergyGroup.length >= 4 ? getSynergyDamage(synergyGroup) : 0;
   const aiDiscard = [...aiState.discardPile].reverse().slice(0, 8);
   const playerDiscard = [...playerState.discardPile].reverse().slice(0, 8);
 
@@ -172,10 +190,18 @@ const cancelMode = attackMode || pendingTrainer || pendingTeleport;
             {logOpen ? '◀ Log' : '▶ Log'}
           </button>
           {cancelMode && (
-            <button onClick={() => { setAttackMode(null); setPendingTrainer(null); setPendingTeleport(null); }}
+            <button onClick={() => { setAttackMode(null); setPendingTrainer(null); setPendingTeleport(null); setMewCopyMode(null); setMewCopiedAttack(null); setSynergyMode(false); }}
               className="px-3 py-1 text-xs font-semibold rounded text-slate-300 hover:text-white"
               style={{ background: 'rgba(71,85,105,0.6)', border: '1px solid rgba(100,116,139,0.4)' }}>
               ✕ Cancelar
+            </button>
+          )}
+          {synergyAvailable && !aiThinking && gameState.phase !== 'end' && (
+            <button onClick={() => setSynergyMode(true)}
+              className="px-3 py-1.5 text-xs font-black rounded text-black hover:scale-105 active:scale-95 transition-transform animate-pulse"
+              style={{ background: 'linear-gradient(135deg,#a855f7,#ec4899)', boxShadow: '0 0 16px rgba(168,85,247,0.7)', border: '1px solid rgba(232,121,249,0.5)' }}
+              title={`${synergyGroup.length}× ${synergyGroup[0]?.def.pokemonType} → ${synergyDmg} dano combinado`}>
+              ✦ Ataque Sinérgico ({synergyDmg}⚡)
             </button>
           )}
           {isPlayerTurn && !cancelMode && !aiThinking && gameState.phase !== 'end' && (
@@ -194,7 +220,10 @@ const cancelMode = attackMode || pendingTrainer || pendingTeleport;
       </div>
 
       {/* ── CONTEXT BANNER ── */}
-      {attackMode && <div className="bg-orange-800/80 text-white text-sm text-center py-1 flex-shrink-0 font-semibold border-b border-orange-600/40">⚔️ Selecione um Pokémon VULNERÁVEL do oponente para atacar</div>}
+      {synergyMode && <div className="bg-yellow-700/80 text-white text-sm text-center py-1 flex-shrink-0 font-semibold border-b border-yellow-500/40">⚡ Ataque Sinérgico: selecione um Pokémon VULNERÁVEL do oponente como alvo</div>}
+      {mewCopyMode && !mewCopiedAttack && <div className="bg-yellow-900/80 text-white text-sm text-center py-1 flex-shrink-0 font-semibold border-b border-yellow-600/40">🌟 Baú de DNA: selecione um ataque do painel de Pokémon em jogo</div>}
+      {mewCopyMode && mewCopiedAttack && <div className="bg-orange-800/80 text-white text-sm text-center py-1 flex-shrink-0 font-semibold border-b border-orange-600/40">🌟 Mew copia "{mewCopiedAttack.name}": selecione um alvo VULNERÁVEL</div>}
+      {attackMode && !mewCopyMode && <div className="bg-orange-800/80 text-white text-sm text-center py-1 flex-shrink-0 font-semibold border-b border-orange-600/40">⚔️ Selecione um Pokémon VULNERÁVEL do oponente para atacar</div>}
       {pendingTeleport && <div className="bg-indigo-800/80 text-white text-sm text-center py-1 flex-shrink-0 font-semibold border-b border-indigo-600/40">🌀 Teletransporte: clique em um Pokémon Básico da sua mão</div>}
       {pendingTrainer?.targetType === 'friendly' && <div className="bg-green-800/80 text-white text-sm text-center py-1 flex-shrink-0 font-semibold border-b border-green-600/40">💊 Selecione um de seus Pokémon como alvo</div>}
       {pendingTrainer?.targetType === 'enemy' && <div className="bg-purple-800/80 text-white text-sm text-center py-1 flex-shrink-0 font-semibold border-b border-purple-600/40">🎯 Ordens do Chefe: selecione um Pokémon PRONTO do oponente</div>}
@@ -303,7 +332,8 @@ const cancelMode = attackMode || pendingTrainer || pendingTeleport;
             <div className="absolute top-1 left-3 text-[10px] text-red-400 font-bold z-10">IA — Em Jogo ({aiState.playArea.length}/5)</div>
             <PlayZone
               playerState={aiState} isCurrentPlayer={currentPlayer === 'ai'} isOpponent={true}
-              attackMode={attackMode} onSelectAttackTarget={handleSelectAttackTarget}
+              attackMode={attackMode ?? (mewCopiedAttack ? { attackerInstanceId: mewCopyMode ?? '', attackIndex: 0 } : null) ?? (synergyMode ? { attackerInstanceId: '', attackIndex: 0 } : null)}
+              onSelectAttackTarget={handleSelectAttackTarget}
               pendingTrainer={pendingTrainer} onSelectTrainerTarget={handleSelectTrainerTarget}
               cardSize="large"
             />
@@ -321,9 +351,31 @@ const cancelMode = attackMode || pendingTrainer || pendingTeleport;
               onAttack={handleAttack} onEvolve={evolveAction}
               attackMode={attackMode} pendingTrainer={pendingTrainer}
               onSelectTrainerTarget={handleSelectTrainerTarget}
+              onMewAbility={(instanceId) => { setMewCopyMode(instanceId); }}
               cardSize="large"
             />
           </div>
+
+          {/* Mew DNA panel */}
+          {mewCopyMode && !mewCopiedAttack && (
+            <div className="flex-shrink-0 bg-yellow-950/90 border-t border-yellow-700/50 px-4 py-2">
+              <p className="text-yellow-300 text-xs font-bold mb-1">🌟 Baú de DNA — Escolha um ataque para copiar:</p>
+              <div className="flex flex-wrap gap-2 overflow-x-auto">
+                {[...gameState.players.player.playArea, ...gameState.players.ai.playArea].map(pk => (
+                  <div key={pk.instanceId} className="flex flex-col gap-0.5">
+                    <span className="text-[9px] text-slate-400 font-bold">{pk.def.displayName}</span>
+                    {pk.def.attacks.filter(a => a.damage > 0).map((atk, i) => (
+                      <button key={i}
+                        onClick={() => { setMewCopiedAttack(atk); }}
+                        className="text-[9px] px-2 py-0.5 rounded bg-yellow-800 hover:bg-yellow-600 text-white text-left">
+                        {atk.name} <span className="text-yellow-300">{atk.cost}⚡</span> <span className="text-red-300">{atk.damage}</span>
+                      </button>
+                    ))}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Player hand + discard */}
           <div className="flex-shrink-0 flex items-end gap-2 px-3 py-2"
