@@ -67,6 +67,7 @@ export function PlayZone({
         return (
           <div
             key={pokemon.instanceId}
+            data-card-hover
             onMouseEnter={(e) => showTooltip(pokemon.def, e)}
             onMouseMove={moveTooltip}
             onMouseLeave={hideTooltip}
