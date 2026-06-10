@@ -269,13 +269,14 @@ export function evolvePokemon(
       ...pk,
       cardId: evoDef.id,
       def: evoDef,
-      currentHp: Math.max(1, evoDef.hp - damageTaken), // preserve damage, minimum 1 HP
-      hasAttackedThisTurn: false, // evolution resets attack for the new form
+      currentHp: Math.max(1, evoDef.hp - damageTaken),
+      hasAttackedThisTurn: false,
+      turnsInPlay: 0, // prevents evolving the same Pokémon twice in one turn
       evolutionStack: [...pk.evolutionStack, evoDef],
     };
   });
 
-  s = { ...s, players: { ...s.players, [pid]: { ...p, hand: newHand, playArea: newArea, evolutionPlayedThisTurn: true } } };
+  s = { ...s, players: { ...s.players, [pid]: { ...p, hand: newHand, playArea: newArea } } };
   s = spendEnergy(s, pid, evoDef.retreatCost);
   return log(s, pid, `${pid === 'player' ? 'Você' : 'IA'} evoluiu para ${evoDef.displayName}.`);
 }
