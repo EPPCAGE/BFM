@@ -396,7 +396,12 @@ export function performAttack(
   // Apply damage (reduced by target's weakenAttacker debuff or shield)
   const rawDamage = attack.damage;
   const weakenPenalty = target.weakenAttacker ?? 0;
-  const damage = Math.max(0, rawDamage - weakenPenalty);
+  let damage = Math.max(0, rawDamage - weakenPenalty);
+  // Weakness: ×2 if target's weakness matches attacker's pokemonType
+  if (target.def.weakness && target.def.weakness === attacker.def.pokemonType) {
+    damage = damage * 2;
+    s = log(s, pid, `É super eficaz! ×2`);
+  }
   const shieldedTarget = { ...target, weakenAttacker: undefined };
   const newTargetHp = Math.max(0, shieldedTarget.currentHp - Math.max(0, damage - (shieldedTarget.damageReduction ?? 0)));
 
@@ -483,6 +488,226 @@ export function performAttack(
   if (playerAfter.playArea.length === 0 && playerAfter.hand.filter(c => c.type === 'pokemon').length === 0 && playerAfter.deckCards.filter(c => c.type === 'pokemon').length === 0) {
     s = log(s, pid, 'Não há Pokémon disponíveis. Derrota por exaustão!');
     return { ...s, result: opponent(pid) === 'player' ? 'player_wins' : 'ai_wins', phase: 'end' };
+  }
+
+  return s;
+}
+
+// ─── Mew Copied Attack ─────────────────────────────────────────────────────────
+
+export function performCopiedAttack(
+  state: GameState, pid: PlayerId,
+  mewInstanceId: string, attack: Attack,
+  targetInstanceId: string
+): GameState {
+  let s = state;
+  const p = s.players[pid];
+  const opp = s.players[opponent(pid)];
+  const mew = p.playArea.find(pk => pk.instanceId === mewInstanceId);
+  const target = opp.playArea.find(pk => pk.instanceId === targetInstanceId);
+
+  if (!mew || !target) return s;
+  if (target.vulnerability !== 'vulnerable') {
+    return log(s, pid, `${target.def.displayName} não está vulnerável e não pode ser atacado.`);
+  }
+  if (attack.damage === 0) return s;
+  if (availableEnergy(p) < 1) return s;
+
+  // Pay 1 energy
+  s = spendEnergy(s, pid, 1);
+
+  // Apply damage with weakness
+  let damage = attack.damage;
+  const weakenPenalty = target.weakenAttacker ?? 0;
+  damage = Math.max(0, damage - weakenPenalty);
+  if (target.def.weakness && target.def.weakness === mew.def.pokemonType) {
+    damage = damage * 2;
+    s = log(s, pid, `É super eficaz! ×2`);
+  }
+  const shieldedTarget = { ...target, weakenAttacker: undefined };
+  const newTargetHp = Math.max(0, shieldedTarget.currentHp - Math.max(0, damage - (shieldedTarget.damageReduction ?? 0)));
+
+  // Mark Mew as attacked and ability used
+  const newMew = { ...mew, vulnerability: 'vulnerable' as const, hasAttackedThisTurn: true, hasUsedAbilityThisTurn: true };
+
+  // Counterattack
+  const counterData = getLowestPositiveDamageAttack(shieldedTarget.def);
+  const counterDmg = counterData ? counterData.attack.damage : 0;
+  const newMewHp = Math.max(0, newMew.currentHp - counterDmg);
+
+  s = log(s, pid, `Mew copiou ${attack.name} em ${target.def.displayName} causando ${damage} de dano!`);
+  if (counterData) {
+    s = log(s, opponent(pid), `${target.def.displayName} contra-atacou com ${counterData.attack.name} causando ${counterDmg} de dano!`);
+  }
+
+  const mewFainted = newMewHp <= 0;
+  const targetFainted = newTargetHp <= 0;
+
+  let newPlayerArea = s.players[pid].playArea.map(pk =>
+    pk.instanceId === mewInstanceId ? { ...newMew, currentHp: newMewHp } : pk
+  );
+  let newOppArea = targetFainted
+    ? opp.playArea.filter(pk => pk.instanceId !== targetInstanceId)
+    : opp.playArea.map(pk =>
+        pk.instanceId === targetInstanceId
+          ? { ...target, currentHp: newTargetHp, damageReduction: undefined, weakenAttacker: undefined }
+          : pk
+      );
+  if (mewFainted) newPlayerArea = newPlayerArea.filter(pk => pk.instanceId !== mewInstanceId);
+
+  let playerPoints = s.players[pid].points;
+  let oppPoints = s.players[opponent(pid)].points;
+  const playerDiscard = [...s.players[pid].discardPile];
+  const oppDiscard = [...opp.discardPile];
+
+  if (targetFainted) {
+    playerPoints += target.def.pointValue;
+    oppDiscard.push(target.def);
+    s = log(s, pid, `${target.def.displayName} foi derrotado! +${target.def.pointValue} ponto(s).`);
+  }
+  if (mewFainted) {
+    oppPoints += mew.def.pointValue;
+    playerDiscard.push(mew.def);
+    s = log(s, opponent(pid), `Mew foi derrotado pelo contra-ataque! +${mew.def.pointValue} ponto(s).`);
+  }
+
+  s = {
+    ...s,
+    players: {
+      ...s.players,
+      [pid]: { ...s.players[pid], playArea: newPlayerArea, points: playerPoints, discardPile: playerDiscard },
+      [opponent(pid)]: { ...opp, playArea: newOppArea, points: oppPoints, discardPile: oppDiscard },
+    },
+  };
+
+  if (playerPoints >= 10) {
+    s = log(s, pid, `${pid === 'player' ? 'Você ganhou' : 'IA ganhou'}! 10 pontos atingidos.`);
+    return { ...s, result: pid === 'player' ? 'player_wins' : 'ai_wins', phase: 'end' };
+  }
+  if (oppPoints >= 10) {
+    s = log(s, opponent(pid), `${opponent(pid) === 'player' ? 'Você ganhou' : 'IA ganhou'}! 10 pontos atingidos.`);
+    return { ...s, result: opponent(pid) === 'player' ? 'player_wins' : 'ai_wins', phase: 'end' };
+  }
+
+  const oppAfter = s.players[opponent(pid)];
+  if (oppAfter.playArea.length === 0 && oppAfter.hand.filter(c => c.type === 'pokemon').length === 0 && oppAfter.deckCards.filter(c => c.type === 'pokemon').length === 0) {
+    s = log(s, opponent(pid), 'Não há Pokémon disponíveis. Derrota por exaustão!');
+    return { ...s, result: pid === 'player' ? 'player_wins' : 'ai_wins', phase: 'end' };
+  }
+
+  return s;
+}
+
+// ─── Synergy Attack ────────────────────────────────────────────────────────────
+
+export function canSynergyAttack(state: GameState, pid: PlayerId): boolean {
+  const group = getSynergyGroup(state, pid);
+  if (group.length < 4) return false;
+  return availableEnergy(state.players[pid]) >= 1;
+}
+
+export function getSynergyGroup(state: GameState, pid: PlayerId): PokemonInPlay[] {
+  const p = state.players[pid];
+  const eligible = p.playArea.filter(pk => pk.vulnerability === 'ready' && !pk.hasAttackedThisTurn);
+  if (eligible.length < 4) return [];
+
+  // Group by pokemonType
+  const groups: Record<string, PokemonInPlay[]> = {};
+  for (const pk of eligible) {
+    const t = pk.def.pokemonType;
+    if (!groups[t]) groups[t] = [];
+    groups[t].push(pk);
+  }
+
+  // Find largest group with ≥4
+  let best: PokemonInPlay[] = [];
+  for (const grp of Object.values(groups)) {
+    if (grp.length >= 4 && grp.length > best.length) best = grp;
+  }
+  return best;
+}
+
+export function getSynergyDamage(group: PokemonInPlay[]): number {
+  let total = 0;
+  for (const pk of group) {
+    const best = pk.def.attacks
+      .filter(a => a.damage > 0)
+      .sort((a, b) => a.damage - b.damage)[0];
+    total += best ? best.damage : 0;
+  }
+  return Math.floor(total * 1.1);
+}
+
+export function performSynergyAttack(
+  state: GameState, pid: PlayerId,
+  targetInstanceId: string
+): GameState {
+  let s = state;
+  const p = s.players[pid];
+  const opp = s.players[opponent(pid)];
+  const target = opp.playArea.find(pk => pk.instanceId === targetInstanceId);
+
+  if (!target) return s;
+  if (target.vulnerability !== 'vulnerable') {
+    return log(s, pid, `${target.def.displayName} não está vulnerável.`);
+  }
+  const group = getSynergyGroup(s, pid);
+  if (group.length < 4) return s;
+  if (availableEnergy(p) < 1) return s;
+
+  // Spend 1 energy
+  s = spendEnergy(s, pid, 1);
+
+  const damage = getSynergyDamage(group);
+  const newTargetHp = Math.max(0, target.currentHp - damage);
+  const targetFainted = newTargetHp <= 0;
+
+  const typeLabel = group[0].def.pokemonType;
+  s = log(s, pid, `Ataque Sinérgico! ${group.length}× ${typeLabel} causaram ${damage} de dano combinado (+10%) em ${target.def.displayName}!`);
+
+  // All attackers become vulnerable
+  const newPlayerArea = s.players[pid].playArea.map(pk => {
+    if (group.some(g => g.instanceId === pk.instanceId)) {
+      return { ...pk, vulnerability: 'vulnerable' as const, hasAttackedThisTurn: true };
+    }
+    return pk;
+  });
+
+  let newOppArea = targetFainted
+    ? opp.playArea.filter(pk => pk.instanceId !== targetInstanceId)
+    : opp.playArea.map(pk =>
+        pk.instanceId === targetInstanceId
+          ? { ...target, currentHp: newTargetHp, damageReduction: undefined, weakenAttacker: undefined }
+          : pk
+      );
+
+  let playerPoints = s.players[pid].points;
+  const oppDiscard = [...opp.discardPile];
+
+  if (targetFainted) {
+    playerPoints += target.def.pointValue;
+    oppDiscard.push(target.def);
+    s = log(s, pid, `${target.def.displayName} foi derrotado! +${target.def.pointValue} ponto(s).`);
+  }
+
+  s = {
+    ...s,
+    players: {
+      ...s.players,
+      [pid]: { ...s.players[pid], playArea: newPlayerArea, points: playerPoints },
+      [opponent(pid)]: { ...opp, playArea: newOppArea, discardPile: oppDiscard },
+    },
+  };
+
+  if (playerPoints >= 10) {
+    s = log(s, pid, `${pid === 'player' ? 'Você ganhou' : 'IA ganhou'}! 10 pontos atingidos.`);
+    return { ...s, result: pid === 'player' ? 'player_wins' : 'ai_wins', phase: 'end' };
+  }
+
+  const oppAfter = s.players[opponent(pid)];
+  if (oppAfter.playArea.length === 0 && oppAfter.hand.filter(c => c.type === 'pokemon').length === 0 && oppAfter.deckCards.filter(c => c.type === 'pokemon').length === 0) {
+    s = log(s, opponent(pid), 'Não há Pokémon disponíveis. Derrota por exaustão!');
+    return { ...s, result: pid === 'player' ? 'player_wins' : 'ai_wins', phase: 'end' };
   }
 
   return s;

@@ -11,6 +11,8 @@ interface Props {
   canAffordAttack?: (cost: number) => boolean;
   evolutionCard?: PokemonCardDef;
   onEvolve?: () => void;
+  showAbility?: boolean;
+  onMewAbility?: () => void;
   /** Override card dimensions (default 90×120) */
   cardWidth?: number;
   cardHeight?: number;
@@ -20,6 +22,7 @@ export function PokemonCard({
   pokemon, isSelected, isTargetable, onClick,
   showAttacks, onAttack, canAffordAttack,
   evolutionCard, onEvolve,
+  showAbility, onMewAbility,
   cardWidth = 90, cardHeight = 120,
 }: Props) {
   const { def, currentHp, vulnerability } = pokemon;
@@ -102,6 +105,14 @@ export function PokemonCard({
                 {atk.damage > 0 && <span className="text-red-300"> {atk.damageText ?? atk.damage}</span>}
               </button>
             ))}
+            {showAbility && def.ability?.name === 'Baú de DNA' && !pokemon.hasUsedAbilityThisTurn && (
+              <button
+                onClick={(e) => { e.stopPropagation(); onMewAbility?.(); }}
+                className="text-[9px] text-left px-1.5 py-1 rounded bg-yellow-600 hover:bg-yellow-500 text-white font-bold mt-0.5"
+              >
+                🌟 Baú de DNA
+              </button>
+            )}
           </div>
         )}
       </div>

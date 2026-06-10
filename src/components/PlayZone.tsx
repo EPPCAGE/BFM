@@ -23,6 +23,8 @@ interface Props {
   pendingTrainer?: { cardId: string; targetType: 'friendly' | 'enemy' } | null;
   onSelectTrainerTarget?: (targetInstanceId: string) => void;
 
+  onMewAbility?: (instanceId: string) => void;
+
   /** 'normal' = 90×120, 'large' = 110×154 */
   cardSize?: 'normal' | 'large';
 }
@@ -32,6 +34,7 @@ export function PlayZone({
   onAttack, onEvolve,
   attackMode, onSelectAttackTarget,
   pendingTrainer, onSelectTrainerTarget,
+  onMewAbility,
   cardSize = 'normal',
 }: Props) {
   const energy = availableEnergy(playerState);
@@ -78,6 +81,8 @@ export function PlayZone({
               evolutionCard={evolutionCard}
               onEvolve={evolutionCard ? () => onEvolve?.(pokemon.instanceId, evolutionCard.id) : undefined}
               showAttacks={!isOpponent && isCurrentPlayer && !pendingTrainer && !attackMode}
+              showAbility={!isOpponent && isCurrentPlayer && !pendingTrainer && !attackMode}
+              onMewAbility={() => onMewAbility?.(pokemon.instanceId)}
               canAffordAttack={(cost) => energy >= cost}
               onAttack={(attackIndex) => {
                 if (!isOpponent) onAttack?.(pokemon.instanceId, attackIndex);

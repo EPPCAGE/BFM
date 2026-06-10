@@ -9,7 +9,7 @@ export const POKEMON_CARDS: PokemonCardDef[] = [
   // ── Fire ──
   {
     id: 'charmander', displayName: 'Charmander', type: 'pokemon',
-    pokemonType: 'Fire', stage: 'Basic', hp: 60, retreatCost: 1, pointValue: 1,
+    pokemonType: 'Fire', stage: 'Basic', hp: 60, retreatCost: 1, pointValue: 1, weakness: 'Water',
     tcgId: 'base1-46', imageUrl: img('base1-46'),
     attacks: [
       { name: 'Arranhão', cost: 1, damage: 10 },
@@ -19,6 +19,7 @@ export const POKEMON_CARDS: PokemonCardDef[] = [
   {
     id: 'charmeleon', displayName: 'Charmeleon', type: 'pokemon',
     pokemonType: 'Fire', stage: 'Stage1', hp: 90, retreatCost: 2, pointValue: 2,
+    weakness: 'Water',
     evolvesFrom: 'Charmander',
     tcgId: 'base1-24', imageUrl: img('base1-24'),
     attacks: [
@@ -29,6 +30,7 @@ export const POKEMON_CARDS: PokemonCardDef[] = [
   {
     id: 'charizard-ex', displayName: 'Charizard ex', type: 'pokemon',
     pokemonType: 'Fire', stage: 'ex', hp: 330, retreatCost: 2, pointValue: 3,
+    weakness: 'Water',
     evolvesFrom: 'Charmeleon',
     tcgId: 'sv3pt5-6', imageUrl: img('sv3pt5-6'),
     attacks: [
@@ -39,6 +41,7 @@ export const POKEMON_CARDS: PokemonCardDef[] = [
   {
     id: 'growlithe', displayName: 'Growlithe', type: 'pokemon',
     pokemonType: 'Fire', stage: 'Basic', hp: 70, retreatCost: 2, pointValue: 1,
+    weakness: 'Water',
     tcgId: 'base4-42', imageUrl: img('base4-42'),
     attacks: [
       { name: 'Mordida', cost: 1, damage: 20 },
@@ -48,6 +51,7 @@ export const POKEMON_CARDS: PokemonCardDef[] = [
   {
     id: 'arcanine', displayName: 'Arcanine', type: 'pokemon',
     pokemonType: 'Fire', stage: 'Stage1', hp: 130, retreatCost: 3, pointValue: 2,
+    weakness: 'Water',
     evolvesFrom: 'Growlithe',
     tcgId: 'base1-23', imageUrl: img('base1-23'),
     attacks: [
@@ -58,6 +62,7 @@ export const POKEMON_CARDS: PokemonCardDef[] = [
   {
     id: 'vulpix', displayName: 'Vulpix', type: 'pokemon',
     pokemonType: 'Fire', stage: 'Basic', hp: 50, retreatCost: 1, pointValue: 1,
+    weakness: 'Water',
     tcgId: 'base1-68', imageUrl: img('base1-68'),
     attacks: [
       { name: 'Rabo de Fogo', cost: 1, damage: 10 },
@@ -67,6 +72,7 @@ export const POKEMON_CARDS: PokemonCardDef[] = [
   {
     id: 'ninetales', displayName: 'Ninetales', type: 'pokemon',
     pokemonType: 'Fire', stage: 'Stage1', hp: 100, retreatCost: 1, pointValue: 2,
+    weakness: 'Water',
     evolvesFrom: 'Vulpix',
     tcgId: 'base1-12', imageUrl: img('base1-12'),
     attacks: [
@@ -77,6 +83,7 @@ export const POKEMON_CARDS: PokemonCardDef[] = [
   {
     id: 'magmar', displayName: 'Magmar', type: 'pokemon',
     pokemonType: 'Fire', stage: 'Basic', hp: 70, retreatCost: 2, pointValue: 1,
+    weakness: 'Water',
     tcgId: 'base1-36', imageUrl: img('base1-36'),
     attacks: [
       { name: 'Soco Ígneo', cost: 2, damage: 30 },
@@ -86,6 +93,7 @@ export const POKEMON_CARDS: PokemonCardDef[] = [
   {
     id: 'magmortar', displayName: 'Magmortar', type: 'pokemon',
     pokemonType: 'Fire', stage: 'Stage1', hp: 140, retreatCost: 3, pointValue: 2,
+    weakness: 'Water',
     evolvesFrom: 'Magmar',
     tcgId: 'dp3-31', imageUrl: img('dp3-31'),
     attacks: [
@@ -98,6 +106,7 @@ export const POKEMON_CARDS: PokemonCardDef[] = [
   {
     id: 'squirtle', displayName: 'Squirtle', type: 'pokemon',
     pokemonType: 'Water', stage: 'Basic', hp: 60, retreatCost: 1, pointValue: 1,
+    weakness: 'Electric',
     tcgId: 'base1-63', imageUrl: img('base1-63'),
     attacks: [
       { name: 'Bolha', cost: 1, damage: 10 },
@@ -107,6 +116,7 @@ export const POKEMON_CARDS: PokemonCardDef[] = [
   {
     id: 'wartortle', displayName: 'Wartortle', type: 'pokemon',
     pokemonType: 'Water', stage: 'Stage1', hp: 90, retreatCost: 2, pointValue: 2,
+    weakness: 'Electric',
     evolvesFrom: 'Squirtle',
     tcgId: 'base1-42', imageUrl: img('base1-42'),
     attacks: [
@@ -117,6 +127,7 @@ export const POKEMON_CARDS: PokemonCardDef[] = [
   {
     id: 'blastoise-ex', displayName: 'Blastoise ex', type: 'pokemon',
     pokemonType: 'Water', stage: 'ex', hp: 300, retreatCost: 3, pointValue: 3,
+    weakness: 'Electric',
     evolvesFrom: 'Wartortle',
     tcgId: 'sv3pt5-17', imageUrl: img('sv3pt5-17'),
     attacks: [
@@ -129,6 +140,7 @@ export const POKEMON_CARDS: PokemonCardDef[] = [
   {
     id: 'bulbasaur', displayName: 'Bulbasaur', type: 'pokemon',
     pokemonType: 'Grass', stage: 'Basic', hp: 60, retreatCost: 1, pointValue: 1,
+    weakness: 'Fire',
     tcgId: 'base1-44', imageUrl: img('base1-44'),
     attacks: [
       { name: 'Chicote de Vinha', cost: 1, damage: 10 },
@@ -138,6 +150,7 @@ export const POKEMON_CARDS: PokemonCardDef[] = [
   {
     id: 'ivysaur', displayName: 'Ivysaur', type: 'pokemon',
     pokemonType: 'Grass', stage: 'Stage1', hp: 90, retreatCost: 2, pointValue: 2,
+    weakness: 'Fire',
     evolvesFrom: 'Bulbasaur',
     tcgId: 'base1-30', imageUrl: img('base1-30'),
     attacks: [
@@ -148,6 +161,7 @@ export const POKEMON_CARDS: PokemonCardDef[] = [
   {
     id: 'venusaur-ex', displayName: 'Venusaur ex', type: 'pokemon',
     pokemonType: 'Grass', stage: 'ex', hp: 310, retreatCost: 3, pointValue: 3,
+    weakness: 'Fire',
     evolvesFrom: 'Ivysaur',
     tcgId: 'sv3pt5-4', imageUrl: img('sv3pt5-4'),
     attacks: [
@@ -158,6 +172,7 @@ export const POKEMON_CARDS: PokemonCardDef[] = [
   {
     id: 'oddish', displayName: 'Oddish', type: 'pokemon',
     pokemonType: 'Grass', stage: 'Basic', hp: 50, retreatCost: 1, pointValue: 1,
+    weakness: 'Fire',
     tcgId: 'base2-57', imageUrl: img('base2-57'),
     attacks: [
       { name: 'Pó Adormecedor', cost: 1, damage: 10 },
@@ -167,6 +182,7 @@ export const POKEMON_CARDS: PokemonCardDef[] = [
   {
     id: 'gloom', displayName: 'Gloom', type: 'pokemon',
     pokemonType: 'Grass', stage: 'Stage1', hp: 70, retreatCost: 2, pointValue: 2,
+    weakness: 'Fire',
     evolvesFrom: 'Oddish',
     tcgId: 'base2-38', imageUrl: img('base2-38'),
     attacks: [
@@ -177,6 +193,7 @@ export const POKEMON_CARDS: PokemonCardDef[] = [
   {
     id: 'vileplume', displayName: 'Vileplume', type: 'pokemon',
     pokemonType: 'Grass', stage: 'Stage2', hp: 120, retreatCost: 2, pointValue: 3,
+    weakness: 'Fire',
     evolvesFrom: 'Gloom',
     tcgId: 'base2-15', imageUrl: img('base2-15'),
     attacks: [
@@ -189,6 +206,7 @@ export const POKEMON_CARDS: PokemonCardDef[] = [
   {
     id: 'pikachu', displayName: 'Pikachu', type: 'pokemon',
     pokemonType: 'Electric', stage: 'Basic', hp: 60, retreatCost: 1, pointValue: 1,
+    weakness: 'Fighting',
     tcgId: 'base1-58', imageUrl: img('base1-58'),
     attacks: [
       { name: 'Thundershock', cost: 1, damage: 10 },
@@ -198,6 +216,7 @@ export const POKEMON_CARDS: PokemonCardDef[] = [
   {
     id: 'raichu', displayName: 'Raichu', type: 'pokemon',
     pokemonType: 'Electric', stage: 'Stage1', hp: 110, retreatCost: 2, pointValue: 2,
+    weakness: 'Fighting',
     evolvesFrom: 'Pikachu',
     tcgId: 'base1-14', imageUrl: img('base1-14'),
     attacks: [
@@ -208,6 +227,7 @@ export const POKEMON_CARDS: PokemonCardDef[] = [
   {
     id: 'magnemite', displayName: 'Magnemite', type: 'pokemon',
     pokemonType: 'Electric', stage: 'Basic', hp: 50, retreatCost: 1, pointValue: 1,
+    weakness: 'Fighting',
     tcgId: 'base1-53', imageUrl: img('base1-53'),
     attacks: [
       { name: 'Thundershock', cost: 1, damage: 10 },
@@ -217,6 +237,7 @@ export const POKEMON_CARDS: PokemonCardDef[] = [
   {
     id: 'magneton', displayName: 'Magneton', type: 'pokemon',
     pokemonType: 'Electric', stage: 'Stage1', hp: 80, retreatCost: 1, pointValue: 2,
+    weakness: 'Fighting',
     evolvesFrom: 'Magnemite',
     tcgId: 'base1-9', imageUrl: img('base1-9'),
     attacks: [
@@ -227,6 +248,7 @@ export const POKEMON_CARDS: PokemonCardDef[] = [
   {
     id: 'luxray', displayName: 'Luxray', type: 'pokemon',
     pokemonType: 'Electric', stage: 'Stage2', hp: 130, retreatCost: 2, pointValue: 3,
+    weakness: 'Fighting',
     evolvesFrom: 'Magneton',
     tcgId: 'dp1-7', imageUrl: img('dp1-7'),
     attacks: [
@@ -239,6 +261,7 @@ export const POKEMON_CARDS: PokemonCardDef[] = [
   {
     id: 'ralts', displayName: 'Ralts', type: 'pokemon',
     pokemonType: 'Psychic', stage: 'Basic', hp: 50, retreatCost: 1, pointValue: 1,
+    weakness: 'Psychic',
     tcgId: 'sv1-84', imageUrl: img('sv1-84'),
     attacks: [
       { name: 'Ondas Psíquicas', cost: 1, damage: 10 },
@@ -248,6 +271,7 @@ export const POKEMON_CARDS: PokemonCardDef[] = [
   {
     id: 'kirlia', displayName: 'Kirlia', type: 'pokemon',
     pokemonType: 'Psychic', stage: 'Stage1', hp: 70, retreatCost: 1, pointValue: 2,
+    weakness: 'Psychic',
     evolvesFrom: 'Ralts',
     tcgId: 'sv1-85', imageUrl: img('sv1-85'),
     attacks: [
@@ -258,6 +282,7 @@ export const POKEMON_CARDS: PokemonCardDef[] = [
   {
     id: 'gardevoir-ex', displayName: 'Gardevoir ex', type: 'pokemon',
     pokemonType: 'Psychic', stage: 'ex', hp: 310, retreatCost: 2, pointValue: 3,
+    weakness: 'Psychic',
     evolvesFrom: 'Kirlia',
     tcgId: 'sv1-86', imageUrl: img('sv1-86'),
     ability: {
@@ -273,6 +298,7 @@ export const POKEMON_CARDS: PokemonCardDef[] = [
   {
     id: 'abra', displayName: 'Abra', type: 'pokemon',
     pokemonType: 'Psychic', stage: 'Basic', hp: 50, retreatCost: 1, pointValue: 1,
+    weakness: 'Psychic',
     tcgId: 'base1-43', imageUrl: img('base1-43'),
     attacks: [
       { name: 'Teletransporte', cost: 1, damage: 0, effect: 'Troque este Pokémon com um da sua mão (se houver). O novo Pokémon entra pronto.', effectType: 'teleport' },
@@ -282,6 +308,7 @@ export const POKEMON_CARDS: PokemonCardDef[] = [
   {
     id: 'kadabra', displayName: 'Kadabra', type: 'pokemon',
     pokemonType: 'Psychic', stage: 'Stage1', hp: 80, retreatCost: 2, pointValue: 2,
+    weakness: 'Psychic',
     evolvesFrom: 'Abra',
     tcgId: 'base1-32', imageUrl: img('base1-32'),
     attacks: [
@@ -292,6 +319,7 @@ export const POKEMON_CARDS: PokemonCardDef[] = [
   {
     id: 'alakazam', displayName: 'Alakazam', type: 'pokemon',
     pokemonType: 'Psychic', stage: 'Stage2', hp: 130, retreatCost: 2, pointValue: 3,
+    weakness: 'Psychic',
     evolvesFrom: 'Kadabra',
     tcgId: 'base1-1', imageUrl: img('base1-1'),
     ability: {
@@ -307,6 +335,7 @@ export const POKEMON_CARDS: PokemonCardDef[] = [
   {
     id: 'mew', displayName: 'Mew', type: 'pokemon',
     pokemonType: 'Psychic', stage: 'Basic', hp: 60, retreatCost: 1, pointValue: 1,
+    weakness: 'Psychic',
     tcgId: 'cel25-11', imageUrl: img('cel25-11'),
     ability: {
       name: 'Baú de DNA',
@@ -322,6 +351,7 @@ export const POKEMON_CARDS: PokemonCardDef[] = [
   {
     id: 'machop', displayName: 'Machop', type: 'pokemon',
     pokemonType: 'Fighting', stage: 'Basic', hp: 70, retreatCost: 2, pointValue: 1,
+    weakness: 'Psychic',
     tcgId: 'base1-52', imageUrl: img('base1-52'),
     attacks: [
       { name: 'Murro Baixo', cost: 1, damage: 20 },
@@ -331,6 +361,7 @@ export const POKEMON_CARDS: PokemonCardDef[] = [
   {
     id: 'machoke', displayName: 'Machoke', type: 'pokemon',
     pokemonType: 'Fighting', stage: 'Stage1', hp: 100, retreatCost: 3, pointValue: 2,
+    weakness: 'Psychic',
     evolvesFrom: 'Machop',
     tcgId: 'base1-34', imageUrl: img('base1-34'),
     attacks: [
@@ -341,6 +372,7 @@ export const POKEMON_CARDS: PokemonCardDef[] = [
   {
     id: 'machamp', displayName: 'Machamp', type: 'pokemon',
     pokemonType: 'Fighting', stage: 'Stage2', hp: 160, retreatCost: 3, pointValue: 3,
+    weakness: 'Psychic',
     evolvesFrom: 'Machoke',
     tcgId: 'base1-8', imageUrl: img('base1-8'),
     attacks: [
@@ -351,6 +383,7 @@ export const POKEMON_CARDS: PokemonCardDef[] = [
   {
     id: 'riolu', displayName: 'Riolu', type: 'pokemon',
     pokemonType: 'Fighting', stage: 'Basic', hp: 60, retreatCost: 1, pointValue: 1,
+    weakness: 'Psychic',
     tcgId: 'dp2-68', imageUrl: img('dp2-68'),
     attacks: [
       { name: 'Murro Rápido', cost: 1, damage: 10 },
@@ -360,6 +393,7 @@ export const POKEMON_CARDS: PokemonCardDef[] = [
   {
     id: 'lucario', displayName: 'Lucario', type: 'pokemon',
     pokemonType: 'Fighting', stage: 'Stage1', hp: 110, retreatCost: 2, pointValue: 2,
+    weakness: 'Psychic',
     evolvesFrom: 'Riolu',
     tcgId: 'dp1-5', imageUrl: img('dp1-5'),
     attacks: [
@@ -372,6 +406,7 @@ export const POKEMON_CARDS: PokemonCardDef[] = [
   {
     id: 'eevee', displayName: 'Eevee', type: 'pokemon',
     pokemonType: 'Normal', stage: 'Basic', hp: 60, retreatCost: 1, pointValue: 1,
+    weakness: 'Fighting',
     tcgId: 'base2-51', imageUrl: img('base2-51'),
     attacks: [
       { name: 'Tackle', cost: 1, damage: 10 },
@@ -381,6 +416,7 @@ export const POKEMON_CARDS: PokemonCardDef[] = [
   {
     id: 'snorlax', displayName: 'Snorlax', type: 'pokemon',
     pokemonType: 'Normal', stage: 'Basic', hp: 150, retreatCost: 4, pointValue: 1,
+    weakness: 'Fighting',
     tcgId: 'base2-11', imageUrl: img('base2-11'),
     attacks: [
       { name: 'Barriga de Aço', cost: 1, damage: 0, effect: 'Previne 30 de dano recebido neste turno.', effectType: 'shield30' },
@@ -390,6 +426,7 @@ export const POKEMON_CARDS: PokemonCardDef[] = [
   {
     id: 'pidgey', displayName: 'Pidgey', type: 'pokemon',
     pokemonType: 'Normal', stage: 'Basic', hp: 50, retreatCost: 1, pointValue: 1,
+    weakness: 'Fighting',
     tcgId: 'base2-46', imageUrl: img('base2-46'),
     attacks: [
       { name: 'Rajada', cost: 1, damage: 10 },
@@ -399,6 +436,7 @@ export const POKEMON_CARDS: PokemonCardDef[] = [
   {
     id: 'pidgeotto', displayName: 'Pidgeotto', type: 'pokemon',
     pokemonType: 'Normal', stage: 'Stage1', hp: 80, retreatCost: 1, pointValue: 2,
+    weakness: 'Fighting',
     evolvesFrom: 'Pidgey',
     tcgId: 'base1-22', imageUrl: img('base1-22'),
     attacks: [
@@ -409,6 +447,7 @@ export const POKEMON_CARDS: PokemonCardDef[] = [
   {
     id: 'pidgeot-ex', displayName: 'Pidgeot ex', type: 'pokemon',
     pokemonType: 'Normal', stage: 'ex', hp: 280, retreatCost: 1, pointValue: 3,
+    weakness: 'Fighting',
     evolvesFrom: 'Pidgeotto',
     tcgId: 'sv3pt5-38', imageUrl: img('sv3pt5-38'),
     ability: {
@@ -424,6 +463,7 @@ export const POKEMON_CARDS: PokemonCardDef[] = [
   {
     id: 'bibarel', displayName: 'Bibarel', type: 'pokemon',
     pokemonType: 'Normal', stage: 'Stage1', hp: 100, retreatCost: 3, pointValue: 2,
+    weakness: 'Fighting',
     tcgId: 'brs-121', imageUrl: img('brs-121'),
     ability: {
       name: 'Incisivos Industriosos',
@@ -439,6 +479,7 @@ export const POKEMON_CARDS: PokemonCardDef[] = [
   {
     id: 'electabuzz', displayName: 'Electabuzz', type: 'pokemon',
     pokemonType: 'Electric', stage: 'Basic', hp: 70, retreatCost: 2, pointValue: 1,
+    weakness: 'Fighting',
     tcgId: 'base1-20', imageUrl: img('base1-20'),
     attacks: [
       { name: 'Thunderpunch', cost: 2, damage: 30 },
@@ -448,6 +489,7 @@ export const POKEMON_CARDS: PokemonCardDef[] = [
   {
     id: 'electivire', displayName: 'Electivire', type: 'pokemon',
     pokemonType: 'Electric', stage: 'Stage1', hp: 140, retreatCost: 3, pointValue: 2,
+    weakness: 'Fighting',
     evolvesFrom: 'Electabuzz',
     tcgId: 'dp3-4', imageUrl: img('dp3-4'),
     attacks: [
@@ -458,6 +500,7 @@ export const POKEMON_CARDS: PokemonCardDef[] = [
   {
     id: 'zapdos', displayName: 'Zapdos', type: 'pokemon',
     pokemonType: 'Electric', stage: 'Basic', hp: 90, retreatCost: 3, pointValue: 2,
+    weakness: 'Fighting',
     tcgId: 'base1-16', imageUrl: img('base1-16'),
     attacks: [
       { name: 'Trovão', cost: 2, damage: 40 },
@@ -469,6 +512,7 @@ export const POKEMON_CARDS: PokemonCardDef[] = [
   {
     id: 'ponyta', displayName: 'Ponyta', type: 'pokemon',
     pokemonType: 'Fire', stage: 'Basic', hp: 50, retreatCost: 1, pointValue: 1,
+    weakness: 'Water',
     tcgId: 'base1-60', imageUrl: img('base1-60'),
     attacks: [
       { name: 'Brasa', cost: 1, damage: 30 },
@@ -479,6 +523,7 @@ export const POKEMON_CARDS: PokemonCardDef[] = [
   {
     id: 'gastly', displayName: 'Gastly', type: 'pokemon',
     pokemonType: 'Psychic', stage: 'Basic', hp: 30, retreatCost: 1, pointValue: 1,
+    weakness: 'Psychic',
     tcgId: 'sv3pt5-92', imageUrl: img('sv3pt5-92'),
     attacks: [
       { name: 'Hipnose', cost: 1, damage: 10 },
@@ -487,6 +532,7 @@ export const POKEMON_CARDS: PokemonCardDef[] = [
   {
     id: 'haunter', displayName: 'Haunter', type: 'pokemon',
     pokemonType: 'Psychic', stage: 'Stage1', hp: 60, retreatCost: 1, pointValue: 2,
+    weakness: 'Psychic',
     evolvesFrom: 'Gastly',
     tcgId: 'sv3pt5-93', imageUrl: img('sv3pt5-93'),
     attacks: [
@@ -497,6 +543,7 @@ export const POKEMON_CARDS: PokemonCardDef[] = [
   {
     id: 'gengar', displayName: 'Gengar', type: 'pokemon',
     pokemonType: 'Psychic', stage: 'Stage2', hp: 130, retreatCost: 2, pointValue: 3,
+    weakness: 'Psychic',
     evolvesFrom: 'Haunter',
     tcgId: 'sv3pt5-94', imageUrl: img('sv3pt5-94'),
     attacks: [
@@ -507,6 +554,7 @@ export const POKEMON_CARDS: PokemonCardDef[] = [
   {
     id: 'drowzee', displayName: 'Drowzee', type: 'pokemon',
     pokemonType: 'Psychic', stage: 'Basic', hp: 60, retreatCost: 2, pointValue: 1,
+    weakness: 'Psychic',
     tcgId: 'sv3pt5-96', imageUrl: img('sv3pt5-96'),
     attacks: [
       { name: 'Psíquico', cost: 1, damage: 10 },
@@ -515,6 +563,7 @@ export const POKEMON_CARDS: PokemonCardDef[] = [
   {
     id: 'hypno', displayName: 'Hypno', type: 'pokemon',
     pokemonType: 'Psychic', stage: 'Stage1', hp: 90, retreatCost: 2, pointValue: 2,
+    weakness: 'Psychic',
     evolvesFrom: 'Drowzee',
     tcgId: 'sv3pt5-97', imageUrl: img('sv3pt5-97'),
     attacks: [
@@ -525,6 +574,7 @@ export const POKEMON_CARDS: PokemonCardDef[] = [
   {
     id: 'mewtwo', displayName: 'Mewtwo', type: 'pokemon',
     pokemonType: 'Psychic', stage: 'Basic', hp: 130, retreatCost: 3, pointValue: 1,
+    weakness: 'Psychic',
     tcgId: 'base1-10', imageUrl: img('base1-10'),
     attacks: [
       { name: 'Psicoataque', cost: 2, damage: 50 },
@@ -534,6 +584,7 @@ export const POKEMON_CARDS: PokemonCardDef[] = [
   {
     id: 'mr-mime', displayName: 'Mr. Mime', type: 'pokemon',
     pokemonType: 'Psychic', stage: 'Basic', hp: 70, retreatCost: 1, pointValue: 1,
+    weakness: 'Psychic',
     tcgId: 'base2-6', imageUrl: img('base2-6'),
     attacks: [
       { name: 'Confusão', cost: 1, damage: 20 },
@@ -543,6 +594,7 @@ export const POKEMON_CARDS: PokemonCardDef[] = [
   {
     id: 'jynx', displayName: 'Jynx', type: 'pokemon',
     pokemonType: 'Psychic', stage: 'Basic', hp: 70, retreatCost: 2, pointValue: 1,
+    weakness: 'Psychic',
     tcgId: 'sv3pt5-124', imageUrl: img('sv3pt5-124'),
     attacks: [
       { name: 'Abraço Gelado', cost: 2, damage: 30 },
@@ -554,6 +606,7 @@ export const POKEMON_CARDS: PokemonCardDef[] = [
   {
     id: 'psyduck', displayName: 'Psyduck', type: 'pokemon',
     pokemonType: 'Water', stage: 'Basic', hp: 60, retreatCost: 1, pointValue: 1,
+    weakness: 'Electric',
     tcgId: 'sv3pt5-54', imageUrl: img('sv3pt5-54'),
     attacks: [
       { name: 'Dor de Cabeça', cost: 1, damage: 10 },
@@ -563,6 +616,7 @@ export const POKEMON_CARDS: PokemonCardDef[] = [
   {
     id: 'golduck', displayName: 'Golduck', type: 'pokemon',
     pokemonType: 'Water', stage: 'Stage1', hp: 100, retreatCost: 2, pointValue: 2,
+    weakness: 'Electric',
     evolvesFrom: 'Psyduck',
     tcgId: 'sv3pt5-55', imageUrl: img('sv3pt5-55'),
     attacks: [
@@ -573,6 +627,7 @@ export const POKEMON_CARDS: PokemonCardDef[] = [
   {
     id: 'horsea', displayName: 'Horsea', type: 'pokemon',
     pokemonType: 'Water', stage: 'Basic', hp: 50, retreatCost: 1, pointValue: 1,
+    weakness: 'Electric',
     tcgId: 'sv3pt5-116', imageUrl: img('sv3pt5-116'),
     attacks: [
       { name: 'Bolha', cost: 1, damage: 10 },
@@ -581,6 +636,7 @@ export const POKEMON_CARDS: PokemonCardDef[] = [
   {
     id: 'seadra', displayName: 'Seadra', type: 'pokemon',
     pokemonType: 'Water', stage: 'Stage1', hp: 90, retreatCost: 2, pointValue: 2,
+    weakness: 'Electric',
     evolvesFrom: 'Horsea',
     tcgId: 'sv3pt5-117', imageUrl: img('sv3pt5-117'),
     attacks: [
@@ -591,6 +647,7 @@ export const POKEMON_CARDS: PokemonCardDef[] = [
   {
     id: 'seel', displayName: 'Seel', type: 'pokemon',
     pokemonType: 'Water', stage: 'Basic', hp: 60, retreatCost: 2, pointValue: 1,
+    weakness: 'Electric',
     tcgId: 'sv3pt5-86', imageUrl: img('sv3pt5-86'),
     attacks: [
       { name: 'Lança-Gelo', cost: 1, damage: 10 },
@@ -599,6 +656,7 @@ export const POKEMON_CARDS: PokemonCardDef[] = [
   {
     id: 'dewgong', displayName: 'Dewgong', type: 'pokemon',
     pokemonType: 'Water', stage: 'Stage1', hp: 90, retreatCost: 3, pointValue: 2,
+    weakness: 'Electric',
     evolvesFrom: 'Seel',
     tcgId: 'sv3pt5-87', imageUrl: img('sv3pt5-87'),
     attacks: [
@@ -609,6 +667,7 @@ export const POKEMON_CARDS: PokemonCardDef[] = [
   {
     id: 'lapras', displayName: 'Lapras', type: 'pokemon',
     pokemonType: 'Water', stage: 'Basic', hp: 100, retreatCost: 3, pointValue: 2,
+    weakness: 'Electric',
     tcgId: 'sv3pt5-131', imageUrl: img('sv3pt5-131'),
     attacks: [
       { name: 'Remoinho de Água', cost: 2, damage: 40 },
@@ -618,6 +677,7 @@ export const POKEMON_CARDS: PokemonCardDef[] = [
   {
     id: 'slowbro', displayName: 'Slowbro', type: 'pokemon',
     pokemonType: 'Psychic', stage: 'Stage1', hp: 110, retreatCost: 3, pointValue: 2,
+    weakness: 'Psychic',
     evolvesFrom: 'Slowpoke',
     tcgId: 'sv3pt5-80', imageUrl: img('sv3pt5-80'),
     attacks: [
@@ -628,6 +688,7 @@ export const POKEMON_CARDS: PokemonCardDef[] = [
   {
     id: 'vaporeon', displayName: 'Vaporeon', type: 'pokemon',
     pokemonType: 'Water', stage: 'Stage1', hp: 110, retreatCost: 2, pointValue: 2,
+    weakness: 'Electric',
     evolvesFrom: 'Eevee',
     tcgId: 'base2-12', imageUrl: img('base2-12'),
     attacks: [
@@ -640,6 +701,7 @@ export const POKEMON_CARDS: PokemonCardDef[] = [
   {
     id: 'jigglypuff', displayName: 'Jigglypuff', type: 'pokemon',
     pokemonType: 'Psychic', stage: 'Basic', hp: 60, retreatCost: 1, pointValue: 1,
+    weakness: 'Psychic',
     tcgId: 'base2-54', imageUrl: img('base2-54'),
     attacks: [
       { name: 'Soco', cost: 1, damage: 20 },
@@ -648,6 +710,7 @@ export const POKEMON_CARDS: PokemonCardDef[] = [
   {
     id: 'slowpoke', displayName: 'Slowpoke', type: 'pokemon',
     pokemonType: 'Psychic', stage: 'Basic', hp: 50, retreatCost: 1, pointValue: 1,
+    weakness: 'Psychic',
     tcgId: 'fossil-55', imageUrl: img('fossil-55'),
     attacks: [
       { name: 'Cabeçada', cost: 1, damage: 20 },
@@ -658,6 +721,7 @@ export const POKEMON_CARDS: PokemonCardDef[] = [
   {
     id: 'voltorb', displayName: 'Voltorb', type: 'pokemon',
     pokemonType: 'Electric', stage: 'Basic', hp: 40, retreatCost: 1, pointValue: 1,
+    weakness: 'Fighting',
     tcgId: 'base1-67', imageUrl: img('base1-67'),
     attacks: [
       { name: 'Encontrão', cost: 1, damage: 20 },
@@ -666,6 +730,7 @@ export const POKEMON_CARDS: PokemonCardDef[] = [
   {
     id: 'electrode', displayName: 'Electrode', type: 'pokemon',
     pokemonType: 'Electric', stage: 'Stage1', hp: 90, retreatCost: 1, pointValue: 2,
+    weakness: 'Fighting',
     evolvesFrom: 'Voltorb',
     tcgId: 'base1-21', imageUrl: img('base1-21'),
     attacks: [
@@ -676,6 +741,7 @@ export const POKEMON_CARDS: PokemonCardDef[] = [
   {
     id: 'mareep', displayName: 'Mareep', type: 'pokemon',
     pokemonType: 'Electric', stage: 'Basic', hp: 50, retreatCost: 1, pointValue: 1,
+    weakness: 'Fighting',
     tcgId: 'neo1-56', imageUrl: img('neo1-56'),
     attacks: [
       { name: 'Trovãozinho', cost: 1, damage: 20 },

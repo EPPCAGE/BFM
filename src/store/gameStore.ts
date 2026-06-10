@@ -5,7 +5,9 @@ import {
   canEvolve, evolvePokemon,
   canPlayTrainer, playTrainer, playEnergyFromHand, playEnergyFromDeck,
   playEnergyFromDiscard, completeDeckSearch,
+  performCopiedAttack, performSynergyAttack,
 } from '../game/engine';
+import type { Attack } from '../game/types';
 import { runAITurn, type AIDifficulty } from '../game/ai';
 import { STARTER_DECKS } from '../data/decks';
 
@@ -30,6 +32,8 @@ interface GameStore {
   evolveAction: (targetInstanceId: string, evolvedCardId: string) => void;
   playTrainerAction: (cardId: string, targetInstanceId?: string) => void;
   completeDeckSearchAction: (cardId: string) => void;
+  copiedAttackAction: (mewInstanceId: string, attack: Attack, targetInstanceId: string) => void;
+  synergyAttackAction: (targetInstanceId: string) => void;
   endTurnAction: () => void;
 }
 
@@ -116,6 +120,20 @@ export const useGameStore = create<GameStore>((set, get) => ({
     const { gameState } = get();
     if (!gameState) return;
     set({ gameState: completeDeckSearch(gameState, 'player', cardId) });
+  },
+
+  copiedAttackAction: (mewInstanceId, attack, targetInstanceId) => {
+    const { gameState } = get();
+    if (!gameState || gameState.currentPlayer !== 'player') return;
+    const ns = performCopiedAttack(gameState, 'player', mewInstanceId, attack, targetInstanceId);
+    set({ gameState: ns });
+  },
+
+  synergyAttackAction: (targetInstanceId) => {
+    const { gameState } = get();
+    if (!gameState || gameState.currentPlayer !== 'player') return;
+    const ns = performSynergyAttack(gameState, 'player', targetInstanceId);
+    set({ gameState: ns });
   },
 
   endTurnAction: () => {

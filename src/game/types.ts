@@ -35,6 +35,7 @@ export interface PokemonCardDef {
   retreatCost: number;
   pointValue: number;
   evolvesFrom?: string;  // displayName of base form
+  weakness?: PokemonType;
   attacks: Attack[];
   ability?: Ability;
   imageUrl: string;
