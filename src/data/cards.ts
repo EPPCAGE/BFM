@@ -487,7 +487,7 @@ export const POKEMON_CARDS: PokemonCardDef[] = [
   {
     id: 'slowpoke', displayName: 'Slowpoke', type: 'pokemon',
     pokemonType: 'Psychic', stage: 'Basic', hp: 50, retreatCost: 1, pointValue: 1,
-    tcgId: 'base1-55', imageUrl: img('base1-55'),
+    tcgId: 'fossil-55', imageUrl: img('fossil-55'),
     attacks: [
       { name: 'Cabeçada', cost: 1, damage: 20 },
     ],
