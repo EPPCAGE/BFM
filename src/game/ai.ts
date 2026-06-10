@@ -5,6 +5,8 @@ import {
   canPlayTrainer, playTrainer, playEnergyFromHand, playEnergyFromDeck,
   endTurn as engineEndTurn, opponent, completeDeckSearch,
   canEvolve, evolvePokemon,
+  canSynergyAttack, getSynergyGroup, getSynergyDamage, performSynergyAttack,
+  performCopiedAttack,
 } from './engine';
 
 function counterDamage(target: PokemonInPlay): number {
@@ -41,22 +43,100 @@ function autoCompleteDeckSearch(state: GameState, pid: PlayerId): GameState {
 let _steps: GameState[] = [];
 function snap(s: GameState): GameState { _steps.push(s); return s; }
 
-// Evolve all eligible Pokémon in play (used by hard/extra-hard)
+// Evolve all eligible Pokémon in play (multiple evolutions allowed per turn)
 function evolveAll(state: GameState, pid: PlayerId): GameState {
   let s = state;
-  if (s.players[pid].evolutionPlayedThisTurn) return s;
-  const areaSnap = [...s.players[pid].playArea];
-  for (const pk of areaSnap) {
-    const evoCard = s.players[pid].hand.find(
-      c => c.type === 'pokemon' && (c as PokemonCardDef).evolvesFrom === pk.def.displayName
-    ) as PokemonCardDef | undefined;
-    if (evoCard && canEvolve(s, pid, pk.instanceId, evoCard.id)) {
-      s = evolvePokemon(s, pid, pk.instanceId, evoCard.id);
-      if (s.phase === 'end') return s;
-      break; // only one per turn
+  // Keep trying until no more evolutions are possible
+  let evolved = true;
+  while (evolved) {
+    evolved = false;
+    for (const pk of [...s.players[pid].playArea]) {
+      const evoCard = s.players[pid].hand.find(
+        c => c.type === 'pokemon' && (c as PokemonCardDef).evolvesFrom === pk.def.displayName
+      ) as PokemonCardDef | undefined;
+      if (evoCard && canEvolve(s, pid, pk.instanceId, evoCard.id)) {
+        s = evolvePokemon(s, pid, pk.instanceId, evoCard.id);
+        if (s.phase === 'end') return s;
+        evolved = true;
+        break;
+      }
     }
   }
   return s;
+}
+
+// Effective damage considering weakness
+function effectiveDamage(attacker: PokemonInPlay, target: PokemonInPlay, baseDmg: number): number {
+  if (target.def.weakness && target.def.weakness === attacker.def.pokemonType) return baseDmg * 2;
+  return baseDmg;
+}
+
+// Try Mew's "Baú de DNA" ability: copy best attack vs a vulnerable target
+function tryMewAbility(state: GameState, pid: PlayerId): GameState {
+  let s = state;
+  const mew = s.players[pid].playArea.find(
+    pk => pk.def.id === 'mew' && !pk.hasUsedAbilityThisTurn && !pk.hasAttackedThisTurn
+  );
+  if (!mew) return s;
+
+  const allAttacks = s.players[opponent(pid)].playArea
+    .concat(s.players[pid].playArea)
+    .flatMap(pk => pk.def.attacks.filter(a => a.damage > 0));
+
+  const targets = s.players[opponent(pid)].playArea.filter(pk => pk.vulnerability === 'vulnerable');
+  if (targets.length === 0) return s;
+
+  // Pick best attack + target combo by effective damage
+  let bestDmg = -1;
+  let bestAttack = null;
+  let bestTarget = null;
+  for (const target of targets) {
+    for (const atk of allAttacks) {
+      const dmg = effectiveDamage(mew, target, atk.damage);
+      if (dmg > bestDmg) { bestDmg = dmg; bestAttack = atk; bestTarget = target; }
+    }
+  }
+
+  if (bestAttack && bestTarget && s.players[pid].energyPool.some(e => !e.used)) {
+    s = snap(performCopiedAttack(s, pid, mew.instanceId, bestAttack, bestTarget.instanceId));
+  }
+  return s;
+}
+
+// Try synergy attack if available and damage is worth it
+function trySynergyAttack(state: GameState, pid: PlayerId, minDamage = 0): GameState {
+  let s = state;
+  if (!canSynergyAttack(s, pid)) return s;
+  const group = getSynergyGroup(s, pid);
+  const dmg = getSynergyDamage(group);
+  if (dmg < minDamage) return s;
+
+  const targets = s.players[opponent(pid)].playArea
+    .filter(pk => pk.vulnerability === 'vulnerable')
+    .sort((a, b) => {
+      // Prefer KO targets, then highest point value
+      const aKo = dmg >= a.currentHp ? 1 : 0;
+      const bKo = dmg >= b.currentHp ? 1 : 0;
+      if (bKo !== aKo) return bKo - aKo;
+      return b.def.pointValue - a.def.pointValue;
+    });
+
+  if (targets.length === 0) return s;
+  s = snap(performSynergyAttack(s, pid, targets[0].instanceId));
+  return s;
+}
+
+// Pick best target considering weakness
+function weaknessAwareTargets(state: GameState, pid: PlayerId, attacker: PokemonInPlay): PokemonInPlay[] {
+  return state.players[opponent(pid)].playArea
+    .filter(pk => pk.vulnerability === 'vulnerable')
+    .sort((a, b) => {
+      // Prefer targets we're super effective against
+      const aWeak = a.def.weakness === attacker.def.pokemonType ? 1 : 0;
+      const bWeak = b.def.weakness === attacker.def.pokemonType ? 1 : 0;
+      if (bWeak !== aWeak) return bWeak - aWeak;
+      return b.def.pointValue - a.def.pointValue;
+    });
 }
 
 // If field is empty, keep playing energy + summoning until a Basic is on the field or no more options
@@ -230,17 +310,19 @@ function aiHard(state: GameState): GameState {
     if (card.stage === 'Basic' && canSummon(s, pid, card.id)) s = snap(summonPokemon(s, pid, card.id));
   }
 
-  const targets = s.players[opponent(pid)].playArea
-    .filter(pk => pk.vulnerability === 'vulnerable')
-    .sort((a, b) => (a.currentHp / a.def.pointValue) - (b.currentHp / b.def.pointValue));
+  // Try synergy attack (30+ damage threshold)
+  s = trySynergyAttack(s, pid, 30);
+  if (s.phase === 'end') return s;
 
   for (const attacker of [...s.players[pid].playArea]) {
     if (attacker.hasAttackedThisTurn) continue;
+    const targets = weaknessAwareTargets(s, pid, attacker)
+      .sort((a, b) => (a.currentHp / a.def.pointValue) - (b.currentHp / b.def.pointValue));
     for (const target of targets) {
       const best = attacker.def.attacks
         .map((a, i) => ({ a, i }))
         .filter(x => canAttack(s, pid, attacker.instanceId, x.i) && !isSuicidal(s, pid, attacker, x.a.damage, target))
-        .sort((x, y) => y.a.damage - x.a.damage)[0];
+        .sort((x, y) => effectiveDamage(attacker, target, y.a.damage) - effectiveDamage(attacker, target, x.a.damage))[0];
       if (best) {
         s = snap(performAttack(s, pid, attacker.instanceId, best.i, target.instanceId));
         if (s.phase === 'end') return s;
@@ -294,22 +376,6 @@ function aiExtraHard(state: GameState): GameState {
 
   // Helper: would this kill win the game?
   const winsGame = (target: PokemonInPlay) => me().points + target.def.pointValue >= 10;
-
-  // Helper: best affordable non-suicidal attack for attacker vs target
-  function bestSafeAttack(attacker: PokemonInPlay, target: PokemonInPlay) {
-    return attacker.def.attacks
-      .map((a, i) => ({ a, i }))
-      .filter(x => canAttack(s, pid, attacker.instanceId, x.i) && !isSuicidal(s, pid, attacker, x.a.damage, target))
-      .sort((x, y) => y.a.damage - x.a.damage)[0];
-  }
-
-  // Helper: best affordable attack regardless of suicidal (for game-winning plays)
-  function bestAttack(attacker: PokemonInPlay, _target: PokemonInPlay) {
-    return attacker.def.attacks
-      .map((a, i) => ({ a, i }))
-      .filter(x => canAttack(s, pid, attacker.instanceId, x.i))
-      .sort((x, y) => y.a.damage - x.a.damage)[0];
-  }
 
   // ── PHASE 1: Draw supporters early to maximise options ──────────────────────
   if (!me().supporterPlayedThisTurn) {
@@ -397,12 +463,32 @@ function aiExtraHard(state: GameState): GameState {
     if (card.stage === 'Basic' && canSummon(s, pid, card.id)) s = snap(summonPokemon(s, pid, card.id));
   }
 
+  // ── PHASE 5.5: Synergy attack ────────────────────────────────────────────────
+  // Use synergy attack if it would kill a target or deal high damage
+  if (canSynergyAttack(s, pid)) {
+    const group = getSynergyGroup(s, pid);
+    const synergyDmg = getSynergyDamage(group);
+    const synergyKill = opp().playArea.some(pk => pk.vulnerability === 'vulnerable' && synergyDmg >= pk.currentHp);
+    if (synergyKill || synergyDmg >= 60) {
+      s = trySynergyAttack(s, pid, 0);
+      if (s.phase === 'end') return s;
+    }
+  }
+
+  // ── PHASE 5.6: Mew "Baú de DNA" ability ─────────────────────────────────────
+  s = tryMewAbility(s, pid);
+  if (s.phase === 'end') return s;
+
   // ── PHASE 6: Game-winning attacks — override suicidal check ─────────────────
   for (const attacker of [...me().playArea]) {
     if (attacker.hasAttackedThisTurn) continue;
     for (const target of opp().playArea.filter(pk => pk.vulnerability === 'vulnerable')) {
-      const best = bestAttack(attacker, target);
-      if (best && kills(best.a.damage, target) && winsGame(target)) {
+      const effDmg = (dmg: number) => effectiveDamage(attacker, target, dmg);
+      const best = attacker.def.attacks
+        .map((a, i) => ({ a, i }))
+        .filter(x => canAttack(s, pid, attacker.instanceId, x.i))
+        .sort((x, y) => effDmg(y.a.damage) - effDmg(x.a.damage))[0];
+      if (best && kills(effDmg(best.a.damage), target) && winsGame(target)) {
         s = snap(performAttack(s, pid, attacker.instanceId, best.i, target.instanceId));
         return s;
       }
@@ -437,15 +523,20 @@ function aiExtraHard(state: GameState): GameState {
     const killTargets = opp().playArea
       .filter(pk => pk.vulnerability === 'vulnerable')
       .filter(target => {
-        const b = bestAttack(attacker, target);
-        return b && kills(b.a.damage, target);
+        const b = attacker.def.attacks
+          .map((a, i) => ({ a, i }))
+          .filter(x => canAttack(s, pid, attacker.instanceId, x.i))
+          .sort((x, y) => effectiveDamage(attacker, target, y.a.damage) - effectiveDamage(attacker, target, x.a.damage))[0];
+        return b && kills(effectiveDamage(attacker, target, b.a.damage), target);
       })
       .sort((a, b) => b.def.pointValue - a.def.pointValue);
 
     if (killTargets.length > 0) {
       const target = killTargets[0];
-      const best = bestAttack(attacker, target)!;
-      // Accept mutual kills only if we have a replacement
+      const best = attacker.def.attacks
+        .map((a, i) => ({ a, i }))
+        .filter(x => canAttack(s, pid, attacker.instanceId, x.i))
+        .sort((x, y) => effectiveDamage(attacker, target, y.a.damage) - effectiveDamage(attacker, target, x.a.damage))[0]!;
       const counter = counterDamage(target);
       const attackerDies = counter >= attacker.currentHp;
       const others = me().playArea.filter(pk => pk.instanceId !== attacker.instanceId);
@@ -459,16 +550,17 @@ function aiExtraHard(state: GameState): GameState {
   // ── PHASE 9: Damage accumulation — chip down the weakest target ──────────────
   for (const attacker of [...me().playArea]) {
     if (attacker.hasAttackedThisTurn) continue;
-    // Sort: most damaged relative to HP (closest to dying) and highest point value
-    const vulnTargets = opp().playArea
-      .filter(pk => pk.vulnerability === 'vulnerable')
+    const vulnTargets = weaknessAwareTargets(s, pid, attacker)
       .sort((a, b) => {
         const scoreA = (1 - a.currentHp / a.def.hp) * a.def.pointValue;
         const scoreB = (1 - b.currentHp / b.def.hp) * b.def.pointValue;
         return scoreB - scoreA;
       });
     for (const target of vulnTargets) {
-      const best = bestSafeAttack(attacker, target);
+      const best = attacker.def.attacks
+        .map((a, i) => ({ a, i }))
+        .filter(x => canAttack(s, pid, attacker.instanceId, x.i) && !isSuicidal(s, pid, attacker, effectiveDamage(attacker, target, x.a.damage), target))
+        .sort((x, y) => effectiveDamage(attacker, target, y.a.damage) - effectiveDamage(attacker, target, x.a.damage))[0];
       if (best) {
         s = snap(performAttack(s, pid, attacker.instanceId, best.i, target.instanceId));
         if (s.phase === 'end') return s;
