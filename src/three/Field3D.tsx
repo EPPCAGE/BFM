@@ -60,14 +60,14 @@ function FieldCard({ pk, pos, owner, state, onAttack, onEvolve, onSelectTarget, 
         onClick={(e) => { e.stopPropagation(); if (isTarget) onSelectTarget?.(pk.instanceId); }}
       />
 
-      {/* HP bar sits below the card (toward the camera) so it never overlaps the art */}
-      <Html position={[0, 0, 0.88]} center distanceFactor={6} pointerEvents="none" style={{ zIndex: 1 }}>
-        <div style={{ width: 82, background: 'rgba(5,8,20,0.82)', borderRadius: 6, padding: '3px 5px', boxShadow: '0 2px 8px rgba(0,0,0,0.7)' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 9, fontWeight: 700, color: '#fff', textShadow: '0 1px 2px #000', marginBottom: 2 }}>
-            <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 52 }}>{pk.def.displayName}</span>
+      {/* HP bar sits flat on the table above the card group */}
+      <Html position={[0, 0.12, 0.72]} center distanceFactor={18} pointerEvents="none" style={{ zIndex: 1 }}>
+        <div style={{ width: 70, background: 'rgba(5,8,20,0.88)', borderRadius: 5, padding: '2px 4px', boxShadow: '0 1px 6px rgba(0,0,0,0.8)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 8, fontWeight: 700, color: '#fff', textShadow: '0 1px 2px #000', marginBottom: 2 }}>
+            <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 44 }}>{pk.def.displayName}</span>
             <span style={{ color: pk.currentHp / pk.def.hp > 0.5 ? '#86efac' : '#fca5a5' }}>{pk.currentHp}/{pk.def.hp}</span>
           </div>
-          <div style={{ height: 4, background: '#1e293b', borderRadius: 99, overflow: 'hidden' }}>
+          <div style={{ height: 3, background: '#1e293b', borderRadius: 99, overflow: 'hidden' }}>
             <div style={{
               height: '100%',
               width: `${Math.max(0, (pk.currentHp / pk.def.hp) * 100)}%`,
@@ -75,8 +75,8 @@ function FieldCard({ pk, pos, owner, state, onAttack, onEvolve, onSelectTarget, 
               transition: 'width 0.5s ease',
             }} />
           </div>
-          <div style={{ textAlign: 'center', fontSize: 7, fontWeight: 800, marginTop: 2, color: vulnerable ? '#fca5a5' : '#4ade80', letterSpacing: 1 }}>
-            {vulnerable ? '⚠ VULNERÁVEL' : '✓ PRONTO'}
+          <div style={{ textAlign: 'center', fontSize: 6, fontWeight: 800, marginTop: 1, color: vulnerable ? '#fca5a5' : '#4ade80', letterSpacing: 0.5 }}>
+            {vulnerable ? '⚠ VULN' : '✓ PRONTO'}
           </div>
         </div>
       </Html>
