@@ -136,9 +136,9 @@ export function HoloCard({
         <planeGeometry args={[CARD_W * 0.97, CARD_H * 0.97]} />
         <meshStandardMaterial
           map={faceUp ? frontTex : backTex}
-          roughness={0.7}
+          roughness={0.85}
           metalness={0}
-          envMapIntensity={0.2}
+          envMapIntensity={0.1}
         />
       </mesh>
 

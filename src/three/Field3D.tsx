@@ -13,9 +13,9 @@ const PLAYER_Z = 1.4;
 
 function holoFor(pk: PokemonInPlay): number {
   const v = pk.def.pointValue ?? 1;
-  if (v >= 3) return 0.9;
-  if (v === 2) return 0.6;
-  return 0.32;
+  if (v >= 3) return 0.5;
+  if (v === 2) return 0.32;
+  return 0.16;
 }
 
 function rowPositions(pokemons: PokemonInPlay[], z: number): Record<string, [number, number, number]> {
@@ -141,6 +141,28 @@ function ImpactLayer({ state, positions }: { state: GameState; positions: Record
   );
 }
 
+// A thin white rectangular outline laid flat on the table (a play zone)
+function ZoneOutline({ z, w, d, color = '#eef2ff', opacity = 0.4 }: { z: number; w: number; d: number; color?: string; opacity?: number }) {
+  const t = 0.04; // line thickness
+  const y = -0.038;
+  return (
+    <group>
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, y, z - d / 2]}>
+        <planeGeometry args={[w, t]} /><meshBasicMaterial color={color} transparent opacity={opacity} />
+      </mesh>
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, y, z + d / 2]}>
+        <planeGeometry args={[w, t]} /><meshBasicMaterial color={color} transparent opacity={opacity} />
+      </mesh>
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[-w / 2, y, z]}>
+        <planeGeometry args={[t, d]} /><meshBasicMaterial color={color} transparent opacity={opacity} />
+      </mesh>
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[w / 2, y, z]}>
+        <planeGeometry args={[t, d]} /><meshBasicMaterial color={color} transparent opacity={opacity} />
+      </mesh>
+    </group>
+  );
+}
+
 // Slow camera breathing for cinematic feel
 function CameraRig() {
   useFrame((state) => {
@@ -192,32 +214,20 @@ export function Field3D({ state, isPlayerTurn, playerEnergy, targeting, onAttack
         <planeGeometry args={[40, 40]} />
         <meshStandardMaterial color="#0c3a26" roughness={0.97} metalness={0} envMapIntensity={0.3} />
       </mesh>
-      {/* White arena marking rings */}
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.04, 0]}>
-        <ringGeometry args={[3.5, 3.55, 80]} />
-        <meshBasicMaterial color="#eef2ff" transparent opacity={0.7} side={THREE.DoubleSide} />
+      {/* Subtle side tints (player = blue, AI = red) */}
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.045, 1.4]}>
+        <planeGeometry args={[9.2, 1.9]} /><meshBasicMaterial color="#1e3a8a" transparent opacity={0.12} />
       </mesh>
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.04, 0]}>
-        <ringGeometry args={[5.6, 5.64, 80]} />
-        <meshBasicMaterial color="#eef2ff" transparent opacity={0.35} side={THREE.DoubleSide} />
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.045, -2.1]}>
+        <planeGeometry args={[9.2, 1.9]} /><meshBasicMaterial color="#7f1d1d" transparent opacity={0.12} />
       </mesh>
-      {/* Player zone marking box (white outline strips) */}
-      {[1.4, -2.1].map((z, i) => (
-        <group key={i}>
-          <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.038, z - 0.85]}>
-            <planeGeometry args={[9, 0.04]} />
-            <meshBasicMaterial color="#eef2ff" transparent opacity={0.55} />
-          </mesh>
-          <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.038, z + 0.85]}>
-            <planeGeometry args={[9, 0.04]} />
-            <meshBasicMaterial color="#eef2ff" transparent opacity={0.55} />
-          </mesh>
-        </group>
-      ))}
-      {/* Center divider line */}
+      {/* Clean play-zone outlines, one per player */}
+      <ZoneOutline z={1.4} w={9.2} d={1.9} color="#bfdbfe" opacity={0.45} />
+      <ZoneOutline z={-2.1} w={9.2} d={1.9} color="#fecaca" opacity={0.45} />
+      {/* Single center divider line */}
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.038, -0.35]}>
-        <planeGeometry args={[12, 0.05]} />
-        <meshBasicMaterial color="#eef2ff" transparent opacity={0.75} />
+        <planeGeometry args={[10, 0.05]} />
+        <meshBasicMaterial color="#eef2ff" transparent opacity={0.5} />
       </mesh>
 
       <ContactShadows position={[0, 0, 0]} opacity={0.3} scale={20} blur={1.8} far={6} />
