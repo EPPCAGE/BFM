@@ -127,7 +127,7 @@ function ImpactLayer({ state, positions }: { state: GameState; positions: Record
       if (!all.find(p => p.instanceId === id)) delete prevHp.current[id];
     }
     if (next.length) setBursts(b => [...b, ...next]);
-  });
+  }, [state]);
 
   return (
     <>
@@ -188,7 +188,7 @@ export function Field3D({ state, isPlayerTurn, playerEnergy, targeting, onAttack
   const allPos = { ...aiPos, ...playerPos };
 
   return (
-    <Canvas shadows dpr={[1, 2]} camera={{ position: [0, 3.0, 5.2], fov: 52 }}
+    <Canvas shadows={false} dpr={[1, 1.5]} camera={{ position: [0, 3.0, 5.2], fov: 52 }}
       gl={{ antialias: true, toneMapping: THREE.ACESFilmicToneMapping, toneMappingExposure: 1.05 }}>
       <color attach="background" args={['#081c14']} />
       <fog attach="fog" args={['#081c14', 14, 26]} />
@@ -196,9 +196,7 @@ export function Field3D({ state, isPlayerTurn, playerEnergy, targeting, onAttack
       <CameraRig />
 
       <ambientLight intensity={0.55} color="#e8eeff" />
-      <directionalLight position={[0, 10, 4]} intensity={1.1} castShadow color="#ffffff"
-        shadow-mapSize={[2048, 2048]} shadow-camera-near={1} shadow-camera-far={25}
-        shadow-camera-left={-8} shadow-camera-right={8} shadow-camera-top={8} shadow-camera-bottom={-8} />
+      <directionalLight position={[0, 10, 4]} intensity={1.1} color="#ffffff" />
       <directionalLight position={[0, 4, -6]} intensity={1.0} color="#ccd8ff" />
       <pointLight position={[-5, 4, 3]} intensity={35} color="#4f8cff" distance={18} />
       <pointLight position={[5, 4, 3]} intensity={35} color="#4f8cff" distance={18} />
@@ -228,7 +226,7 @@ export function Field3D({ state, isPlayerTurn, playerEnergy, targeting, onAttack
         <meshBasicMaterial color="#eef2ff" transparent opacity={0.5} />
       </mesh>
 
-      <ContactShadows position={[0, 0, 0]} opacity={0.3} scale={20} blur={1.8} far={6} />
+      <ContactShadows position={[0, 0, 0]} opacity={0.25} scale={20} blur={1.5} far={6} frames={1} />
 
       {state.players.ai.playArea.map(pk => (
         <FieldCard key={pk.instanceId} pk={pk} pos={aiPos[pk.instanceId]} owner="ai" state={state}

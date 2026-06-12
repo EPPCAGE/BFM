@@ -162,7 +162,7 @@ export function GameBoard() {
       // TurnBanner handles this via its own effect
     }
     prevPlayerRef.current = gameState.currentPlayer;
-  });
+  }, [gameState]);
 
   if (!gameState) return null;
 
