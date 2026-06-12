@@ -170,8 +170,8 @@ export function Field3D({ state, isPlayerTurn, playerEnergy, targeting, onAttack
   return (
     <Canvas shadows dpr={[1, 2]} camera={{ position: [0, 3.0, 5.2], fov: 52 }}
       gl={{ antialias: true, toneMapping: THREE.ACESFilmicToneMapping, toneMappingExposure: 1.05 }}>
-      <color attach="background" args={['#0d1b3e']} />
-      <fog attach="fog" args={['#0d1b3e', 14, 26]} />
+      <color attach="background" args={['#081c14']} />
+      <fog attach="fog" args={['#081c14', 14, 26]} />
 
       <CameraRig />
 
@@ -187,34 +187,37 @@ export function Field3D({ state, isPlayerTurn, playerEnergy, targeting, onAttack
 
       <Suspense fallback={null}><Environment preset="lobby" /></Suspense>
 
-      {/* Arena floor */}
+      {/* Felt table surface — dark green, matte (no metalness) */}
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.05, 0]} receiveShadow>
         <planeGeometry args={[40, 40]} />
-        <meshStandardMaterial color="#1a3a6e" roughness={0.4} metalness={0.5} envMapIntensity={1.5} />
+        <meshStandardMaterial color="#0c3a26" roughness={0.97} metalness={0} envMapIntensity={0.3} />
       </mesh>
-      {/* Glow rings */}
+      {/* White arena marking rings */}
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.04, 0]}>
-        <ringGeometry args={[3.5, 3.8, 64]} />
-        <meshBasicMaterial color="#4f8cff" transparent opacity={0.5} side={THREE.DoubleSide} />
+        <ringGeometry args={[3.5, 3.55, 80]} />
+        <meshBasicMaterial color="#eef2ff" transparent opacity={0.7} side={THREE.DoubleSide} />
       </mesh>
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.04, 0]}>
-        <ringGeometry args={[5.5, 5.7, 64]} />
-        <meshBasicMaterial color="#7eb8ff" transparent opacity={0.25} side={THREE.DoubleSide} />
+        <ringGeometry args={[5.6, 5.64, 80]} />
+        <meshBasicMaterial color="#eef2ff" transparent opacity={0.35} side={THREE.DoubleSide} />
       </mesh>
-      {/* Player zone */}
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.035, 1.4]}>
-        <planeGeometry args={[9, 1.6]} />
-        <meshBasicMaterial color="#3b82f6" transparent opacity={0.15} />
-      </mesh>
-      {/* AI zone */}
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.035, -2.1]}>
-        <planeGeometry args={[9, 1.6]} />
-        <meshBasicMaterial color="#ef4444" transparent opacity={0.15} />
-      </mesh>
-      {/* Center divider */}
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.04, 0]}>
-        <planeGeometry args={[14, 0.06]} />
-        <meshBasicMaterial color="#fbbf24" transparent opacity={0.7} />
+      {/* Player zone marking box (white outline strips) */}
+      {[1.4, -2.1].map((z, i) => (
+        <group key={i}>
+          <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.038, z - 0.85]}>
+            <planeGeometry args={[9, 0.04]} />
+            <meshBasicMaterial color="#eef2ff" transparent opacity={0.55} />
+          </mesh>
+          <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.038, z + 0.85]}>
+            <planeGeometry args={[9, 0.04]} />
+            <meshBasicMaterial color="#eef2ff" transparent opacity={0.55} />
+          </mesh>
+        </group>
+      ))}
+      {/* Center divider line */}
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.038, -0.35]}>
+        <planeGeometry args={[12, 0.05]} />
+        <meshBasicMaterial color="#eef2ff" transparent opacity={0.75} />
       </mesh>
 
       <ContactShadows position={[0, 0, 0]} opacity={0.3} scale={20} blur={1.8} far={6} />
