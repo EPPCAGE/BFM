@@ -7,6 +7,8 @@ import { CardTooltip } from './CardTooltip';
 import { DeckSearchModal } from './DeckSearchModal';
 import { HintPanel } from './HintPanel';
 import { TurnBanner } from './TurnBanner';
+import { AttackParticles } from './AttackParticles';
+import { VictoryConfetti } from './VictoryConfetti';
 import { AnimatePresence, motion } from 'framer-motion';
 import { canAttack, canSynergyAttack, getSynergyGroup, getSynergyDamage } from '../game/engine';
 import { useTooltip } from '../hooks/useTooltip';
@@ -44,6 +46,8 @@ export function GameBoard() {
   const [shakingCard, setShakingCard] = useState<string | null>(null);
   const [evolvingCard, setEvolvingCard] = useState<string | null>(null);
   const [koFlash, setKoFlash] = useState<{ name: string; isPlayer: boolean } | null>(null);
+  const [attackParticles, setAttackParticles] = useState<{ type: string; direction: 'up' | 'down'; key: number } | null>(null);
+  const [showConfetti, setShowConfetti] = useState(false);
   const [muted, setMuted] = useState(() => localStorage.getItem('lorkemon-muted') === '1');
   const prevHpRef = useRef<Record<string, number>>({});
   const prevEvoRef = useRef<Record<string, number>>({});
@@ -88,13 +92,26 @@ export function GameBoard() {
       playSound(gameState.result === 'player_wins' ? 'win' : 'ko');
     }
 
-    // ── Log-based sounds ──
+    // ── Result: show confetti ──
+    if (gameState.result === 'player_wins') {
+      setShowConfetti(true);
+    }
+
+    // ── Log-based sounds + attack particles ──
     const newEntries = gameState.log.slice(prevLogLenRef.current);
     prevLogLenRef.current = gameState.log.length;
     for (const e of newEntries) {
       const m = e.message;
       if (m.includes('derrotado')) playSound('ko');
-      else if (m.includes('usou') && m.includes('dano')) playSound('attack');
+      else if ((m.includes('usou') && m.includes('dano')) || m.includes('sinérgico')) {
+        playSound('attack');
+        // Determine attacker type and direction from log actor
+        const isAiAttack = e.player === 'ai';
+        // Find the attacking pokemon's type from current state
+        const attackerArea = isAiAttack ? gameState.players.ai.playArea : gameState.players.player.playArea;
+        const atkType = attackerArea[0]?.def.pokemonType ?? 'Normal';
+        setAttackParticles({ type: atkType, direction: isAiAttack ? 'down' : 'up', key: Date.now() });
+      }
       else if (m.includes('invocou')) playSound('summon');
       else if (m.includes('evoluiu') || m.includes('Evo')) playSound('evolve');
     }
@@ -239,6 +256,19 @@ export function GameBoard() {
     <div className="flex flex-col h-screen tcg-mat overflow-hidden">
 
       <TurnBanner currentPlayer={currentPlayer} turn={turn} />
+
+      {/* ── ATTACK PARTICLES ── */}
+      {attackParticles && (
+        <AttackParticles
+          key={attackParticles.key}
+          pokemonType={attackParticles.type}
+          direction={attackParticles.direction}
+          onDone={() => setAttackParticles(null)}
+        />
+      )}
+
+      {/* ── VICTORY CONFETTI ── */}
+      <VictoryConfetti active={showConfetti} />
 
       {/* ── KO FLASH OVERLAY ── */}
       <AnimatePresence>
@@ -646,11 +676,18 @@ export function GameBoard() {
                 {!isPlayerTurn && <span className="text-[10px] text-slate-500 italic">Aguardando IA…</span>}
               </div>
               <div className="hand-fan gap-1.5 overflow-x-auto scrollbar-hide pb-1">
+                <AnimatePresence initial={false}>
                 {playerState.hand.map((card, idx) => {
                   const isTeleportTarget = pendingTeleport && card.type === 'pokemon' && (card as PokemonCardDef).stage === 'Basic';
                   const isMenuOpen = cardMenu?.idx === idx;
                   return (
-                    <div key={`${card.id}-${idx}`} data-card-hover
+                    <motion.div
+                      key={`${card.id}-${idx}`}
+                      data-card-hover
+                      initial={{ opacity: 0, y: 40, scale: 0.85 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: 20, scale: 0.9 }}
+                      transition={{ type: 'spring', stiffness: 280, damping: 22, delay: idx * 0.04 }}
                       className={`relative card-in-hand rounded-lg cursor-pointer flex-shrink-0 shadow-xl
                         ${isTeleportTarget ? 'ring-2 ring-indigo-400 animate-pulse' : ''}
                         ${isMenuOpen ? 'ring-2 ring-yellow-400 scale-105' : ''}`}
@@ -662,9 +699,10 @@ export function GameBoard() {
                       <CardImage card={card} className="w-full h-full rounded-lg" />
                       {card.type === 'item' && <div className="absolute bottom-0 left-0 right-0 bg-amber-700/85 text-[8px] text-center text-white rounded-b font-semibold">ITEM</div>}
                       {card.type === 'supporter' && <div className="absolute bottom-0 left-0 right-0 bg-purple-700/85 text-[8px] text-center text-white rounded-b font-semibold">APOIADOR</div>}
-                    </div>
+                    </motion.div>
                   );
                 })}
+                </AnimatePresence>
                 {playerState.hand.length === 0 && <span className="text-slate-500 text-sm italic py-10">Mão vazia</span>}
               </div>
             </div>
