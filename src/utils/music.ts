@@ -101,12 +101,11 @@ export function startMusic() {
 }
 
 export function setMusicMuted(muted: boolean) {
-  if (!ctx || !master) {
-    if (!muted) startMusic();
-    return;
+  if (muted) {
+    stopMusic();
+  } else {
+    startMusic();
   }
-  master.gain.cancelScheduledValues(ctx.currentTime);
-  master.gain.linearRampToValueAtTime(muted ? 0.0 : 0.5, ctx.currentTime + 0.5);
 }
 
 export function stopMusic() {
