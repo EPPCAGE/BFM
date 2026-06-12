@@ -145,8 +145,8 @@ function ImpactLayer({ state, positions }: { state: GameState; positions: Record
 function CameraRig() {
   useFrame((state) => {
     const t = state.clock.elapsedTime;
-    state.camera.position.x = Math.sin(t * 0.15) * 0.35;
-    state.camera.position.y = 4.2 + Math.sin(t * 0.22) * 0.1;
+    state.camera.position.x = Math.sin(t * 0.15) * 0.3;
+    state.camera.position.y = 3.0 + Math.sin(t * 0.22) * 0.08;
     state.camera.lookAt(0, 0, -0.3);
   });
   return null;
@@ -168,32 +168,57 @@ export function Field3D({ state, isPlayerTurn, playerEnergy, targeting, onAttack
   const allPos = { ...aiPos, ...playerPos };
 
   return (
-    <Canvas shadows dpr={[1, 2]} camera={{ position: [0, 4.2, 6.2], fov: 42 }}
-      gl={{ antialias: true, toneMapping: THREE.ACESFilmicToneMapping }}>
-      <color attach="background" args={['#05060f']} />
-      <fog attach="fog" args={['#05060f', 9, 18]} />
+    <Canvas shadows dpr={[1, 2]} camera={{ position: [0, 3.0, 5.2], fov: 52 }}
+      gl={{ antialias: true, toneMapping: THREE.ACESFilmicToneMapping, toneMappingExposure: 1.4 }}>
+      <color attach="background" args={['#0d1b3e']} />
+      <fog attach="fog" args={['#0d1b3e', 14, 26]} />
 
       <CameraRig />
 
-      <ambientLight intensity={0.5} />
-      <directionalLight position={[3, 8, 4]} intensity={1.8} castShadow
+      <ambientLight intensity={2.2} color="#e8eeff" />
+      <directionalLight position={[0, 10, 4]} intensity={3.5} castShadow color="#ffffff"
         shadow-mapSize={[2048, 2048]} shadow-camera-near={1} shadow-camera-far={25}
         shadow-camera-left={-8} shadow-camera-right={8} shadow-camera-top={8} shadow-camera-bottom={-8} />
-      <pointLight position={[-4, 3, 2]} intensity={30} color="#3b82f6" distance={14} />
-      <pointLight position={[4, 3, -2]} intensity={30} color="#ef4444" distance={14} />
+      <directionalLight position={[0, 4, -6]} intensity={2.0} color="#ccd8ff" />
+      <pointLight position={[-5, 4, 3]} intensity={60} color="#4f8cff" distance={18} />
+      <pointLight position={[5, 4, 3]} intensity={60} color="#4f8cff" distance={18} />
+      <pointLight position={[-4, 3, -3]} intensity={50} color="#ff4f6a" distance={16} />
+      <pointLight position={[4, 3, -3]} intensity={50} color="#ff4f6a" distance={16} />
+      <pointLight position={[0, 6, 0]} intensity={100} color="#ffffff" distance={22} />
 
-      <Suspense fallback={null}><Environment preset="night" /></Suspense>
+      <Suspense fallback={null}><Environment preset="lobby" /></Suspense>
 
+      {/* Arena floor */}
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.05, 0]} receiveShadow>
         <planeGeometry args={[40, 40]} />
-        <meshStandardMaterial color="#0b1226" roughness={0.85} metalness={0.15} />
+        <meshStandardMaterial color="#1a3a6e" roughness={0.4} metalness={0.5} envMapIntensity={1.5} />
+      </mesh>
+      {/* Glow rings */}
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.04, 0]}>
+        <ringGeometry args={[3.5, 3.8, 64]} />
+        <meshBasicMaterial color="#4f8cff" transparent opacity={0.5} side={THREE.DoubleSide} />
       </mesh>
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.04, 0]}>
+        <ringGeometry args={[5.5, 5.7, 64]} />
+        <meshBasicMaterial color="#7eb8ff" transparent opacity={0.25} side={THREE.DoubleSide} />
+      </mesh>
+      {/* Player zone */}
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.035, 1.4]}>
+        <planeGeometry args={[9, 1.6]} />
+        <meshBasicMaterial color="#3b82f6" transparent opacity={0.15} />
+      </mesh>
+      {/* AI zone */}
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.035, -2.1]}>
+        <planeGeometry args={[9, 1.6]} />
+        <meshBasicMaterial color="#ef4444" transparent opacity={0.15} />
+      </mesh>
+      {/* Center divider */}
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.04, 0]}>
         <planeGeometry args={[14, 0.06]} />
-        <meshBasicMaterial color="#fbbf24" transparent opacity={0.5} />
+        <meshBasicMaterial color="#fbbf24" transparent opacity={0.7} />
       </mesh>
 
-      <ContactShadows position={[0, 0, 0]} opacity={0.5} scale={20} blur={2.4} far={6} />
+      <ContactShadows position={[0, 0, 0]} opacity={0.3} scale={20} blur={1.8} far={6} />
 
       {state.players.ai.playArea.map(pk => (
         <FieldCard key={pk.instanceId} pk={pk} pos={aiPos[pk.instanceId]} owner="ai" state={state}
@@ -208,8 +233,8 @@ export function Field3D({ state, isPlayerTurn, playerEnergy, targeting, onAttack
       <ImpactLayer state={state} positions={allPos} />
 
       <EffectComposer>
-        <Bloom mipmapBlur intensity={0.7} luminanceThreshold={0.55} luminanceSmoothing={0.2} />
-        <Vignette eskil={false} offset={0.25} darkness={0.75} />
+        <Bloom mipmapBlur intensity={0.5} luminanceThreshold={0.7} luminanceSmoothing={0.3} />
+        <Vignette eskil={false} offset={0.35} darkness={0.45} />
       </EffectComposer>
     </Canvas>
   );
