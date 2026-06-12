@@ -175,8 +175,8 @@ export function Field3D({ state, isPlayerTurn, playerEnergy, targeting, onAttack
 
       <CameraRig />
 
-      <ambientLight intensity={1.1} color="#e8eeff" />
-      <directionalLight position={[0, 10, 4]} intensity={1.8} castShadow color="#ffffff"
+      <ambientLight intensity={0.55} color="#e8eeff" />
+      <directionalLight position={[0, 10, 4]} intensity={1.1} castShadow color="#ffffff"
         shadow-mapSize={[2048, 2048]} shadow-camera-near={1} shadow-camera-far={25}
         shadow-camera-left={-8} shadow-camera-right={8} shadow-camera-top={8} shadow-camera-bottom={-8} />
       <directionalLight position={[0, 4, -6]} intensity={1.0} color="#ccd8ff" />
@@ -185,7 +185,7 @@ export function Field3D({ state, isPlayerTurn, playerEnergy, targeting, onAttack
       <pointLight position={[-4, 3, -3]} intensity={30} color="#ff4f6a" distance={16} />
       <pointLight position={[4, 3, -3]} intensity={30} color="#ff4f6a" distance={16} />
 
-      <Suspense fallback={null}><Environment preset="lobby" /></Suspense>
+      <Suspense fallback={null}><Environment preset="lobby" environmentIntensity={0.35} /></Suspense>
 
       {/* Felt table surface — dark green, matte (no metalness) */}
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.05, 0]} receiveShadow>
