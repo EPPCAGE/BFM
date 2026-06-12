@@ -1,4 +1,4 @@
-import { Canvas, useThree } from '@react-three/fiber';
+import { Canvas } from '@react-three/fiber';
 import { Html, ContactShadows } from '@react-three/drei';
 import { useRef, useState, useEffect } from 'react';
 import * as THREE from 'three';
@@ -150,12 +150,6 @@ interface Props {
   onSelectTarget?: (instanceId: string) => void;
 }
 
-function Invalidator({ state }: { state: GameState }) {
-  const { invalidate } = useThree();
-  useEffect(() => { invalidate(); }, [state, invalidate]);
-  return null;
-}
-
 export function Field3D({ state, isPlayerTurn, playerEnergy, targeting, onAttack, onEvolve, onSelectTarget }: Props) {
   const aiPos = rowPositions(state.players.ai.playArea, AI_Z);
   const playerPos = rowPositions(state.players.player.playArea, PLAYER_Z);
@@ -163,9 +157,8 @@ export function Field3D({ state, isPlayerTurn, playerEnergy, targeting, onAttack
 
   return (
     <Canvas shadows={false} dpr={[1, 1.2]} camera={{ position: [0, 3.0, 5.2], fov: 52 }}
-      gl={{ antialias: false, toneMapping: THREE.ACESFilmicToneMapping, toneMappingExposure: 1.05 }}
-      frameloop="demand">
-      <Invalidator state={state} />
+      gl={{ antialias: false, toneMapping: THREE.ACESFilmicToneMapping, toneMappingExposure: 1.05 }}>
+
       <color attach="background" args={['#081c14']} />
 
       <ambientLight intensity={0.85} color="#e8eeff" />
