@@ -41,7 +41,10 @@ export function GameBoard() {
   // ── Visual fx state ──
   const [damageEvents, setDamageEvents] = useState<Record<string, DamageEvent[]>>({});
   const [shakingCard, setShakingCard] = useState<string | null>(null);
+  const [evolvingCard, setEvolvingCard] = useState<string | null>(null);
+  const [muted, setMuted] = useState(() => localStorage.getItem('lorkemon-muted') === '1');
   const prevHpRef = useRef<Record<string, number>>({});
+  const prevEvoRef = useRef<Record<string, number>>({});
   const prevPlayerRef = useRef<string | null>(null);
 
   const addDamageEvent = useCallback((instanceId: string, delta: number) => {
@@ -109,6 +112,14 @@ export function GameBoard() {
         }
       }
       prevHpRef.current[pk.instanceId] = pk.currentHp;
+
+      // ── Evolution glow ──
+      const prevEvoLen = prevEvoRef.current[pk.instanceId] ?? 1;
+      if (pk.evolutionStack.length > prevEvoLen) {
+        setEvolvingCard(pk.instanceId);
+        setTimeout(() => setEvolvingCard(e => e === pk.instanceId ? null : e), 750);
+      }
+      prevEvoRef.current[pk.instanceId] = pk.evolutionStack.length;
     }
 
     // ── Turn change banner ──
@@ -231,12 +242,29 @@ export function GameBoard() {
           </h1>
           <span className="text-xs text-slate-500">TURNO <span className="text-white font-bold">{turn}</span></span>
           <span className={`text-xs px-2 py-0.5 rounded-full font-bold ${isPlayerTurn ? 'bg-blue-700 text-white' : 'bg-red-800 text-white'}`}>
-            {aiThinking ? '⏳ IA pensando…' : isPlayerTurn ? '● Sua vez' : '● Vez da IA'}
+            {isPlayerTurn ? '● Sua vez' : '● Vez da IA'}
           </span>
+          {aiThinking && (
+            <span className="text-xs text-slate-400 flex items-center gap-1">
+              <span className="ai-dots">IA pensando</span>
+            </span>
+          )}
           <span className="text-xs text-slate-400">Você: <strong className="text-blue-300">{playerState.points}</strong>/10</span>
           <span className="text-xs text-slate-400">IA: <strong className="text-red-300">{aiState.points}</strong>/10</span>
         </div>
         <div className="flex gap-2 items-center">
+          <button
+            onClick={() => {
+              const next = !muted;
+              setMuted(next);
+              localStorage.setItem('lorkemon-muted', next ? '1' : '0');
+            }}
+            className="px-2 py-1 text-slate-400 hover:text-white text-xs rounded"
+            style={{ background: 'rgba(30,41,59,0.8)', border: '1px solid rgba(71,85,105,0.4)' }}
+            title={muted ? 'Ativar som' : 'Silenciar'}
+          >
+            {muted ? '🔇' : '🔊'}
+          </button>
           <button onClick={() => setLogOpen(o => !o)}
             className="px-2 py-1 text-slate-400 hover:text-white text-xs rounded"
             style={{ background: 'rgba(30,41,59,0.8)', border: '1px solid rgba(71,85,105,0.4)' }}>
@@ -404,6 +432,15 @@ export function GameBoard() {
           <div className="flex-1 flex flex-col items-center justify-center relative"
             style={{ minHeight: 180, background: 'linear-gradient(180deg,rgba(10,18,40,0.5) 0%,rgba(60,10,10,0.25) 100%)' }}>
             <div className="absolute top-1 left-3 text-[10px] text-red-400 font-bold z-10">IA — Em Jogo ({aiState.playArea.length}/5)</div>
+            {aiThinking && (
+              <div className="absolute inset-0 z-20 flex items-center justify-center pointer-events-none">
+                <div className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-300 flex items-center gap-2"
+                  style={{ background: 'rgba(10,10,30,0.75)', border: '1px solid rgba(239,68,68,0.25)', backdropFilter: 'blur(4px)' }}>
+                  <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
+                  <span className="ai-dots">IA calculando</span>
+                </div>
+              </div>
+            )}
             <PlayZone
               playerState={aiState} isCurrentPlayer={currentPlayer === 'ai'} isOpponent={true}
               attackMode={attackMode ?? (mewCopiedAttack ? { attackerInstanceId: mewCopyMode ?? '', attackIndex: 0 } : null) ?? (synergyMode ? { attackerInstanceId: '', attackIndex: 0 } : null)}
@@ -413,6 +450,7 @@ export function GameBoard() {
               damageEvents={damageEvents}
               onDamageEventDone={removeDamageEvent}
               shakingCard={shakingCard}
+              evolvingCard={evolvingCard}
             />
           </div>
 
@@ -485,6 +523,7 @@ export function GameBoard() {
               damageEvents={damageEvents}
               onDamageEventDone={removeDamageEvent}
               shakingCard={shakingCard}
+              evolvingCard={evolvingCard}
             />
           </div>
 
@@ -563,7 +602,7 @@ export function GameBoard() {
                 {isPlayerTurn && <span className="text-[10px] text-slate-400">— clique em uma carta para ações</span>}
                 {!isPlayerTurn && <span className="text-[10px] text-slate-500 italic">Aguardando IA…</span>}
               </div>
-              <div className="flex items-end gap-1.5 overflow-x-auto scrollbar-hide pb-1">
+              <div className="hand-fan gap-1.5 overflow-x-auto scrollbar-hide pb-1">
                 {playerState.hand.map((card, idx) => {
                   const isTeleportTarget = pendingTeleport && card.type === 'pokemon' && (card as PokemonCardDef).stage === 'Basic';
                   const isMenuOpen = cardMenu?.idx === idx;

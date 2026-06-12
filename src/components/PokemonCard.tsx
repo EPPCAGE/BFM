@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { PokemonInPlay, PokemonCardDef } from '../game/types';
 import { CardImage } from './CardImage';
@@ -19,11 +19,11 @@ interface Props {
   onMewAbility?: () => void;
   cardWidth?: number;
   cardHeight?: number;
-  /** Damage events to display as floating numbers */
   damageEvents?: DamageEvent[];
   onDamageEventDone?: (id: string) => void;
-  /** Trigger shake animation */
   shaking?: boolean;
+  /** Trigger evolution glow effect */
+  evolving?: boolean;
 }
 
 const shakeVariants = {
@@ -41,14 +41,22 @@ export function PokemonCard({
   showAbility, onMewAbility,
   cardWidth = 90, cardHeight = 120,
   damageEvents = [], onDamageEventDone,
-  shaking,
+  shaking, evolving,
 }: Props) {
   const { def, currentHp, vulnerability } = pokemon;
   const hpPercent = Math.max(0, (currentHp / def.hp) * 100);
   const hpColor = hpPercent > 60 ? '#22c55e' : hpPercent > 30 ? '#f59e0b' : '#ef4444';
 
   const [showKoBurst, setShowKoBurst] = useState(false);
-  const isKO = currentHp <= 0;
+  const prevHpRef = useRef(currentHp);
+
+  // Detect KO moment (hp just reached 0 from a positive value)
+  useEffect(() => {
+    if (prevHpRef.current > 0 && currentHp <= 0) {
+      setShowKoBurst(true);
+    }
+    prevHpRef.current = currentHp;
+  }, [currentHp]);
 
   const isVulnerable = vulnerability === 'vulnerable';
   let borderClass = isVulnerable ? 'card-vulnerable' : 'card-ready';
@@ -62,12 +70,6 @@ export function PokemonCard({
     ? { width: H, height: W, minWidth: H, display: 'flex', alignItems: 'center', justifyContent: 'center' }
     : { width: W, minWidth: W };
 
-  // Trigger KO burst when HP hits 0
-  const prevKo = isKO && !showKoBurst && damageEvents.length > 0;
-  if (prevKo && !showKoBurst) {
-    // Will show burst via AnimatePresence exit
-  }
-
   return (
     <div style={outerStyle} onClick={onClick} title={def.displayName}>
       <motion.div
@@ -76,11 +78,11 @@ export function PokemonCard({
         className={`relative rounded-lg overflow-visible select-none ${borderClass} ${onClick ? 'cursor-pointer' : ''}`}
         style={isVulnerable ? { width: W, minWidth: W, transform: 'rotate(90deg)' } : { width: W, minWidth: W }}
       >
-        {/* Clip inner content but allow absolute overlays outside */}
+        {/* Clip inner content */}
         <div className="rounded-lg overflow-hidden" style={{ width: W, height: H, position: 'relative' }}>
           <CardImage card={def} className="w-full" style={{ height: H }} />
 
-          {/* White flash overlay on hit */}
+          {/* White flash on hit */}
           <AnimatePresence>
             {shaking && (
               <motion.div
@@ -91,6 +93,22 @@ export function PokemonCard({
                 transition={{ duration: 0.25 }}
                 className="absolute inset-0 bg-white pointer-events-none z-20"
               />
+            )}
+          </AnimatePresence>
+
+          {/* Evolution glow ring */}
+          <AnimatePresence>
+            {evolving && (
+              <motion.div key="evoglow" className="absolute inset-0 pointer-events-none z-30 flex items-center justify-center overflow-hidden">
+                <motion.div
+                  initial={{ scale: 0.2, opacity: 1 }}
+                  animate={{ scale: 2.2, opacity: 0 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.7, ease: 'easeOut' }}
+                  className="rounded-full"
+                  style={{ width: W, height: H, background: 'radial-gradient(ellipse, rgba(168,85,247,0.8) 0%, rgba(99,102,241,0.4) 50%, transparent 70%)' }}
+                />
+              </motion.div>
             )}
           </AnimatePresence>
 

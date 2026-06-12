@@ -1,5 +1,9 @@
 let ctx: AudioContext | null = null;
 
+export function isMuted(): boolean {
+  return localStorage.getItem('lorkemon-muted') === '1';
+}
+
 function getCtx(): AudioContext {
   if (!ctx) ctx = new AudioContext();
   if (ctx.state === 'suspended') ctx.resume();
@@ -23,6 +27,7 @@ function tone(freq: number, duration: number, type: OscillatorType = 'sine', gai
 export type SoundId = 'card' | 'energy' | 'summon' | 'attack' | 'evolve' | 'ko' | 'win' | 'error' | 'trainer';
 
 export function playSound(id: SoundId) {
+  if (isMuted()) return;
   try {
     switch (id) {
       case 'card':

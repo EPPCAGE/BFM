@@ -29,6 +29,8 @@ interface Props {
   onDamageEventDone?: (instanceId: string, eventId: string) => void;
   /** instanceId of the card currently shaking */
   shakingCard?: string | null;
+  /** instanceId of the card currently evolving */
+  evolvingCard?: string | null;
 }
 
 export function PlayZone({
@@ -41,6 +43,7 @@ export function PlayZone({
   damageEvents = {},
   onDamageEventDone,
   shakingCard,
+  evolvingCard,
 }: Props) {
   const energy = availableEnergy(playerState);
   const { tooltip, showTooltip, moveTooltip, hideTooltip } = useTooltip();
@@ -98,6 +101,7 @@ export function PlayZone({
               damageEvents={damageEvents[pokemon.instanceId] ?? []}
               onDamageEventDone={onDamageEventDone ? (evId) => onDamageEventDone(pokemon.instanceId, evId) : undefined}
               shaking={shakingCard === pokemon.instanceId}
+              evolving={evolvingCard === pokemon.instanceId}
             />
           </div>
         );
