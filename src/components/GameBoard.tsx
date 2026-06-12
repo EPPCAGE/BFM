@@ -7,6 +7,7 @@ import { CardTooltip } from './CardTooltip';
 import { DeckSearchModal } from './DeckSearchModal';
 import { HintPanel } from './HintPanel';
 import { TurnBanner } from './TurnBanner';
+import { AnimatePresence, motion } from 'framer-motion';
 import { canAttack, canSynergyAttack, getSynergyGroup, getSynergyDamage } from '../game/engine';
 import { useTooltip } from '../hooks/useTooltip';
 import { playSound } from '../utils/sounds';
@@ -42,9 +43,11 @@ export function GameBoard() {
   const [damageEvents, setDamageEvents] = useState<Record<string, DamageEvent[]>>({});
   const [shakingCard, setShakingCard] = useState<string | null>(null);
   const [evolvingCard, setEvolvingCard] = useState<string | null>(null);
+  const [koFlash, setKoFlash] = useState<{ name: string; isPlayer: boolean } | null>(null);
   const [muted, setMuted] = useState(() => localStorage.getItem('lorkemon-muted') === '1');
   const prevHpRef = useRef<Record<string, number>>({});
   const prevEvoRef = useRef<Record<string, number>>({});
+  const prevNamesRef = useRef<Record<string, string>>({});
   const prevPlayerRef = useRef<string | null>(null);
 
   const addDamageEvent = useCallback((instanceId: string, delta: number) => {
@@ -96,12 +99,13 @@ export function GameBoard() {
       else if (m.includes('evoluiu') || m.includes('Evo')) playSound('evolve');
     }
 
-    // ── HP delta → damage numbers + shake ──
+    // ── HP delta → damage numbers + shake + KO flash ──
     const allPokemon = [
-      ...gameState.players.player.playArea,
-      ...gameState.players.ai.playArea,
+      ...gameState.players.player.playArea.map(pk => ({ pk, isPlayer: true })),
+      ...gameState.players.ai.playArea.map(pk => ({ pk, isPlayer: false })),
     ];
-    for (const pk of allPokemon) {
+    for (const { pk, isPlayer } of allPokemon) {
+      prevNamesRef.current[pk.instanceId] = pk.def.displayName;
       const prev = prevHpRef.current[pk.instanceId];
       if (prev !== undefined && prev !== pk.currentHp) {
         const delta = pk.currentHp - prev;
@@ -109,6 +113,10 @@ export function GameBoard() {
         if (delta < 0) {
           setShakingCard(pk.instanceId);
           setTimeout(() => setShakingCard(s => s === pk.instanceId ? null : s), 500);
+          if (pk.currentHp <= 0) {
+            setKoFlash({ name: pk.def.displayName, isPlayer });
+            setTimeout(() => setKoFlash(null), 2200);
+          }
         }
       }
       prevHpRef.current[pk.instanceId] = pk.currentHp;
@@ -231,6 +239,41 @@ export function GameBoard() {
     <div className="flex flex-col h-screen tcg-mat overflow-hidden">
 
       <TurnBanner currentPlayer={currentPlayer} turn={turn} />
+
+      {/* ── KO FLASH OVERLAY ── */}
+      <AnimatePresence>
+        {koFlash && (
+          <motion.div
+            key="ko-flash"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.25 }}
+            className="fixed inset-0 z-[60] flex items-center justify-center pointer-events-none"
+            style={{ background: koFlash.isPlayer ? 'rgba(220,38,38,0.18)' : 'rgba(0,0,0,0.18)' }}
+          >
+            <motion.div
+              initial={{ scale: 0.5, opacity: 0 }}
+              animate={{ scale: [0.5, 1.15, 1], opacity: [0, 1, 1] }}
+              exit={{ scale: 0.8, opacity: 0 }}
+              transition={{ duration: 0.4 }}
+              className="text-center px-10 py-6 rounded-3xl"
+              style={{
+                background: 'rgba(5,5,15,0.92)',
+                border: '2px solid rgba(239,68,68,0.7)',
+                boxShadow: '0 0 60px rgba(239,68,68,0.5), 0 0 120px rgba(239,68,68,0.2)',
+                backdropFilter: 'blur(12px)',
+              }}
+            >
+              <div className="text-5xl mb-2">💀</div>
+              <div className="text-2xl font-black text-red-400 tracking-wide" style={{ textShadow: '0 0 20px rgba(239,68,68,0.8)' }}>
+                NOCAUTE!
+              </div>
+              <div className="text-base text-slate-200 mt-1 font-semibold">{koFlash.name} foi derrotado!</div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* ── TOP BAR ── */}
       <div className="flex items-center justify-between px-4 py-1.5 flex-shrink-0"
