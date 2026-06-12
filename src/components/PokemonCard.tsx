@@ -134,17 +134,6 @@ export function PokemonCard({
               {vulnerability === 'ready' ? 'PRONTO' : 'VULN'}
             </div>
 
-            {/* Evolve button */}
-            {evolutionCard && onEvolve && (
-              <button
-                className="absolute bottom-8 left-0 right-0 mx-1 bg-purple-600 hover:bg-purple-500 text-white text-[9px] font-bold rounded py-0.5 text-center shadow-lg z-10"
-                onClick={(e) => { e.stopPropagation(); onEvolve(); }}
-                title={`Evoluir para ${evolutionCard.displayName}`}
-              >
-                ↑ {evolutionCard.displayName}
-              </button>
-            )}
-
             {/* HP Bar */}
             <div className="absolute bottom-0 left-0 right-0 bg-black/75 px-1 py-0.5 z-10">
               <div className="flex justify-between items-center mb-0.5">
@@ -161,7 +150,7 @@ export function PokemonCard({
               </div>
             </div>
 
-            {/* Attacks panel */}
+            {/* Attacks + Evolve panel (shown on hover) */}
             {showAttacks && (
               <div className="absolute inset-0 bg-black/85 flex flex-col justify-center p-1.5 gap-1 rounded-lg z-20" style={{ paddingBottom: 28 }}>
                 <p className="text-white text-[9px] font-bold text-center mb-0.5">{def.displayName}</p>
@@ -177,6 +166,17 @@ export function PokemonCard({
                     {atk.damage > 0 && <span className="text-red-300"> {atk.damageText ?? atk.damage}</span>}
                   </button>
                 ))}
+                {/* Evolve button lives inside the panel so it's never covered */}
+                {evolutionCard && onEvolve && (
+                  <button
+                    onClick={(e) => { e.stopPropagation(); onEvolve(); }}
+                    className="text-[9px] px-1.5 py-1 rounded font-bold text-white text-center mt-0.5"
+                    style={{ background: 'linear-gradient(135deg,#7c3aed,#a855f7)', boxShadow: '0 0 8px rgba(168,85,247,0.6)' }}
+                    title={`Evoluir para ${evolutionCard.displayName}`}
+                  >
+                    ↑ {evolutionCard.displayName}
+                  </button>
+                )}
                 {showAbility && def.ability?.name === 'Baú de DNA' && !pokemon.hasUsedAbilityThisTurn && (
                   <button
                     onClick={(e) => { e.stopPropagation(); onMewAbility?.(); }}
