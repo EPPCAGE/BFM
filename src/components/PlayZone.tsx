@@ -1,13 +1,10 @@
-/**
- * PlayZone — renders only the in-play Pokémon cards for one side of the field.
- * Used by the new centralized layout in GameBoard.
- */
 import type { PlayerState } from '../game/types';
 import type { PokemonCardDef } from '../game/types';
 import { PokemonCard } from './PokemonCard';
 import { CardTooltip } from './CardTooltip';
 import { availableEnergy } from '../game/engine';
 import { useTooltip } from '../hooks/useTooltip';
+import type { DamageEvent } from './DamageNumber';
 
 interface Props {
   playerState: PlayerState;
@@ -25,8 +22,13 @@ interface Props {
 
   onMewAbility?: (instanceId: string) => void;
 
-  /** 'normal' = 90×120, 'large' = 110×154 */
   cardSize?: 'normal' | 'large';
+
+  /** instanceId → pending damage events */
+  damageEvents?: Record<string, DamageEvent[]>;
+  onDamageEventDone?: (instanceId: string, eventId: string) => void;
+  /** instanceId of the card currently shaking */
+  shakingCard?: string | null;
 }
 
 export function PlayZone({
@@ -36,6 +38,9 @@ export function PlayZone({
   pendingTrainer, onSelectTrainerTarget,
   onMewAbility,
   cardSize = 'normal',
+  damageEvents = {},
+  onDamageEventDone,
+  shakingCard,
 }: Props) {
   const energy = availableEnergy(playerState);
   const { tooltip, showTooltip, moveTooltip, hideTooltip } = useTooltip();
@@ -90,6 +95,9 @@ export function PlayZone({
               onClick={() => handlePlayAreaClick(pokemon.instanceId)}
               cardWidth={cardW}
               cardHeight={cardH}
+              damageEvents={damageEvents[pokemon.instanceId] ?? []}
+              onDamageEventDone={onDamageEventDone ? (evId) => onDamageEventDone(pokemon.instanceId, evId) : undefined}
+              shaking={shakingCard === pokemon.instanceId}
             />
           </div>
         );

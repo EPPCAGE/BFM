@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useGameStore } from '../store/gameStore';
 import { GameLog } from './GameLog';
 import { PlayZone } from './PlayZone';
@@ -6,10 +6,12 @@ import { CardImage } from './CardImage';
 import { CardTooltip } from './CardTooltip';
 import { DeckSearchModal } from './DeckSearchModal';
 import { HintPanel } from './HintPanel';
+import { TurnBanner } from './TurnBanner';
 import { canAttack, canSynergyAttack, getSynergyGroup, getSynergyDamage } from '../game/engine';
 import { useTooltip } from '../hooks/useTooltip';
 import { playSound } from '../utils/sounds';
 import type { PokemonCardDef, Attack } from '../game/types';
+import type { DamageEvent } from './DamageNumber';
 
 type PendingTrainer = { cardId: string; targetType: 'friendly' | 'enemy' } | null;
 type CardMenu = { idx: number; x: number; y: number } | null;
@@ -36,6 +38,27 @@ export function GameBoard() {
   const [synergyMode, setSynergyMode] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
+  // ── Visual fx state ──
+  const [damageEvents, setDamageEvents] = useState<Record<string, DamageEvent[]>>({});
+  const [shakingCard, setShakingCard] = useState<string | null>(null);
+  const prevHpRef = useRef<Record<string, number>>({});
+  const prevPlayerRef = useRef<string | null>(null);
+
+  const addDamageEvent = useCallback((instanceId: string, delta: number) => {
+    const evId = `${instanceId}-${Date.now()}-${Math.random()}`;
+    setDamageEvents(prev => ({
+      ...prev,
+      [instanceId]: [...(prev[instanceId] ?? []), { id: evId, delta }],
+    }));
+  }, []);
+
+  const removeDamageEvent = useCallback((instanceId: string, evId: string) => {
+    setDamageEvents(prev => ({
+      ...prev,
+      [instanceId]: (prev[instanceId] ?? []).filter(e => e.id !== evId),
+    }));
+  }, []);
+
   const { tooltip, showTooltip, moveTooltip, hideTooltip } = useTooltip();
 
   // Close menu on outside click
@@ -52,10 +75,14 @@ export function GameBoard() {
   const prevLogLenRef = useRef(0);
   useEffect(() => {
     if (!gameState) return;
+
+    // ── Result sound ──
     if (gameState.result && gameState.result !== prevResultRef.current) {
       prevResultRef.current = gameState.result;
       playSound(gameState.result === 'player_wins' ? 'win' : 'ko');
     }
+
+    // ── Log-based sounds ──
     const newEntries = gameState.log.slice(prevLogLenRef.current);
     prevLogLenRef.current = gameState.log.length;
     for (const e of newEntries) {
@@ -65,6 +92,30 @@ export function GameBoard() {
       else if (m.includes('invocou')) playSound('summon');
       else if (m.includes('evoluiu') || m.includes('Evo')) playSound('evolve');
     }
+
+    // ── HP delta → damage numbers + shake ──
+    const allPokemon = [
+      ...gameState.players.player.playArea,
+      ...gameState.players.ai.playArea,
+    ];
+    for (const pk of allPokemon) {
+      const prev = prevHpRef.current[pk.instanceId];
+      if (prev !== undefined && prev !== pk.currentHp) {
+        const delta = pk.currentHp - prev;
+        addDamageEvent(pk.instanceId, delta);
+        if (delta < 0) {
+          setShakingCard(pk.instanceId);
+          setTimeout(() => setShakingCard(s => s === pk.instanceId ? null : s), 500);
+        }
+      }
+      prevHpRef.current[pk.instanceId] = pk.currentHp;
+    }
+
+    // ── Turn change banner ──
+    if (prevPlayerRef.current && prevPlayerRef.current !== gameState.currentPlayer) {
+      // TurnBanner handles this via its own effect
+    }
+    prevPlayerRef.current = gameState.currentPlayer;
   });
 
   if (!gameState) return null;
@@ -168,6 +219,8 @@ export function GameBoard() {
   return (
     <div className="flex flex-col h-screen tcg-mat overflow-hidden">
 
+      <TurnBanner currentPlayer={currentPlayer} turn={turn} />
+
       {/* ── TOP BAR ── */}
       <div className="flex items-center justify-between px-4 py-1.5 flex-shrink-0"
         style={{ background: 'linear-gradient(180deg,rgba(2,6,23,0.97) 0%,rgba(10,18,40,0.95) 100%)', borderBottom: '1px solid rgba(251,191,36,0.2)' }}>
@@ -236,15 +289,36 @@ export function GameBoard() {
 
       {/* ── RESULT OVERLAY ── */}
       {result && (
-        <div className="absolute inset-0 z-50 flex items-center justify-center" style={{ background: 'rgba(2,6,23,0.85)', backdropFilter: 'blur(8px)' }}>
-          <div className="result-pop text-center px-16 py-12 rounded-3xl"
-            style={{ background: 'linear-gradient(135deg,rgba(15,23,42,0.98),rgba(30,41,59,0.98))', border: result === 'player_wins' ? '1px solid rgba(251,191,36,0.5)' : '1px solid rgba(239,68,68,0.5)', boxShadow: result === 'player_wins' ? '0 0 60px rgba(251,191,36,0.3)' : '0 0 60px rgba(239,68,68,0.3)' }}>
-            <div className="text-7xl mb-4">{result === 'player_wins' ? '🏆' : '💀'}</div>
-            <h2 className="text-4xl font-black mb-2 text-white">{result === 'player_wins' ? 'Você Venceu!' : 'IA Venceu!'}</h2>
-            <p className="text-slate-400 mb-8 text-sm">Turno {turn} · Você: <strong className="text-blue-300">{playerState.points}</strong> pts · IA: <strong className="text-red-300">{aiState.points}</strong> pts</p>
+        <div className="absolute inset-0 z-50 flex items-center justify-center"
+          style={{
+            background: result === 'player_wins'
+              ? 'radial-gradient(ellipse at center, rgba(161,120,0,0.35) 0%, rgba(2,6,23,0.92) 60%)'
+              : 'radial-gradient(ellipse at center, rgba(120,10,10,0.4) 0%, rgba(2,6,23,0.92) 60%)',
+            backdropFilter: 'blur(10px)',
+          }}>
+          <div className="victory-pop text-center px-16 py-12 rounded-3xl"
+            style={{
+              background: result === 'player_wins'
+                ? 'linear-gradient(135deg,rgba(20,20,5,0.97),rgba(40,35,10,0.97))'
+                : 'linear-gradient(135deg,rgba(20,5,5,0.97),rgba(40,10,10,0.97))',
+              border: result === 'player_wins' ? '1px solid rgba(251,191,36,0.6)' : '1px solid rgba(239,68,68,0.6)',
+              boxShadow: result === 'player_wins'
+                ? '0 0 80px rgba(251,191,36,0.4), inset 0 1px 0 rgba(255,255,255,0.05)'
+                : '0 0 80px rgba(239,68,68,0.4), inset 0 1px 0 rgba(255,255,255,0.05)',
+            }}>
+            <div className="text-8xl mb-4" style={{ filter: result === 'player_wins' ? 'drop-shadow(0 0 20px rgba(250,204,21,0.8))' : 'drop-shadow(0 0 20px rgba(239,68,68,0.8))' }}>
+              {result === 'player_wins' ? '🏆' : '💀'}
+            </div>
+            <h2 className="text-5xl font-black mb-3"
+              style={{ color: result === 'player_wins' ? '#fde047' : '#f87171', textShadow: result === 'player_wins' ? '0 0 30px rgba(250,204,21,0.7)' : '0 0 30px rgba(239,68,68,0.7)' }}>
+              {result === 'player_wins' ? 'VITÓRIA!' : 'DERROTA'}
+            </h2>
+            <p className="text-slate-400 mb-8 text-sm">
+              Turno {turn} · Você: <strong className="text-blue-300">{playerState.points}</strong> pts · IA: <strong className="text-red-300">{aiState.points}</strong> pts
+            </p>
             <button onClick={resetGame}
-              className="px-10 py-3 font-black text-lg rounded-2xl text-black transition-all hover:scale-105"
-              style={{ background: 'linear-gradient(135deg,#fde047,#f59e0b)', boxShadow: '0 0 24px rgba(251,191,36,0.6)' }}>
+              className="px-10 py-3 font-black text-lg rounded-2xl text-black transition-all hover:scale-105 active:scale-95"
+              style={{ background: 'linear-gradient(135deg,#fde047,#f59e0b)', boxShadow: '0 0 24px rgba(251,191,36,0.7)' }}>
               Jogar Novamente
             </button>
           </div>
@@ -336,6 +410,9 @@ export function GameBoard() {
               onSelectAttackTarget={handleSelectAttackTarget}
               pendingTrainer={pendingTrainer} onSelectTrainerTarget={handleSelectTrainerTarget}
               cardSize="large"
+              damageEvents={damageEvents}
+              onDamageEventDone={removeDamageEvent}
+              shakingCard={shakingCard}
             />
           </div>
 
@@ -405,6 +482,9 @@ export function GameBoard() {
               onSelectTrainerTarget={handleSelectTrainerTarget}
               onMewAbility={(instanceId) => { setMewCopyMode(instanceId); }}
               cardSize="large"
+              damageEvents={damageEvents}
+              onDamageEventDone={removeDamageEvent}
+              shakingCard={shakingCard}
             />
           </div>
 
