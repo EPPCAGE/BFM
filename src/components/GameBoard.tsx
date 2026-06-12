@@ -14,7 +14,6 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { canAttack, canSynergyAttack, getSynergyGroup, getSynergyDamage, availableEnergy } from '../game/engine';
 import { useTooltip } from '../hooks/useTooltip';
 import { playSound } from '../utils/sounds';
-import { startMusic, setMusicMuted } from '../utils/music';
 import type { PokemonCardDef, Attack } from '../game/types';
 import type { DamageEvent } from './DamageNumber';
 
@@ -53,12 +52,6 @@ export function GameBoard() {
   const [muted, setMuted] = useState(() => localStorage.getItem('lorkemon-muted') === '1');
   const [view3d, setView3d] = useState(() => localStorage.getItem('lorkemon-3d') === '1');
 
-  // Start background music on first user interaction (browsers require a gesture)
-  useEffect(() => {
-    const kick = () => { startMusic(); window.removeEventListener('pointerdown', kick); };
-    window.addEventListener('pointerdown', kick);
-    return () => window.removeEventListener('pointerdown', kick);
-  }, []);
   const prevHpRef = useRef<Record<string, number>>({});
   const prevEvoRef = useRef<Record<string, number>>({});
   const prevNamesRef = useRef<Record<string, string>>({});
@@ -359,7 +352,6 @@ export function GameBoard() {
               const next = !muted;
               setMuted(next);
               localStorage.setItem('lorkemon-muted', next ? '1' : '0');
-              setMusicMuted(next);
             }}
             className="px-2 py-1 text-slate-400 hover:text-white text-xs rounded"
             style={{ background: 'rgba(30,41,59,0.8)', border: '1px solid rgba(71,85,105,0.4)' }}
