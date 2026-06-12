@@ -169,22 +169,21 @@ export function Field3D({ state, isPlayerTurn, playerEnergy, targeting, onAttack
 
   return (
     <Canvas shadows dpr={[1, 2]} camera={{ position: [0, 3.0, 5.2], fov: 52 }}
-      gl={{ antialias: true, toneMapping: THREE.ACESFilmicToneMapping, toneMappingExposure: 1.4 }}>
+      gl={{ antialias: true, toneMapping: THREE.ACESFilmicToneMapping, toneMappingExposure: 1.05 }}>
       <color attach="background" args={['#0d1b3e']} />
       <fog attach="fog" args={['#0d1b3e', 14, 26]} />
 
       <CameraRig />
 
-      <ambientLight intensity={2.2} color="#e8eeff" />
-      <directionalLight position={[0, 10, 4]} intensity={3.5} castShadow color="#ffffff"
+      <ambientLight intensity={1.1} color="#e8eeff" />
+      <directionalLight position={[0, 10, 4]} intensity={1.8} castShadow color="#ffffff"
         shadow-mapSize={[2048, 2048]} shadow-camera-near={1} shadow-camera-far={25}
         shadow-camera-left={-8} shadow-camera-right={8} shadow-camera-top={8} shadow-camera-bottom={-8} />
-      <directionalLight position={[0, 4, -6]} intensity={2.0} color="#ccd8ff" />
-      <pointLight position={[-5, 4, 3]} intensity={60} color="#4f8cff" distance={18} />
-      <pointLight position={[5, 4, 3]} intensity={60} color="#4f8cff" distance={18} />
-      <pointLight position={[-4, 3, -3]} intensity={50} color="#ff4f6a" distance={16} />
-      <pointLight position={[4, 3, -3]} intensity={50} color="#ff4f6a" distance={16} />
-      <pointLight position={[0, 6, 0]} intensity={100} color="#ffffff" distance={22} />
+      <directionalLight position={[0, 4, -6]} intensity={1.0} color="#ccd8ff" />
+      <pointLight position={[-5, 4, 3]} intensity={35} color="#4f8cff" distance={18} />
+      <pointLight position={[5, 4, 3]} intensity={35} color="#4f8cff" distance={18} />
+      <pointLight position={[-4, 3, -3]} intensity={30} color="#ff4f6a" distance={16} />
+      <pointLight position={[4, 3, -3]} intensity={30} color="#ff4f6a" distance={16} />
 
       <Suspense fallback={null}><Environment preset="lobby" /></Suspense>
 
