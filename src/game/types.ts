@@ -7,7 +7,7 @@ export type PokemonType =
 
 export type AbilityCategory = 'A' | 'B' | 'C' | 'D' | 'E' | 'F';
 
-export type AttackEffectType = 'draw3' | 'shield30' | 'weaken-attacker' | 'teleport';
+export type AttackEffectType = 'draw3' | 'shield30' | 'weaken-attacker' | 'teleport' | 'healself30' | 'healself60';
 
 export interface Attack {
   name: string;

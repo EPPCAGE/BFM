@@ -137,6 +137,102 @@ const abismoAquatico: string[] = [
   ...STANDARD_TRAINERS,
 ];
 
+// ─── Sombras Negras (Dark) — 60 cartas ───────────────────────────────────────
+const sombrasNegras: string[] = [
+  // Tyranitar line ×4
+  'larvitar', 'larvitar', 'larvitar', 'larvitar',
+  'pupitar',  'pupitar',  'pupitar',  'pupitar',
+  'tyranitar','tyranitar','tyranitar','tyranitar',
+  // Houndoom line ×4
+  'houndour', 'houndour', 'houndour', 'houndour',
+  'houndoom', 'houndoom', 'houndoom', 'houndoom',
+  // Weavile line ×4
+  'sneasel', 'sneasel', 'sneasel', 'sneasel',
+  'weavile',  'weavile',  'weavile',  'weavile',
+  // Honchkrow line ×4
+  'murkrow',   'murkrow',   'murkrow',   'murkrow',
+  'honchkrow', 'honchkrow', 'honchkrow', 'honchkrow',
+  // Darkrai ×4
+  'darkrai', 'darkrai', 'darkrai', 'darkrai',
+  ...STANDARD_TRAINERS,
+];
+
+// ─── Fúria Dracônica (Dragon) — 60 cartas ────────────────────────────────────
+const furiaDraconica: string[] = [
+  // Dragonite line ×4
+  'dratini',   'dratini',   'dratini',   'dratini',
+  'dragonair', 'dragonair', 'dragonair', 'dragonair',
+  'dragonite', 'dragonite', 'dragonite', 'dragonite',
+  // Garchomp line ×4
+  'gible',    'gible',    'gible',    'gible',
+  'gabite',   'gabite',   'gabite',   'gabite',
+  'garchomp', 'garchomp', 'garchomp', 'garchomp',
+  // Salamence line ×4
+  'bagon',    'bagon',    'bagon',    'bagon',
+  'shelgon',  'shelgon',  'shelgon',  'shelgon',
+  'salamence','salamence','salamence','salamence',
+  // Extras
+  'dratini', 'dratini', 'dragonair', 'dragonite',
+  ...STANDARD_TRAINERS,
+];
+
+// ─── Coração de Aço (Metal) — 60 cartas ──────────────────────────────────────
+const coracaoDeAco: string[] = [
+  // Metagross line ×4
+  'beldum',   'beldum',   'beldum',   'beldum',
+  'metang',   'metang',   'metang',   'metang',
+  'metagross','metagross','metagross','metagross',
+  // Scizor line ×4
+  'scyther', 'scyther', 'scyther', 'scyther',
+  'scizor',  'scizor',  'scizor',  'scizor',
+  // Steelix line ×4
+  'onix',    'onix',    'onix',    'onix',
+  'steelix', 'steelix', 'steelix', 'steelix',
+  // Jirachi ×4 + Skarmory ×4 + extras
+  'jirachi',  'jirachi',  'jirachi',  'jirachi',
+  'skarmory', 'skarmory', 'skarmory', 'skarmory',
+  'beldum', 'beldum', 'metang', 'metagross',
+  ...STANDARD_TRAINERS,
+];
+
+// ─── Encanto das Fadas (Fairy) — 60 cartas ───────────────────────────────────
+const encantodasFadas: string[] = [
+  // Togekiss line ×4
+  'togepi',   'togepi',   'togepi',   'togepi',
+  'togetic',  'togetic',  'togetic',  'togetic',
+  'togekiss', 'togekiss', 'togekiss', 'togekiss',
+  // Clefable line ×4
+  'clefairy', 'clefairy', 'clefairy', 'clefairy',
+  'clefable', 'clefable', 'clefable', 'clefable',
+  // Sylveon (via Eevee) ×4
+  'eevee',   'eevee',   'eevee',   'eevee',
+  'sylveon', 'sylveon', 'sylveon', 'sylveon',
+  // Xerneas ×4 + Gardevoir (fairy) ×4 + extras
+  'xerneas',  'xerneas',  'xerneas',  'xerneas',
+  'gardevoir','gardevoir','gardevoir','gardevoir',
+  'togepi', 'togetic', 'clefairy', 'sylveon',
+  ...STANDARD_TRAINERS,
+];
+
+// ─── Força da Natureza (Grass/Johto) — 60 cartas ─────────────────────────────
+const forcaDaNatureza: string[] = [
+  // Meganium line ×4
+  'chikorita', 'chikorita', 'chikorita', 'chikorita',
+  'bayleef',   'bayleef',   'bayleef',   'bayleef',
+  'meganium',  'meganium',  'meganium',  'meganium',
+  // Sceptile line ×4
+  'treecko', 'treecko', 'treecko', 'treecko',
+  'grovyle', 'grovyle', 'grovyle', 'grovyle',
+  'sceptile','sceptile','sceptile','sceptile',
+  // Celebi ×4
+  'celebi', 'celebi', 'celebi', 'celebi',
+  // Vileplume line ×4
+  'oddish',   'oddish',   'oddish',   'oddish',
+  'gloom',    'gloom',    'gloom',    'gloom',
+  'vileplume','vileplume','vileplume','vileplume',
+  ...STANDARD_TRAINERS,
+];
+
 // Sanity checks (run in dev)
 if (chamasDaCoragem.length !== 60) {
   console.warn(`Chamas da Coragem tem ${chamasDaCoragem.length} cartas (esperado 60)`);
@@ -153,6 +249,12 @@ if (sombraAncestral.length !== 60) {
 if (abismoAquatico.length !== 60) {
   console.warn(`Abismo Aquático tem ${abismoAquatico.length} cartas (esperado 60)`);
 }
+
+if (sombrasNegras.length !== 60) console.warn(`Sombras Negras tem ${sombrasNegras.length} cartas`);
+if (furiaDraconica.length !== 60) console.warn(`Fúria Dracônica tem ${furiaDraconica.length} cartas`);
+if (coracaoDeAco.length !== 60) console.warn(`Coração de Aço tem ${coracaoDeAco.length} cartas`);
+if (encantodasFadas.length !== 60) console.warn(`Encanto das Fadas tem ${encantodasFadas.length} cartas`);
+if (forcaDaNatureza.length !== 60) console.warn(`Força da Natureza tem ${forcaDaNatureza.length} cartas`);
 
 export const STARTER_DECKS: DeckDefinition[] = [
   {
@@ -184,5 +286,35 @@ export const STARTER_DECKS: DeckDefinition[] = [
     name: 'Abismo Aquático',
     description: 'Poder aquático com Golduck, Dewgong e Vaporeon. Ataques em ondas e resistência glacial.',
     cards: abismoAquatico,
+  },
+  {
+    id: 'sombras-negras',
+    name: 'Sombras Negras',
+    description: 'Trevas profundas com Tyranitar, Houndoom e Darkrai. Ataques sombrios e poder destrutivo.',
+    cards: sombrasNegras,
+  },
+  {
+    id: 'furia-draconica',
+    name: 'Fúria Dracônica',
+    description: 'Poder ancestral dos dragões com Dragonite, Salamence e Garchomp. Dano avassalador.',
+    cards: furiaDraconica,
+  },
+  {
+    id: 'coracao-de-aco',
+    name: 'Coração de Aço',
+    description: 'Defesa de aço com Metagross, Scizor e Steelix. Resistência inabalável e golpes pesados.',
+    cards: coracaoDeAco,
+  },
+  {
+    id: 'encanto-das-fadas',
+    name: 'Encanto das Fadas',
+    description: 'Magia fada com Togekiss, Sylveon e Xerneas. Cura constante e ataques encantadores.',
+    cards: encantodasFadas,
+  },
+  {
+    id: 'forca-da-natureza',
+    name: 'Força da Natureza',
+    description: 'Natureza poderosa com Meganium, Sceptile e Celebi. Cura e dano sustentado.',
+    cards: forcaDaNatureza,
   },
 ];

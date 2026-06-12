@@ -344,6 +344,18 @@ export function performAbilityAttack(
       s = { ...s, players: { ...s.players, [pid]: { ...s.players[pid], playArea: s.players[pid].playArea.map(pk => pk.instanceId === attackerInstanceId ? { ...pk, vulnerability: 'vulnerable' as const, hasAttackedThisTurn: true, weakenAttacker: 20 } : pk) } } };
       break;
     }
+    case 'healself30': {
+      const healed30 = Math.min(attacker.currentHp + 30, attacker.def.hp);
+      s = { ...s, players: { ...s.players, [pid]: { ...s.players[pid], playArea: s.players[pid].playArea.map(pk => pk.instanceId === attackerInstanceId ? { ...pk, currentHp: healed30, vulnerability: 'vulnerable' as const, hasAttackedThisTurn: true } : pk) } } };
+      s = log(s, pid, `${attacker.def.displayName} curou 30 de dano!`);
+      break;
+    }
+    case 'healself60': {
+      const healed60 = Math.min(attacker.currentHp + 60, attacker.def.hp);
+      s = { ...s, players: { ...s.players, [pid]: { ...s.players[pid], playArea: s.players[pid].playArea.map(pk => pk.instanceId === attackerInstanceId ? { ...pk, currentHp: healed60, vulnerability: 'vulnerable' as const, hasAttackedThisTurn: true } : pk) } } };
+      s = log(s, pid, `${attacker.def.displayName} curou 60 de dano!`);
+      break;
+    }
     case 'teleport': {
       if (handIndex === undefined) break;
       const hand = s.players[pid].hand;

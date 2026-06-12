@@ -5,7 +5,7 @@ const img = (tcgId: string) =>
 
 // ─── Pokemon ───────────────────────────────────────────────────────────────────
 
-export const POKEMON_CARDS: PokemonCardDef[] = [
+const BASE_POKEMON_CARDS: PokemonCardDef[] = [
   // ── Fire ──
   {
     id: 'charmander', displayName: 'Charmander', type: 'pokemon',
@@ -747,6 +747,635 @@ export const POKEMON_CARDS: PokemonCardDef[] = [
       { name: 'Trovãozinho', cost: 1, damage: 20 },
     ],
   },
+];
+
+// ─── Dark ──────────────────────────────────────────────────────────────────────
+const DARK_CARDS: PokemonCardDef[] = [
+  {
+    id: 'sneasel', displayName: 'Sneasel', type: 'pokemon',
+    pokemonType: 'Dark', stage: 'Basic', hp: 60, retreatCost: 1, pointValue: 1,
+    weakness: 'Fighting',
+    tcgId: 'neo1-25', imageUrl: img('neo1-25'),
+    attacks: [
+      { name: 'Garra Afiada', cost: 1, damage: 20 },
+      { name: 'Furtividade', cost: 2, damage: 40 },
+    ],
+  },
+  {
+    id: 'weavile', displayName: 'Weavile', type: 'pokemon',
+    pokemonType: 'Dark', stage: 'Stage1', hp: 90, retreatCost: 1, pointValue: 2,
+    weakness: 'Fighting',
+    evolvesFrom: 'Sneasel',
+    tcgId: 'dp3-40', imageUrl: img('dp3-40'),
+    attacks: [
+      { name: 'Golpe Noturno', cost: 2, damage: 40 },
+      { name: 'Faca de Gelo', cost: 3, damage: 80 },
+    ],
+  },
+  {
+    id: 'houndour', displayName: 'Houndour', type: 'pokemon',
+    pokemonType: 'Dark', stage: 'Basic', hp: 60, retreatCost: 1, pointValue: 1,
+    weakness: 'Fighting',
+    tcgId: 'neo2-49', imageUrl: img('neo2-49'),
+    attacks: [
+      { name: 'Mordida', cost: 1, damage: 20 },
+      { name: 'Brasa Sombria', cost: 2, damage: 30 },
+    ],
+  },
+  {
+    id: 'houndoom', displayName: 'Houndoom', type: 'pokemon',
+    pokemonType: 'Dark', stage: 'Stage1', hp: 110, retreatCost: 2, pointValue: 2,
+    weakness: 'Fighting',
+    evolvesFrom: 'Houndour',
+    tcgId: 'neo2-8', imageUrl: img('neo2-8'),
+    attacks: [
+      { name: 'Chama Negra', cost: 2, damage: 50 },
+      { name: 'Pesadelo Infernal', cost: 4, damage: 120, effect: 'Descarte 1 energia deste Pokémon.' },
+    ],
+  },
+  {
+    id: 'umbreon', displayName: 'Umbreon', type: 'pokemon',
+    pokemonType: 'Dark', stage: 'Stage1', hp: 110, retreatCost: 2, pointValue: 2,
+    weakness: 'Fighting',
+    evolvesFrom: 'Eevee',
+    tcgId: 'neo1-13', imageUrl: img('neo1-13'),
+    attacks: [
+      { name: 'Mordida Lunar', cost: 2, damage: 50 },
+      { name: 'Voz Perturbadora', cost: 3, damage: 80 },
+    ],
+  },
+  {
+    id: 'murkrow', displayName: 'Murkrow', type: 'pokemon',
+    pokemonType: 'Dark', stage: 'Basic', hp: 50, retreatCost: 1, pointValue: 1,
+    weakness: 'Fighting',
+    tcgId: 'neo1-17', imageUrl: img('neo1-17'),
+    attacks: [
+      { name: 'Investida', cost: 1, damage: 20 },
+      { name: 'Caos', cost: 2, damage: 30 },
+    ],
+  },
+  {
+    id: 'honchkrow', displayName: 'Honchkrow', type: 'pokemon',
+    pokemonType: 'Dark', stage: 'Stage1', hp: 120, retreatCost: 2, pointValue: 2,
+    weakness: 'Fighting',
+    evolvesFrom: 'Murkrow',
+    tcgId: 'dp1-10', imageUrl: img('dp1-10'),
+    attacks: [
+      { name: 'Noite Escura', cost: 2, damage: 50 },
+      { name: 'Comando Sombrio', cost: 3, damage: 90 },
+    ],
+  },
+  {
+    id: 'darkrai', displayName: 'Darkrai', type: 'pokemon',
+    pokemonType: 'Dark', stage: 'Basic', hp: 120, retreatCost: 2, pointValue: 2,
+    weakness: 'Fighting',
+    tcgId: 'dp3-3', imageUrl: img('dp3-3'),
+    attacks: [
+      { name: 'Sonho Negro', cost: 2, damage: 40 },
+      { name: 'Medo Noturno', cost: 4, damage: 110 },
+    ],
+  },
+  {
+    id: 'tyranitar', displayName: 'Tyranitar', type: 'pokemon',
+    pokemonType: 'Dark', stage: 'Stage2', hp: 180, retreatCost: 4, pointValue: 3,
+    weakness: 'Fighting',
+    evolvesFrom: 'Pupitar',
+    tcgId: 'neo2-11', imageUrl: img('neo2-11'),
+    attacks: [
+      { name: 'Destruição', cost: 3, damage: 80 },
+      { name: 'Tempestade de Areia', cost: 5, damage: 150, effect: 'Causa 20 a todos os Pokémon do banco.' },
+    ],
+  },
+  {
+    id: 'larvitar', displayName: 'Larvitar', type: 'pokemon',
+    pokemonType: 'Fighting', stage: 'Basic', hp: 50, retreatCost: 1, pointValue: 1,
+    weakness: 'Psychic',
+    tcgId: 'neo2-52', imageUrl: img('neo2-52'),
+    attacks: [
+      { name: 'Mordida', cost: 1, damage: 20 },
+    ],
+  },
+  {
+    id: 'pupitar', displayName: 'Pupitar', type: 'pokemon',
+    pokemonType: 'Fighting', stage: 'Stage1', hp: 90, retreatCost: 3, pointValue: 2,
+    weakness: 'Psychic',
+    evolvesFrom: 'Larvitar',
+    tcgId: 'neo2-36', imageUrl: img('neo2-36'),
+    attacks: [
+      { name: 'Slam', cost: 2, damage: 40 },
+      { name: 'Corpo de Rocha', cost: 3, damage: 60 },
+    ],
+  },
+];
+
+// ─── Dragon ────────────────────────────────────────────────────────────────────
+const DRAGON_CARDS: PokemonCardDef[] = [
+  {
+    id: 'dratini', displayName: 'Dratini', type: 'pokemon',
+    pokemonType: 'Dragon', stage: 'Basic', hp: 50, retreatCost: 1, pointValue: 1,
+    weakness: 'Fairy',
+    tcgId: 'base2-26', imageUrl: img('base2-26'),
+    attacks: [
+      { name: 'Envolver', cost: 1, damage: 10 },
+      { name: 'Slam', cost: 2, damage: 20 },
+    ],
+  },
+  {
+    id: 'dragonair', displayName: 'Dragonair', type: 'pokemon',
+    pokemonType: 'Dragon', stage: 'Stage1', hp: 90, retreatCost: 2, pointValue: 2,
+    weakness: 'Fairy',
+    evolvesFrom: 'Dratini',
+    tcgId: 'base2-23', imageUrl: img('base2-23'),
+    attacks: [
+      { name: 'Agitar', cost: 2, damage: 40 },
+      { name: 'Pulso do Dragão', cost: 3, damage: 70 },
+    ],
+  },
+  {
+    id: 'dragonite', displayName: 'Dragonite', type: 'pokemon',
+    pokemonType: 'Dragon', stage: 'Stage2', hp: 180, retreatCost: 3, pointValue: 3,
+    weakness: 'Fairy',
+    evolvesFrom: 'Dragonair',
+    tcgId: 'base2-4', imageUrl: img('base2-4'),
+    attacks: [
+      { name: 'Vento do Dragão', cost: 3, damage: 80 },
+      { name: 'Praga do Dragão', cost: 5, damage: 180, effect: 'Descarte 2 energias deste Pokémon.' },
+    ],
+  },
+  {
+    id: 'bagon', displayName: 'Bagon', type: 'pokemon',
+    pokemonType: 'Dragon', stage: 'Basic', hp: 50, retreatCost: 1, pointValue: 1,
+    weakness: 'Fairy',
+    tcgId: 'ex7-27', imageUrl: img('ex7-27'),
+    attacks: [
+      { name: 'Mordida', cost: 1, damage: 20 },
+    ],
+  },
+  {
+    id: 'shelgon', displayName: 'Shelgon', type: 'pokemon',
+    pokemonType: 'Dragon', stage: 'Stage1', hp: 80, retreatCost: 3, pointValue: 2,
+    weakness: 'Fairy',
+    evolvesFrom: 'Bagon',
+    tcgId: 'ex7-40', imageUrl: img('ex7-40'),
+    attacks: [
+      { name: 'Escudo de Dragão', cost: 2, damage: 30 },
+      { name: 'Investida Feroz', cost: 3, damage: 60 },
+    ],
+  },
+  {
+    id: 'salamence', displayName: 'Salamence', type: 'pokemon',
+    pokemonType: 'Dragon', stage: 'Stage2', hp: 170, retreatCost: 3, pointValue: 3,
+    weakness: 'Fairy',
+    evolvesFrom: 'Shelgon',
+    tcgId: 'ex7-9', imageUrl: img('ex7-9'),
+    attacks: [
+      { name: 'Chama Dracônica', cost: 3, damage: 90 },
+      { name: 'Frenesi', cost: 5, damage: 160 },
+    ],
+  },
+  {
+    id: 'gible', displayName: 'Gible', type: 'pokemon',
+    pokemonType: 'Dragon', stage: 'Basic', hp: 60, retreatCost: 1, pointValue: 1,
+    weakness: 'Fairy',
+    tcgId: 'dp5-71', imageUrl: img('dp5-71'),
+    attacks: [
+      { name: 'Morder', cost: 1, damage: 20 },
+    ],
+  },
+  {
+    id: 'gabite', displayName: 'Gabite', type: 'pokemon',
+    pokemonType: 'Dragon', stage: 'Stage1', hp: 90, retreatCost: 2, pointValue: 2,
+    weakness: 'Fairy',
+    evolvesFrom: 'Gible',
+    tcgId: 'dp5-36', imageUrl: img('dp5-36'),
+    attacks: [
+      { name: 'Corte Dragon', cost: 2, damage: 40 },
+      { name: 'Fenda', cost: 3, damage: 70 },
+    ],
+  },
+  {
+    id: 'garchomp', displayName: 'Garchomp', type: 'pokemon',
+    pokemonType: 'Dragon', stage: 'Stage2', hp: 170, retreatCost: 2, pointValue: 3,
+    weakness: 'Fairy',
+    evolvesFrom: 'Gabite',
+    tcgId: 'dp5-5', imageUrl: img('dp5-5'),
+    attacks: [
+      { name: 'Golpe de Garra', cost: 3, damage: 100 },
+      { name: 'Ataque Sonic', cost: 4, damage: 160 },
+    ],
+  },
+];
+
+// ─── Metal ─────────────────────────────────────────────────────────────────────
+const METAL_CARDS: PokemonCardDef[] = [
+  {
+    id: 'beldum', displayName: 'Beldum', type: 'pokemon',
+    pokemonType: 'Metal', stage: 'Basic', hp: 50, retreatCost: 3, pointValue: 1,
+    weakness: 'Fire',
+    tcgId: 'ex6-55', imageUrl: img('ex6-55'),
+    attacks: [
+      { name: 'Cabeçada Metálica', cost: 1, damage: 10 },
+    ],
+  },
+  {
+    id: 'metang', displayName: 'Metang', type: 'pokemon',
+    pokemonType: 'Metal', stage: 'Stage1', hp: 90, retreatCost: 3, pointValue: 2,
+    weakness: 'Fire',
+    evolvesFrom: 'Beldum',
+    tcgId: 'ex6-40', imageUrl: img('ex6-40'),
+    attacks: [
+      { name: 'Golpe de Aço', cost: 2, damage: 40 },
+      { name: 'Psíquico', cost: 3, damage: 60 },
+    ],
+  },
+  {
+    id: 'metagross', displayName: 'Metagross', type: 'pokemon',
+    pokemonType: 'Metal', stage: 'Stage2', hp: 160, retreatCost: 4, pointValue: 3,
+    weakness: 'Fire',
+    evolvesFrom: 'Metang',
+    tcgId: 'ex6-11', imageUrl: img('ex6-11'),
+    attacks: [
+      { name: 'Canhão Metálico', cost: 3, damage: 80 },
+      { name: 'Psicocanhão', cost: 5, damage: 170 },
+    ],
+  },
+  {
+    id: 'scyther', displayName: 'Scyther', type: 'pokemon',
+    pokemonType: 'Metal', stage: 'Basic', hp: 70, retreatCost: 1, pointValue: 1,
+    weakness: 'Fire',
+    tcgId: 'base1-26', imageUrl: img('base1-26'),
+    attacks: [
+      { name: 'Corte de Foice', cost: 1, damage: 30 },
+      { name: 'Fúria de Cortes', cost: 3, damage: 60 },
+    ],
+  },
+  {
+    id: 'scizor', displayName: 'Scizor', type: 'pokemon',
+    pokemonType: 'Metal', stage: 'Stage1', hp: 120, retreatCost: 2, pointValue: 2,
+    weakness: 'Fire',
+    evolvesFrom: 'Scyther',
+    tcgId: 'neo1-10', imageUrl: img('neo1-10'),
+    attacks: [
+      { name: 'Pinça de Aço', cost: 2, damage: 50 },
+      { name: 'Corte Metálico', cost: 3, damage: 90 },
+    ],
+  },
+  {
+    id: 'steelix', displayName: 'Steelix', type: 'pokemon',
+    pokemonType: 'Metal', stage: 'Stage1', hp: 150, retreatCost: 4, pointValue: 2,
+    weakness: 'Fire',
+    evolvesFrom: 'Onix',
+    tcgId: 'neo1-11', imageUrl: img('neo1-11'),
+    attacks: [
+      { name: 'Cauda de Aço', cost: 2, damage: 50 },
+      { name: 'Slam de Ferro', cost: 4, damage: 110 },
+    ],
+  },
+  {
+    id: 'onix', displayName: 'Onix', type: 'pokemon',
+    pokemonType: 'Fighting', stage: 'Basic', hp: 90, retreatCost: 3, pointValue: 1,
+    weakness: 'Psychic',
+    tcgId: 'base1-56', imageUrl: img('base1-56'),
+    attacks: [
+      { name: 'Tackle', cost: 1, damage: 20 },
+      { name: 'Investida de Pedra', cost: 3, damage: 50 },
+    ],
+  },
+  {
+    id: 'skarmory', displayName: 'Skarmory', type: 'pokemon',
+    pokemonType: 'Metal', stage: 'Basic', hp: 80, retreatCost: 1, pointValue: 1,
+    weakness: 'Fire',
+    tcgId: 'neo2-20', imageUrl: img('neo2-20'),
+    attacks: [
+      { name: 'Asa de Aço', cost: 1, damage: 20 },
+      { name: 'Corte de Lâmina', cost: 3, damage: 70 },
+    ],
+  },
+  {
+    id: 'jirachi', displayName: 'Jirachi', type: 'pokemon',
+    pokemonType: 'Metal', stage: 'Basic', hp: 70, retreatCost: 1, pointValue: 1,
+    weakness: 'Fire',
+    tcgId: 'ex6-9', imageUrl: img('ex6-9'),
+    ability: {
+      name: 'Desejo Estelar',
+      category: 'B',
+      text: 'Uma vez no seu turno, você pode comprar 1 carta extra.',
+    },
+    attacks: [
+      { name: 'Poeira Estelar', cost: 2, damage: 30 },
+      { name: 'Meteor Mash', cost: 3, damage: 70 },
+    ],
+  },
+];
+
+// ─── Fairy ─────────────────────────────────────────────────────────────────────
+const FAIRY_CARDS: PokemonCardDef[] = [
+  {
+    id: 'clefairy', displayName: 'Clefairy', type: 'pokemon',
+    pokemonType: 'Fairy', stage: 'Basic', hp: 60, retreatCost: 1, pointValue: 1,
+    weakness: 'Metal',
+    tcgId: 'base1-5', imageUrl: img('base1-5'),
+    attacks: [
+      { name: 'Metronome', cost: 1, damage: 10 },
+      { name: 'Moonblast', cost: 2, damage: 30 },
+    ],
+  },
+  {
+    id: 'clefable', displayName: 'Clefable', type: 'pokemon',
+    pokemonType: 'Fairy', stage: 'Stage1', hp: 100, retreatCost: 2, pointValue: 2,
+    weakness: 'Metal',
+    evolvesFrom: 'Clefairy',
+    tcgId: 'base2-1', imageUrl: img('base2-1'),
+    attacks: [
+      { name: 'Lunar', cost: 2, damage: 40 },
+      { name: 'Fada Suprema', cost: 4, damage: 100 },
+    ],
+  },
+  {
+    id: 'togepi', displayName: 'Togepi', type: 'pokemon',
+    pokemonType: 'Fairy', stage: 'Basic', hp: 40, retreatCost: 1, pointValue: 1,
+    weakness: 'Metal',
+    tcgId: 'neo1-52', imageUrl: img('neo1-52'),
+    attacks: [
+      { name: 'Encanto', cost: 1, damage: 10 },
+    ],
+  },
+  {
+    id: 'togetic', displayName: 'Togetic', type: 'pokemon',
+    pokemonType: 'Fairy', stage: 'Stage1', hp: 70, retreatCost: 1, pointValue: 2,
+    weakness: 'Metal',
+    evolvesFrom: 'Togepi',
+    tcgId: 'neo1-28', imageUrl: img('neo1-28'),
+    attacks: [
+      { name: 'Brisa de Fadas', cost: 1, damage: 20 },
+      { name: 'Asa Divina', cost: 3, damage: 60 },
+    ],
+  },
+  {
+    id: 'togekiss', displayName: 'Togekiss', type: 'pokemon',
+    pokemonType: 'Fairy', stage: 'Stage2', hp: 140, retreatCost: 2, pointValue: 3,
+    weakness: 'Metal',
+    evolvesFrom: 'Togetic',
+    tcgId: 'dp4-11', imageUrl: img('dp4-11'),
+    attacks: [
+      { name: 'Encanto Sereno', cost: 2, damage: 0, effect: 'Cure 60 de dano deste Pokémon.', effectType: 'healself60' },
+      { name: 'Ar Gracioso', cost: 4, damage: 120 },
+    ],
+  },
+  {
+    id: 'sylveon', displayName: 'Sylveon', type: 'pokemon',
+    pokemonType: 'Fairy', stage: 'Stage1', hp: 110, retreatCost: 2, pointValue: 2,
+    weakness: 'Metal',
+    evolvesFrom: 'Eevee',
+    tcgId: 'xy1-72', imageUrl: img('xy1-72'),
+    attacks: [
+      { name: 'Fita Encantada', cost: 2, damage: 40 },
+      { name: 'Moonblast', cost: 3, damage: 90 },
+    ],
+  },
+  {
+    id: 'gardevoir', displayName: 'Gardevoir', type: 'pokemon',
+    pokemonType: 'Fairy', stage: 'Stage1', hp: 110, retreatCost: 2, pointValue: 2,
+    weakness: 'Metal',
+    evolvesFrom: 'Kirlia',
+    tcgId: 'ex1-7', imageUrl: img('ex1-7'),
+    attacks: [
+      { name: 'Psíquico', cost: 2, damage: 40 },
+      { name: 'Moonblast', cost: 3, damage: 80 },
+    ],
+  },
+  {
+    id: 'xerneas', displayName: 'Xerneas', type: 'pokemon',
+    pokemonType: 'Fairy', stage: 'Basic', hp: 130, retreatCost: 2, pointValue: 2,
+    weakness: 'Metal',
+    tcgId: 'xy1-96', imageUrl: img('xy1-96'),
+    attacks: [
+      { name: 'Geo Control', cost: 2, damage: 30 },
+      { name: 'Carga Fada', cost: 4, damage: 120 },
+    ],
+  },
+];
+
+// ─── Grass (Johto/Hoenn) ───────────────────────────────────────────────────────
+const GRASS_EXTRA: PokemonCardDef[] = [
+  {
+    id: 'chikorita', displayName: 'Chikorita', type: 'pokemon',
+    pokemonType: 'Grass', stage: 'Basic', hp: 50, retreatCost: 1, pointValue: 1,
+    weakness: 'Fire',
+    tcgId: 'neo1-44', imageUrl: img('neo1-44'),
+    attacks: [
+      { name: 'Chicote de Folha', cost: 1, damage: 10 },
+      { name: 'Pétala Doce', cost: 2, damage: 20 },
+    ],
+  },
+  {
+    id: 'bayleef', displayName: 'Bayleef', type: 'pokemon',
+    pokemonType: 'Grass', stage: 'Stage1', hp: 80, retreatCost: 2, pointValue: 2,
+    weakness: 'Fire',
+    evolvesFrom: 'Chikorita',
+    tcgId: 'neo1-18', imageUrl: img('neo1-18'),
+    attacks: [
+      { name: 'Chicote de Vinha', cost: 2, damage: 30 },
+      { name: 'Lança de Folha', cost: 3, damage: 60 },
+    ],
+  },
+  {
+    id: 'meganium', displayName: 'Meganium', type: 'pokemon',
+    pokemonType: 'Grass', stage: 'Stage2', hp: 160, retreatCost: 3, pointValue: 3,
+    weakness: 'Fire',
+    evolvesFrom: 'Bayleef',
+    tcgId: 'neo1-8', imageUrl: img('neo1-8'),
+    attacks: [
+      { name: 'Pétala Solar', cost: 3, damage: 70, effect: 'Cure 40 de dano deste Pokémon.' },
+      { name: 'Solarbeam', cost: 5, damage: 180 },
+    ],
+  },
+  {
+    id: 'treecko', displayName: 'Treecko', type: 'pokemon',
+    pokemonType: 'Grass', stage: 'Basic', hp: 50, retreatCost: 1, pointValue: 1,
+    weakness: 'Fire',
+    tcgId: 'ex4-74', imageUrl: img('ex4-74'),
+    attacks: [
+      { name: 'Arranhão', cost: 1, damage: 10 },
+      { name: 'Chicote', cost: 2, damage: 20 },
+    ],
+  },
+  {
+    id: 'grovyle', displayName: 'Grovyle', type: 'pokemon',
+    pokemonType: 'Grass', stage: 'Stage1', hp: 80, retreatCost: 1, pointValue: 2,
+    weakness: 'Fire',
+    evolvesFrom: 'Treecko',
+    tcgId: 'ex4-36', imageUrl: img('ex4-36'),
+    attacks: [
+      { name: 'Corte de Folha', cost: 2, damage: 40 },
+      { name: 'Lâmina Herbácea', cost: 3, damage: 70 },
+    ],
+  },
+  {
+    id: 'sceptile', displayName: 'Sceptile', type: 'pokemon',
+    pokemonType: 'Grass', stage: 'Stage2', hp: 150, retreatCost: 1, pointValue: 3,
+    weakness: 'Fire',
+    evolvesFrom: 'Grovyle',
+    tcgId: 'ex4-11', imageUrl: img('ex4-11'),
+    attacks: [
+      { name: 'Estalo de Folha', cost: 2, damage: 60 },
+      { name: 'Mega Lança', cost: 4, damage: 140 },
+    ],
+  },
+  {
+    id: 'celebi', displayName: 'Celebi', type: 'pokemon',
+    pokemonType: 'Grass', stage: 'Basic', hp: 70, retreatCost: 1, pointValue: 1,
+    weakness: 'Fire',
+    tcgId: 'neo1-16', imageUrl: img('neo1-16'),
+    attacks: [
+      { name: 'Cura Natural', cost: 1, damage: 0, effect: 'Cure 30 de dano deste Pokémon.', effectType: 'healself30' },
+      { name: 'Viagem no Tempo', cost: 3, damage: 50 },
+    ],
+  },
+];
+
+// ─── Fire (Johto/Hoenn) ────────────────────────────────────────────────────────
+const FIRE_EXTRA: PokemonCardDef[] = [
+  {
+    id: 'cyndaquil', displayName: 'Cyndaquil', type: 'pokemon',
+    pokemonType: 'Fire', stage: 'Basic', hp: 50, retreatCost: 1, pointValue: 1,
+    weakness: 'Water',
+    tcgId: 'neo1-46', imageUrl: img('neo1-46'),
+    attacks: [
+      { name: 'Brasinha', cost: 1, damage: 10 },
+      { name: 'Brasa', cost: 2, damage: 30 },
+    ],
+  },
+  {
+    id: 'quilava', displayName: 'Quilava', type: 'pokemon',
+    pokemonType: 'Fire', stage: 'Stage1', hp: 80, retreatCost: 2, pointValue: 2,
+    weakness: 'Water',
+    evolvesFrom: 'Cyndaquil',
+    tcgId: 'neo1-22', imageUrl: img('neo1-22'),
+    attacks: [
+      { name: 'Chama', cost: 2, damage: 40 },
+      { name: 'Explosão de Fogo', cost: 3, damage: 70 },
+    ],
+  },
+  {
+    id: 'typhlosion', displayName: 'Typhlosion', type: 'pokemon',
+    pokemonType: 'Fire', stage: 'Stage2', hp: 160, retreatCost: 3, pointValue: 3,
+    weakness: 'Water',
+    evolvesFrom: 'Quilava',
+    tcgId: 'neo1-17', imageUrl: img('neo1-17'),
+    attacks: [
+      { name: 'Erupção', cost: 3, damage: 90 },
+      { name: 'Inferno de Chamas', cost: 5, damage: 180, effect: 'Descarte 2 energias deste Pokémon.' },
+    ],
+  },
+  {
+    id: 'torchic', displayName: 'Torchic', type: 'pokemon',
+    pokemonType: 'Fire', stage: 'Basic', hp: 50, retreatCost: 1, pointValue: 1,
+    weakness: 'Water',
+    tcgId: 'ex4-75', imageUrl: img('ex4-75'),
+    attacks: [
+      { name: 'Foco de Brasa', cost: 1, damage: 20 },
+    ],
+  },
+  {
+    id: 'combusken', displayName: 'Combusken', type: 'pokemon',
+    pokemonType: 'Fire', stage: 'Stage1', hp: 90, retreatCost: 2, pointValue: 2,
+    weakness: 'Water',
+    evolvesFrom: 'Torchic',
+    tcgId: 'ex4-29', imageUrl: img('ex4-29'),
+    attacks: [
+      { name: 'Chute de Brasa', cost: 2, damage: 40 },
+      { name: 'Fogo Lutador', cost: 3, damage: 70 },
+    ],
+  },
+  {
+    id: 'blaziken', displayName: 'Blaziken', type: 'pokemon',
+    pokemonType: 'Fire', stage: 'Stage2', hp: 160, retreatCost: 2, pointValue: 3,
+    weakness: 'Water',
+    evolvesFrom: 'Combusken',
+    tcgId: 'ex4-3', imageUrl: img('ex4-3'),
+    attacks: [
+      { name: 'Chute Flamejante', cost: 3, damage: 90 },
+      { name: 'Inferno de Chutes', cost: 5, damage: 180, effect: 'Descarte 2 energias deste Pokémon.' },
+    ],
+  },
+  {
+    id: 'ho-oh', displayName: 'Ho-Oh', type: 'pokemon',
+    pokemonType: 'Fire', stage: 'Basic', hp: 130, retreatCost: 3, pointValue: 2,
+    weakness: 'Water',
+    tcgId: 'neo2-9', imageUrl: img('neo2-9'),
+    attacks: [
+      { name: 'Sagrado Fogo', cost: 3, damage: 80 },
+      { name: 'Fênix Ardente', cost: 5, damage: 150, effect: 'Cure 30 de dano deste Pokémon.' },
+    ],
+  },
+];
+
+// ─── Water (Johto) ─────────────────────────────────────────────────────────────
+const WATER_EXTRA: PokemonCardDef[] = [
+  {
+    id: 'totodile', displayName: 'Totodile', type: 'pokemon',
+    pokemonType: 'Water', stage: 'Basic', hp: 50, retreatCost: 1, pointValue: 1,
+    weakness: 'Electric',
+    tcgId: 'neo1-53', imageUrl: img('neo1-53'),
+    attacks: [
+      { name: 'Mordida', cost: 1, damage: 20 },
+      { name: 'Jato d\'Água', cost: 2, damage: 30 },
+    ],
+  },
+  {
+    id: 'croconaw', displayName: 'Croconaw', type: 'pokemon',
+    pokemonType: 'Water', stage: 'Stage1', hp: 80, retreatCost: 2, pointValue: 2,
+    weakness: 'Electric',
+    evolvesFrom: 'Totodile',
+    tcgId: 'neo1-20', imageUrl: img('neo1-20'),
+    attacks: [
+      { name: 'Hidrojato', cost: 2, damage: 40 },
+      { name: 'Rasgadura', cost: 3, damage: 70 },
+    ],
+  },
+  {
+    id: 'feraligatr', displayName: 'Feraligatr', type: 'pokemon',
+    pokemonType: 'Water', stage: 'Stage2', hp: 170, retreatCost: 3, pointValue: 3,
+    weakness: 'Electric',
+    evolvesFrom: 'Croconaw',
+    tcgId: 'neo1-4', imageUrl: img('neo1-4'),
+    attacks: [
+      { name: 'Aqua Jato', cost: 3, damage: 90 },
+      { name: 'Frenesi Aquático', cost: 5, damage: 180, effect: 'Descarte 2 energias deste Pokémon.' },
+    ],
+  },
+  {
+    id: 'lugia', displayName: 'Lugia', type: 'pokemon',
+    pokemonType: 'Water', stage: 'Basic', hp: 130, retreatCost: 2, pointValue: 2,
+    weakness: 'Electric',
+    tcgId: 'neo2-9', imageUrl: img('neo2-9'),
+    attacks: [
+      { name: 'Aeroblast', cost: 3, damage: 80 },
+      { name: 'Temporal de Prata', cost: 5, damage: 150 },
+    ],
+  },
+  {
+    id: 'suicune', displayName: 'Suicune', type: 'pokemon',
+    pokemonType: 'Water', stage: 'Basic', hp: 120, retreatCost: 2, pointValue: 2,
+    weakness: 'Electric',
+    tcgId: 'ex10-16', imageUrl: img('ex10-16'),
+    attacks: [
+      { name: 'Aurora Polar', cost: 2, damage: 50 },
+      { name: 'Ventania Gelada', cost: 4, damage: 100 },
+    ],
+  },
+];
+
+export const POKEMON_CARDS: PokemonCardDef[] = [
+  ...BASE_POKEMON_CARDS,
+  ...DARK_CARDS,
+  ...DRAGON_CARDS,
+  ...METAL_CARDS,
+  ...FAIRY_CARDS,
+  ...GRASS_EXTRA,
+  ...FIRE_EXTRA,
+  ...WATER_EXTRA,
 ];
 
 // ─── Trainers ──────────────────────────────────────────────────────────────────
