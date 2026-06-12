@@ -11,11 +11,8 @@ const GAP = CARD_W + 0.35;
 const AI_Z = -2.1;
 const PLAYER_Z = 1.4;
 
-function holoFor(pk: PokemonInPlay): number {
-  const v = pk.def.pointValue ?? 1;
-  if (v >= 3) return 0.5;
-  if (v === 2) return 0.32;
-  return 0.16;
+function holoFor(_pk: PokemonInPlay): number {
+  return 0;
 }
 
 function rowPositions(pokemons: PokemonInPlay[], z: number): Record<string, [number, number, number]> {
