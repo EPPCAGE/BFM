@@ -104,6 +104,17 @@ body {
   z-index: 20;
 }
 
+/* ── 3D mode hand cards (CSS hover, no JS polling) ── */
+.hand-card-3d {
+  box-shadow: 0 4px 16px rgba(0,0,0,0.6);
+  position: relative;
+}
+.hand-card-3d:hover {
+  transform: rotate(0deg) translateY(-28px) scale(1.13) !important;
+  box-shadow: 0 20px 40px rgba(0,0,0,0.85), 0 0 24px rgba(250,204,21,0.35);
+  z-index: 80 !important;
+}
+
 /* ── Targetable pulses ── */
 @keyframes gold-pulse {
   0%, 100% { box-shadow: 0 0 8px 2px rgba(251,191,36,0.6), 0 0 20px 5px rgba(251,191,36,0.2); }
@@ -179,8 +190,7 @@ button:active:not(:disabled) {
 .hand-fan .card-in-hand:hover { rotate: 0deg !important; }
 
 /* ── 3D field action panels (drei Html) ── */
-.holo-actions { opacity: 0; transition: opacity 0.15s; }
-.holo-actions:hover { opacity: 1; }
+.holo-actions { opacity: 1; transition: opacity 0.15s; }
 .holo-action-panel {
   display: flex;
   flex-direction: column;

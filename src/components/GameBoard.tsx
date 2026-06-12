@@ -14,7 +14,6 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { canAttack, canSynergyAttack, getSynergyGroup, getSynergyDamage, availableEnergy } from '../game/engine';
 import { useTooltip } from '../hooks/useTooltip';
 import { playSound } from '../utils/sounds';
-import { startMusic, setMusicMuted } from '../utils/music';
 import type { PokemonCardDef, Attack } from '../game/types';
 import type { DamageEvent } from './DamageNumber';
 
@@ -53,12 +52,6 @@ export function GameBoard() {
   const [muted, setMuted] = useState(() => localStorage.getItem('lorkemon-muted') === '1');
   const [view3d, setView3d] = useState(() => localStorage.getItem('lorkemon-3d') === '1');
 
-  // Start background music on first user interaction (browsers require a gesture)
-  useEffect(() => {
-    const kick = () => { startMusic(); window.removeEventListener('pointerdown', kick); };
-    window.addEventListener('pointerdown', kick);
-    return () => window.removeEventListener('pointerdown', kick);
-  }, []);
   const prevHpRef = useRef<Record<string, number>>({});
   const prevEvoRef = useRef<Record<string, number>>({});
   const prevNamesRef = useRef<Record<string, string>>({});
@@ -359,7 +352,6 @@ export function GameBoard() {
               const next = !muted;
               setMuted(next);
               localStorage.setItem('lorkemon-muted', next ? '1' : '0');
-              setMusicMuted(next);
             }}
             className="px-2 py-1 text-slate-400 hover:text-white text-xs rounded"
             style={{ background: 'rgba(30,41,59,0.8)', border: '1px solid rgba(71,85,105,0.4)' }}
@@ -609,7 +601,6 @@ export function GameBoard() {
               Mão ({playerState.hand.length}){isPlayerTurn ? <span className="text-slate-400 font-normal"> — clique para ações</span> : <span className="text-slate-500 italic font-normal"> — aguardando IA…</span>}
             </div>
             <div className="flex items-end justify-center pointer-events-auto px-12" style={{ minHeight: 130 }}>
-              <AnimatePresence initial={false}>
               {playerState.hand.map((card, idx) => {
                 const n = playerState.hand.length;
                 const mid = (n - 1) / 2;
@@ -618,18 +609,20 @@ export function GameBoard() {
                 const isTeleportTarget = pendingTeleport && card.type === 'pokemon' && (card as PokemonCardDef).stage === 'Basic';
                 const isMenuOpen = cardMenu?.idx === idx;
                 return (
-                  <motion.div
+                  <div
                     key={`${card.id}-${idx}`}
                     data-card-hover
-                    initial={{ opacity: 0, y: 50, scale: 0.85 }}
-                    animate={{ opacity: 1, y: lift, scale: 1, rotate: rot }}
-                    exit={{ opacity: 0, y: 30, scale: 0.9 }}
-                    whileHover={{ y: -22, scale: 1.12, rotate: 0, zIndex: 50 }}
-                    transition={{ type: 'spring', stiffness: 280, damping: 22 }}
-                    className={`relative rounded-lg cursor-pointer flex-shrink-0 shadow-xl
+                    className={`hand-card-3d relative rounded-lg cursor-pointer flex-shrink-0 shadow-xl
                       ${isTeleportTarget ? 'ring-2 ring-indigo-400 animate-pulse' : ''}
                       ${isMenuOpen ? 'ring-2 ring-yellow-400' : ''}`}
-                    style={{ width: 96, height: 134, marginLeft: idx === 0 ? 0 : -26, transformOrigin: 'bottom center' }}
+                    style={{
+                      width: 96, height: 134,
+                      marginLeft: idx === 0 ? 0 : -26,
+                      transformOrigin: 'bottom center',
+                      transform: `rotate(${rot}deg) translateY(${lift}px)`,
+                      transition: 'transform 0.18s cubic-bezier(0.34,1.56,0.64,1)',
+                      zIndex: isMenuOpen ? 50 : idx,
+                    }}
                     onClick={(e) => handleHandClick(idx, e)}
                     onMouseEnter={(e) => { if (!cardMenu) showTooltip(card, e); }}
                     onMouseMove={moveTooltip}
@@ -637,10 +630,9 @@ export function GameBoard() {
                     <CardImage card={card} className="w-full h-full rounded-lg" />
                     {card.type === 'item' && <div className="absolute bottom-0 left-0 right-0 bg-amber-700/85 text-[8px] text-center text-white rounded-b font-semibold">ITEM</div>}
                     {card.type === 'supporter' && <div className="absolute bottom-0 left-0 right-0 bg-purple-700/85 text-[8px] text-center text-white rounded-b font-semibold">APOIADOR</div>}
-                  </motion.div>
+                  </div>
                 );
               })}
-              </AnimatePresence>
               {playerState.hand.length === 0 && <span className="text-slate-500 text-sm italic py-10">Mão vazia</span>}
             </div>
           </div>
