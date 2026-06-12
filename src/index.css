@@ -178,6 +178,37 @@ button:active:not(:disabled) {
 .hand-fan .card-in-hand:nth-child(even) { transform-origin: bottom center; rotate: 1.5deg; }
 .hand-fan .card-in-hand:hover { rotate: 0deg !important; }
 
+/* ── 3D field action panels (drei Html) ── */
+.holo-actions { opacity: 0; transition: opacity 0.15s; }
+.holo-actions:hover { opacity: 1; }
+.holo-action-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 5px;
+  border-radius: 10px;
+  background: rgba(8,10,22,0.92);
+  border: 1px solid rgba(99,102,241,0.5);
+  box-shadow: 0 8px 30px rgba(0,0,0,0.7), 0 0 16px rgba(99,102,241,0.3);
+  width: 120px;
+}
+.holo-action-panel button {
+  font-size: 9px;
+  text-align: left;
+  padding: 4px 6px;
+  border-radius: 6px;
+  background: #334155;
+  color: #fff;
+  white-space: nowrap;
+}
+.holo-action-panel button:hover:not(:disabled) { background: #475569; }
+.holo-action-panel button:disabled { opacity: 0.4; cursor: not-allowed; }
+.holo-action-panel button.evo {
+  background: linear-gradient(135deg,#7c3aed,#a855f7);
+  font-weight: 800;
+  text-align: center;
+}
+
 /* ── Attack flash on target ── */
 @keyframes targetFlash {
   0%, 100% { opacity: 0; }

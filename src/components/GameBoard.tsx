@@ -9,10 +9,12 @@ import { HintPanel } from './HintPanel';
 import { TurnBanner } from './TurnBanner';
 import { AttackParticles } from './AttackParticles';
 import { VictoryConfetti } from './VictoryConfetti';
+import { Field3D } from '../three/Field3D';
 import { AnimatePresence, motion } from 'framer-motion';
-import { canAttack, canSynergyAttack, getSynergyGroup, getSynergyDamage } from '../game/engine';
+import { canAttack, canSynergyAttack, getSynergyGroup, getSynergyDamage, availableEnergy } from '../game/engine';
 import { useTooltip } from '../hooks/useTooltip';
 import { playSound } from '../utils/sounds';
+import { startMusic, setMusicMuted } from '../utils/music';
 import type { PokemonCardDef, Attack } from '../game/types';
 import type { DamageEvent } from './DamageNumber';
 
@@ -49,6 +51,14 @@ export function GameBoard() {
   const [attackParticles, setAttackParticles] = useState<{ type: string; direction: 'up' | 'down'; key: number } | null>(null);
   const [showConfetti, setShowConfetti] = useState(false);
   const [muted, setMuted] = useState(() => localStorage.getItem('lorkemon-muted') === '1');
+  const [view3d, setView3d] = useState(() => localStorage.getItem('lorkemon-3d') === '1');
+
+  // Start background music on first user interaction (browsers require a gesture)
+  useEffect(() => {
+    const kick = () => { startMusic(); window.removeEventListener('pointerdown', kick); };
+    window.addEventListener('pointerdown', kick);
+    return () => window.removeEventListener('pointerdown', kick);
+  }, []);
   const prevHpRef = useRef<Record<string, number>>({});
   const prevEvoRef = useRef<Record<string, number>>({});
   const prevNamesRef = useRef<Record<string, string>>({});
@@ -160,6 +170,7 @@ export function GameBoard() {
   const isPlayerTurn = currentPlayer === 'player';
   const playerState = players.player;
   const aiState = players.ai;
+  const availableEnergyForPlayer = availableEnergy(playerState);
 
   // ── Card action menu ──
   const menuCard = cardMenu !== null ? playerState.hand[cardMenu.idx] : null;
@@ -328,9 +339,27 @@ export function GameBoard() {
         <div className="flex gap-2 items-center">
           <button
             onClick={() => {
+              const next = !view3d;
+              setView3d(next);
+              localStorage.setItem('lorkemon-3d', next ? '1' : '0');
+            }}
+            className="px-2.5 py-1 text-xs font-bold rounded"
+            style={{
+              background: view3d ? 'linear-gradient(135deg,#a855f7,#6366f1)' : 'rgba(30,41,59,0.8)',
+              border: '1px solid rgba(168,85,247,0.5)',
+              color: view3d ? '#fff' : '#cbd5e1',
+              boxShadow: view3d ? '0 0 12px rgba(168,85,247,0.5)' : 'none',
+            }}
+            title="Alternar campo 2D / 3D"
+          >
+            {view3d ? '◆ 3D' : '◇ 2D'}
+          </button>
+          <button
+            onClick={() => {
               const next = !muted;
               setMuted(next);
               localStorage.setItem('lorkemon-muted', next ? '1' : '0');
+              setMusicMuted(next);
             }}
             className="px-2 py-1 text-slate-400 hover:text-white text-xs rounded"
             style={{ background: 'rgba(30,41,59,0.8)', border: '1px solid rgba(71,85,105,0.4)' }}
@@ -501,6 +530,32 @@ export function GameBoard() {
             </div>
           </div>
 
+          {view3d ? (
+            /* ── 3D FIELD ── */
+            <div className="flex-1 relative min-h-0">
+              <div className="absolute top-1 left-3 text-[10px] text-red-400 font-bold z-10 pointer-events-none">IA — Em Jogo ({aiState.playArea.length}/5)</div>
+              <div className="absolute bottom-1 left-3 text-[10px] text-blue-400 font-bold z-10 pointer-events-none">Você — Em Jogo ({playerState.playArea.length}/5)</div>
+              {aiThinking && (
+                <div className="absolute top-8 left-1/2 -translate-x-1/2 z-20 pointer-events-none">
+                  <div className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-300 flex items-center gap-2"
+                    style={{ background: 'rgba(10,10,30,0.75)', border: '1px solid rgba(239,68,68,0.25)' }}>
+                    <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
+                    <span className="ai-dots">IA calculando</span>
+                  </div>
+                </div>
+              )}
+              <Field3D
+                state={gameState}
+                isPlayerTurn={isPlayerTurn}
+                playerEnergy={availableEnergyForPlayer}
+                targeting={!!attackMode || synergyMode || !!mewCopiedAttack}
+                onAttack={handleAttack}
+                onEvolve={evolveAction}
+                onSelectTarget={handleSelectAttackTarget}
+              />
+            </div>
+          ) : (
+          <>
           {/* AI play zone */}
           <div className="flex-1 flex flex-col items-center justify-center relative"
             style={{ minHeight: 180, background: 'linear-gradient(180deg,rgba(10,18,40,0.5) 0%,rgba(60,10,10,0.25) 100%)' }}>
@@ -599,6 +654,8 @@ export function GameBoard() {
               evolvingCard={evolvingCard}
             />
           </div>
+          </>
+          )}
 
           {/* Mew DNA panel */}
           {mewCopyMode && !mewCopiedAttack && (
