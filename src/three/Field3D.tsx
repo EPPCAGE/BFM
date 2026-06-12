@@ -1,7 +1,6 @@
-import { Canvas, useFrame } from '@react-three/fiber';
-import { Html, ContactShadows, Environment } from '@react-three/drei';
-import { EffectComposer, Bloom, Vignette } from '@react-three/postprocessing';
-import { Suspense, useRef, useState, useEffect } from 'react';
+import { Canvas, useThree } from '@react-three/fiber';
+import { Html, ContactShadows } from '@react-three/drei';
+import { useRef, useState, useEffect } from 'react';
 import * as THREE from 'three';
 import { HoloCard, CARD_W } from './HoloCard';
 import { ImpactBurst, typeColor } from './ImpactBurst';
@@ -83,7 +82,7 @@ function FieldCard({ pk, pos, owner, state, onAttack, onEvolve, onSelectTarget, 
       </Html>
 
       {!isOpponent && isPlayerTurn && !targeting && (
-        <Html position={[0, 0.4, 0.4]} center distanceFactor={5} className="holo-actions" pointerEvents="auto">
+        <Html position={[0, 0.4, 0.4]} center distanceFactor={5} className="holo-actions" pointerEvents="auto" zIndexRange={[200, 100]}>
           <div className="holo-action-panel">
             {pk.def.attacks.map((atk, ai) => (
               <button key={ai} disabled={energy < atk.cost} onClick={(e) => { e.stopPropagation(); onAttack?.(pk.instanceId, ai); }}>
@@ -161,16 +160,6 @@ function ZoneOutline({ z, w, d, color = '#eef2ff', opacity = 0.4 }: { z: number;
   );
 }
 
-// Slow camera breathing for cinematic feel
-function CameraRig() {
-  useFrame((state) => {
-    const t = state.clock.elapsedTime;
-    state.camera.position.x = Math.sin(t * 0.15) * 0.3;
-    state.camera.position.y = 3.0 + Math.sin(t * 0.22) * 0.08;
-    state.camera.lookAt(0, 0, -0.3);
-  });
-  return null;
-}
 
 interface Props {
   state: GameState;
@@ -182,28 +171,28 @@ interface Props {
   onSelectTarget?: (instanceId: string) => void;
 }
 
+function Invalidator({ state }: { state: GameState }) {
+  const { invalidate } = useThree();
+  useEffect(() => { invalidate(); }, [state, invalidate]);
+  return null;
+}
+
 export function Field3D({ state, isPlayerTurn, playerEnergy, targeting, onAttack, onEvolve, onSelectTarget }: Props) {
   const aiPos = rowPositions(state.players.ai.playArea, AI_Z);
   const playerPos = rowPositions(state.players.player.playArea, PLAYER_Z);
   const allPos = { ...aiPos, ...playerPos };
 
   return (
-    <Canvas shadows={false} dpr={[1, 1.5]} camera={{ position: [0, 3.0, 5.2], fov: 52 }}
-      gl={{ antialias: true, toneMapping: THREE.ACESFilmicToneMapping, toneMappingExposure: 1.05 }}>
+    <Canvas shadows={false} dpr={[1, 1.2]} camera={{ position: [0, 3.0, 5.2], fov: 52 }}
+      gl={{ antialias: false, toneMapping: THREE.ACESFilmicToneMapping, toneMappingExposure: 1.05 }}
+      frameloop="demand">
+      <Invalidator state={state} />
       <color attach="background" args={['#081c14']} />
-      <fog attach="fog" args={['#081c14', 14, 26]} />
 
-      <CameraRig />
-
-      <ambientLight intensity={0.55} color="#e8eeff" />
-      <directionalLight position={[0, 10, 4]} intensity={1.1} color="#ffffff" />
-      <directionalLight position={[0, 4, -6]} intensity={1.0} color="#ccd8ff" />
-      <pointLight position={[-5, 4, 3]} intensity={35} color="#4f8cff" distance={18} />
-      <pointLight position={[5, 4, 3]} intensity={35} color="#4f8cff" distance={18} />
-      <pointLight position={[-4, 3, -3]} intensity={30} color="#ff4f6a" distance={16} />
-      <pointLight position={[4, 3, -3]} intensity={30} color="#ff4f6a" distance={16} />
-
-      <Suspense fallback={null}><Environment preset="lobby" environmentIntensity={0.35} /></Suspense>
+      <ambientLight intensity={0.85} color="#e8eeff" />
+      <directionalLight position={[0, 8, 4]} intensity={1.4} color="#ffffff" />
+      <pointLight position={[0, 4, 3]} intensity={40} color="#4f8cff" distance={18} />
+      <pointLight position={[0, 3, -3]} intensity={35} color="#ff4f6a" distance={16} />
 
       {/* Felt table surface — dark green, matte (no metalness) */}
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.05, 0]} receiveShadow>
@@ -239,11 +228,6 @@ export function Field3D({ state, isPlayerTurn, playerEnergy, targeting, onAttack
       ))}
 
       <ImpactLayer state={state} positions={allPos} />
-
-      <EffectComposer>
-        <Bloom mipmapBlur intensity={0.5} luminanceThreshold={0.7} luminanceSmoothing={0.3} />
-        <Vignette eskil={false} offset={0.35} darkness={0.45} />
-      </EffectComposer>
     </Canvas>
   );
 }
