@@ -487,6 +487,165 @@ export function GameBoard() {
         </div>
 
         {/* ── CENTER ── */}
+        {view3d ? (
+        /* ════════ 3D BATTLEFIELD — single connected scene with floating hands ════════ */
+        <div className="flex-1 relative min-h-0 overflow-hidden min-w-0">
+
+          {/* Base 3D field, full bleed */}
+          <Field3D
+            state={gameState}
+            isPlayerTurn={isPlayerTurn}
+            playerEnergy={availableEnergyForPlayer}
+            targeting={!!attackMode || synergyMode || !!mewCopiedAttack}
+            onAttack={handleAttack}
+            onEvolve={evolveAction}
+            onSelectTarget={handleSelectAttackTarget}
+          />
+
+          {/* Zone labels */}
+          <div className="absolute top-1 left-3 text-[10px] text-red-400 font-bold z-10 pointer-events-none">IA — Em Jogo ({aiState.playArea.length}/5)</div>
+          <div className="absolute left-3 text-[10px] text-blue-400 font-bold z-10 pointer-events-none" style={{ bottom: 168 }}>Você — Em Jogo ({playerState.playArea.length}/5)</div>
+
+          {aiThinking && (
+            <div className="absolute top-1/3 left-1/2 -translate-x-1/2 z-20 pointer-events-none">
+              <div className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-300 flex items-center gap-2"
+                style={{ background: 'rgba(10,10,30,0.7)', border: '1px solid rgba(239,68,68,0.25)', backdropFilter: 'blur(4px)' }}>
+                <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
+                <span className="ai-dots">IA calculando</span>
+              </div>
+            </div>
+          )}
+
+          {/* AI hand — fanned, floating at top, overlapping the field */}
+          <div className="absolute top-0 inset-x-0 z-20 flex flex-col items-center pt-1 pointer-events-none"
+            style={{ background: 'linear-gradient(to bottom, rgba(40,8,12,0.55) 0%, rgba(40,8,12,0.12) 55%, transparent 100%)' }}>
+            <span className="text-[10px] text-red-400 font-bold mb-0.5">IA ({aiState.hand.length})</span>
+            <div className="flex items-start">
+              {aiState.hand.map((_, idx) => {
+                const n = aiState.hand.length;
+                const mid = (n - 1) / 2;
+                const rot = (idx - mid) * 3.5;
+                return (
+                  <div key={idx} className="rounded overflow-hidden shadow-lg"
+                    style={{ width: 44, height: 62, marginLeft: idx === 0 ? 0 : -14,
+                      transform: `rotate(${rot}deg) translateY(${Math.abs(idx - mid) * 2}px)`, transformOrigin: 'top center' }}>
+                    <img src={CARD_BACK_URL} alt="carta" className="w-full h-full object-cover" />
+                  </div>
+                );
+              })}
+              {aiState.hand.length === 0 && <span className="text-slate-600 text-xs italic">Mão vazia</span>}
+            </div>
+          </div>
+
+          {/* AI deck + discard — floating top-right */}
+          <div className="absolute top-1 right-2 z-20 flex items-start gap-1.5 pointer-events-none">
+            <div className="flex flex-col items-end">
+              <span className="text-[8px] text-slate-400 mb-0.5">DESCARTE ({aiState.discardPile.length})</span>
+              {aiDiscard[0] ? (
+                <div data-card-hover className="rounded overflow-hidden pointer-events-auto cursor-default"
+                  style={{ width: 36, height: 50 }}
+                  onMouseEnter={(e) => showTooltip(aiDiscard[0], e)} onMouseMove={moveTooltip} onMouseLeave={hideTooltip}>
+                  <CardImage card={aiDiscard[0]} className="w-full h-full" />
+                </div>
+              ) : (
+                <div className="rounded border border-dashed border-slate-700/70 flex items-center justify-center" style={{ width: 36, height: 50 }}><span className="text-slate-700 text-[7px]">–</span></div>
+              )}
+            </div>
+            <div className="flex flex-col items-center">
+              <div className="rounded overflow-hidden" style={{ width: 32, height: 45 }}>
+                <img src={CARD_BACK_URL} alt="deck" className="w-full h-full object-cover" />
+              </div>
+              <span className="text-[7px] text-slate-400">{aiState.deckCards.length}</span>
+            </div>
+          </div>
+
+          {/* Mew DNA panel overlay */}
+          {mewCopyMode && !mewCopiedAttack && (
+            <div className="absolute top-12 left-1/2 -translate-x-1/2 z-40 rounded-xl px-4 py-2 max-w-[90%]"
+              style={{ background: 'rgba(40,33,4,0.95)', border: '1px solid rgba(202,138,4,0.5)', backdropFilter: 'blur(6px)' }}>
+              <p className="text-yellow-300 text-xs font-bold mb-1">🌟 Baú de DNA — Escolha um ataque para copiar:</p>
+              <div className="flex flex-wrap gap-2 overflow-x-auto max-h-32">
+                {[...gameState.players.player.playArea, ...gameState.players.ai.playArea].map(pk => (
+                  <div key={pk.instanceId} className="flex flex-col gap-0.5">
+                    <span className="text-[9px] text-slate-400 font-bold">{pk.def.displayName}</span>
+                    {pk.def.attacks.filter(a => a.damage > 0).map((atk, i) => (
+                      <button key={i} onClick={() => { setMewCopiedAttack(atk); }}
+                        className="text-[9px] px-2 py-0.5 rounded bg-yellow-800 hover:bg-yellow-600 text-white text-left">
+                        {atk.name} <span className="text-yellow-300">{atk.cost}⚡</span> <span className="text-red-300">{atk.damage}</span>
+                      </button>
+                    ))}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Player deck + discard — floating bottom-left */}
+          <div className="absolute bottom-2 left-2 z-30 flex items-end gap-1.5 pointer-events-auto">
+            <div className="flex flex-col items-center">
+              <div className="rounded overflow-hidden shadow-lg" style={{ width: 34, height: 48 }} title="Deck">
+                <img src={CARD_BACK_URL} alt="deck" className="w-full h-full object-cover" />
+              </div>
+              <span className="text-[7px] text-slate-300">{playerState.deckCards.length}</span>
+            </div>
+            <div className="flex flex-col items-center">
+              {playerState.discardPile.length > 0 ? (
+                <div data-card-hover className="rounded overflow-hidden shadow-lg" style={{ width: 34, height: 48 }} title="Topo do descarte"
+                  onMouseEnter={(e) => showTooltip(playerState.discardPile[playerState.discardPile.length - 1], e)}
+                  onMouseMove={moveTooltip} onMouseLeave={hideTooltip}>
+                  <CardImage card={playerState.discardPile[playerState.discardPile.length - 1]} className="w-full h-full" />
+                </div>
+              ) : (
+                <div className="rounded border border-dashed border-slate-700/70 flex items-center justify-center" style={{ width: 34, height: 48 }}><span className="text-slate-700 text-[7px]">–</span></div>
+              )}
+              <span className="text-[7px] text-slate-300">DESC {playerState.discardPile.length}</span>
+            </div>
+          </div>
+
+          {/* Player hand — fanned, floating at bottom, fading into the field */}
+          <div className="absolute bottom-0 inset-x-0 z-30 flex flex-col items-center justify-end pb-1 pointer-events-none"
+            style={{ background: 'linear-gradient(to top, rgba(8,12,30,0.7) 0%, rgba(8,12,30,0.2) 55%, transparent 100%)' }}>
+            <div className="text-[10px] text-blue-300 font-bold mb-1">
+              Mão ({playerState.hand.length}){isPlayerTurn ? <span className="text-slate-400 font-normal"> — clique para ações</span> : <span className="text-slate-500 italic font-normal"> — aguardando IA…</span>}
+            </div>
+            <div className="flex items-end justify-center pointer-events-auto px-12" style={{ minHeight: 130 }}>
+              <AnimatePresence initial={false}>
+              {playerState.hand.map((card, idx) => {
+                const n = playerState.hand.length;
+                const mid = (n - 1) / 2;
+                const rot = (idx - mid) * 3.5;
+                const lift = Math.abs(idx - mid) * 6;
+                const isTeleportTarget = pendingTeleport && card.type === 'pokemon' && (card as PokemonCardDef).stage === 'Basic';
+                const isMenuOpen = cardMenu?.idx === idx;
+                return (
+                  <motion.div
+                    key={`${card.id}-${idx}`}
+                    data-card-hover
+                    initial={{ opacity: 0, y: 50, scale: 0.85 }}
+                    animate={{ opacity: 1, y: lift, scale: 1, rotate: rot }}
+                    exit={{ opacity: 0, y: 30, scale: 0.9 }}
+                    whileHover={{ y: -22, scale: 1.12, rotate: 0, zIndex: 50 }}
+                    transition={{ type: 'spring', stiffness: 280, damping: 22 }}
+                    className={`relative rounded-lg cursor-pointer flex-shrink-0 shadow-xl
+                      ${isTeleportTarget ? 'ring-2 ring-indigo-400 animate-pulse' : ''}
+                      ${isMenuOpen ? 'ring-2 ring-yellow-400' : ''}`}
+                    style={{ width: 96, height: 134, marginLeft: idx === 0 ? 0 : -26, transformOrigin: 'bottom center' }}
+                    onClick={(e) => handleHandClick(idx, e)}
+                    onMouseEnter={(e) => { if (!cardMenu) showTooltip(card, e); }}
+                    onMouseMove={moveTooltip}
+                    onMouseLeave={hideTooltip}>
+                    <CardImage card={card} className="w-full h-full rounded-lg" />
+                    {card.type === 'item' && <div className="absolute bottom-0 left-0 right-0 bg-amber-700/85 text-[8px] text-center text-white rounded-b font-semibold">ITEM</div>}
+                    {card.type === 'supporter' && <div className="absolute bottom-0 left-0 right-0 bg-purple-700/85 text-[8px] text-center text-white rounded-b font-semibold">APOIADOR</div>}
+                  </motion.div>
+                );
+              })}
+              </AnimatePresence>
+              {playerState.hand.length === 0 && <span className="text-slate-500 text-sm italic py-10">Mão vazia</span>}
+            </div>
+          </div>
+        </div>
+        ) : (
         <div className="flex-1 flex flex-col overflow-y-auto min-w-0">
 
           {/* Opponent hand + discard */}
@@ -530,31 +689,6 @@ export function GameBoard() {
             </div>
           </div>
 
-          {view3d ? (
-            /* ── 3D FIELD ── */
-            <div className="flex-1 relative min-h-0">
-              <div className="absolute top-1 left-3 text-[10px] text-red-400 font-bold z-10 pointer-events-none">IA — Em Jogo ({aiState.playArea.length}/5)</div>
-              <div className="absolute bottom-1 left-3 text-[10px] text-blue-400 font-bold z-10 pointer-events-none">Você — Em Jogo ({playerState.playArea.length}/5)</div>
-              {aiThinking && (
-                <div className="absolute top-8 left-1/2 -translate-x-1/2 z-20 pointer-events-none">
-                  <div className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-300 flex items-center gap-2"
-                    style={{ background: 'rgba(10,10,30,0.75)', border: '1px solid rgba(239,68,68,0.25)' }}>
-                    <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
-                    <span className="ai-dots">IA calculando</span>
-                  </div>
-                </div>
-              )}
-              <Field3D
-                state={gameState}
-                isPlayerTurn={isPlayerTurn}
-                playerEnergy={availableEnergyForPlayer}
-                targeting={!!attackMode || synergyMode || !!mewCopiedAttack}
-                onAttack={handleAttack}
-                onEvolve={evolveAction}
-                onSelectTarget={handleSelectAttackTarget}
-              />
-            </div>
-          ) : (
           <>
           {/* AI play zone */}
           <div className="flex-1 flex flex-col items-center justify-center relative"
@@ -655,7 +789,6 @@ export function GameBoard() {
             />
           </div>
           </>
-          )}
 
           {/* Mew DNA panel */}
           {mewCopyMode && !mewCopiedAttack && (
@@ -765,7 +898,8 @@ export function GameBoard() {
             </div>
           </div>
 
-        </div>{/* end center */}
+        </div>
+        )}{/* end center */}
 
         {/* ── RIGHT SIDEBAR ── */}
         {logOpen && (
