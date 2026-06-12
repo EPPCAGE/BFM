@@ -601,6 +601,7 @@ export function GameBoard() {
               Mão ({playerState.hand.length}){isPlayerTurn ? <span className="text-slate-400 font-normal"> — clique para ações</span> : <span className="text-slate-500 italic font-normal"> — aguardando IA…</span>}
             </div>
             <div className="flex items-end justify-center pointer-events-auto px-12" style={{ minHeight: 130 }}>
+              <AnimatePresence initial={false}>
               {playerState.hand.map((card, idx) => {
                 const n = playerState.hand.length;
                 const mid = (n - 1) / 2;
@@ -609,20 +610,17 @@ export function GameBoard() {
                 const isTeleportTarget = pendingTeleport && card.type === 'pokemon' && (card as PokemonCardDef).stage === 'Basic';
                 const isMenuOpen = cardMenu?.idx === idx;
                 return (
-                  <div
+                  <motion.div
                     key={`${card.id}-${idx}`}
                     data-card-hover
+                    initial={{ opacity: 0, y: 50, scale: 0.85 }}
+                    animate={{ opacity: 1, y: lift, scale: 1, rotate: rot }}
+                    exit={{ opacity: 0, y: 30, scale: 0.9 }}
+                    transition={{ type: 'spring', stiffness: 300, damping: 26 }}
                     className={`hand-card-3d relative rounded-lg cursor-pointer flex-shrink-0 shadow-xl
                       ${isTeleportTarget ? 'ring-2 ring-indigo-400 animate-pulse' : ''}
                       ${isMenuOpen ? 'ring-2 ring-yellow-400' : ''}`}
-                    style={{
-                      width: 96, height: 134,
-                      marginLeft: idx === 0 ? 0 : -26,
-                      transformOrigin: 'bottom center',
-                      transform: `rotate(${rot}deg) translateY(${lift}px)`,
-                      transition: 'transform 0.18s cubic-bezier(0.34,1.56,0.64,1)',
-                      zIndex: isMenuOpen ? 50 : idx,
-                    }}
+                    style={{ width: 96, height: 134, marginLeft: idx === 0 ? 0 : -26, transformOrigin: 'bottom center', zIndex: isMenuOpen ? 50 : idx }}
                     onClick={(e) => handleHandClick(idx, e)}
                     onMouseEnter={(e) => { if (!cardMenu) showTooltip(card, e); }}
                     onMouseMove={moveTooltip}
@@ -630,9 +628,10 @@ export function GameBoard() {
                     <CardImage card={card} className="w-full h-full rounded-lg" />
                     {card.type === 'item' && <div className="absolute bottom-0 left-0 right-0 bg-amber-700/85 text-[8px] text-center text-white rounded-b font-semibold">ITEM</div>}
                     {card.type === 'supporter' && <div className="absolute bottom-0 left-0 right-0 bg-purple-700/85 text-[8px] text-center text-white rounded-b font-semibold">APOIADOR</div>}
-                  </div>
+                  </motion.div>
                 );
               })}
+              </AnimatePresence>
               {playerState.hand.length === 0 && <span className="text-slate-500 text-sm italic py-10">Mão vazia</span>}
             </div>
           </div>
@@ -912,6 +911,19 @@ export function GameBoard() {
       </div>{/* end main area */}
 
       {/* ── CARD ACTION MENU ── */}
+      {cardMenu && menuOptions.length === 0 && (
+        <div ref={menuRef} className="fixed z-50 rounded-xl shadow-2xl p-3"
+          style={{ left: cardMenu.x, top: Math.max(8, cardMenu.y - 80),
+            background: 'linear-gradient(145deg,#1e293b,#0f172a)', border: '1px solid rgba(99,102,241,0.4)',
+            boxShadow: '0 20px 60px rgba(0,0,0,0.8)' }}>
+          <p className="text-xs text-slate-400 mb-2 max-w-[180px]">
+            {menuCard && menuCard.type === 'pokemon' && (menuCard as PokemonCardDef).stage !== 'Basic'
+              ? '⚠ Pokémon evoluído — invoque a forma base primeiro. ' : ''}
+            {playerState.energyPlayedThisTurn ? 'Energia já jogada neste turno.' : ''}
+          </p>
+          <button onClick={() => setCardMenu(null)} className="text-xs text-slate-500 hover:text-slate-300 px-3 py-1 rounded hover:bg-white/5 w-full text-left">✕ Fechar</button>
+        </div>
+      )}
       {cardMenu && menuOptions.length > 0 && (
         <div ref={menuRef} className="fixed z-50 rounded-xl shadow-2xl p-1.5 flex flex-col gap-0.5"
           style={{
